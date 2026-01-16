@@ -1,0 +1,27 @@
+﻿{
+  "mcpServers": {
+    "tailwindcss": {
+      "command": "npx",
+      "args": ["-y", "tailwindcss-mcp-server"]
+    },
+    "prettier": {
+      "command": "npx",
+      "args": ["-y", "@prettier/mcp-server"]
+    },
+    "typescript": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-typescript"]
+    },
+    "vite": {
+      "command": "npx",
+      "args": ["-y", "@vitejs/mcp-server"]
+    },
+    "vue": {
+      "command": "npx",
+      "args": ["-y", "@vue/mcp-server"]
+    },
+    "inkeepMcp": {
+      "url": "https://mcp.inkeep.com/zod/mcp"
+    }
+  }
+}

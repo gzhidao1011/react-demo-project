@@ -1,0 +1,9 @@
+{
+  "setup-worktree": [
+    "echo '正在设置新的 Git worktree...'",
+    "pnpm install",
+    "if [ -f \"$ROOT_WORKTREE_PATH/.env.local\" ]; then cp \"$ROOT_WORKTREE_PATH/.env.local\" .env.local; echo '已复制 .env.local 文件'; fi",
+    "if [ -f \"$ROOT_WORKTREE_PATH/.env\" ]; then cp \"$ROOT_WORKTREE_PATH/.env\" .env; echo '已复制 .env 文件'; fi",
+    "echo 'Worktree 设置完成'"
+  ]
+}

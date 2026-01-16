@@ -1,0 +1,125 @@
+---
+description: Git 提交信息规范，遵循 Conventional Commits 标准
+globs:
+alwaysApply: true
+---
+
+# Git 提交信息规范
+
+当使用 Cursor 的 AI 功能生成 Git 提交信息时（通过 `cursor.generateGitCommitMessage` 命令），**必须**遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范。
+
+> **重要**：类型（type）**必须使用英文**，禁止使用中文类型（如"功能"、"修复"等）。只能使用 `feat`、`fix`、`docs`、`style`、`refactor`、`test`、`perf`、`chore`、`ci`、`build` 等英文类型。
+
+## 提交信息格式
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+## 提交类型（Type）
+
+使用以下类型之一（小写）：
+
+- **feat**: 新增功能或特性（A new feature）
+- **fix**: 修复 bug 或问题（A bug fix）
+- **docs**: 仅文档变更（Documentation only changes）
+- **style**: 代码格式、样式调整，不影响功能（Changes that do not affect the meaning of the code）
+- **refactor**: 代码重构，不改变功能（A code change that neither fixes a bug nor adds a feature）
+- **test**: 添加或修改测试用例（Adding missing tests or correcting existing tests）
+- **perf**: 性能优化相关（A code change that improves performance）
+- **chore**: 构建系统或依赖变更，其他杂务（Changes to the build process or auxiliary tools）
+- **ci**: CI 配置文件和脚本的变更（Changes to CI configuration files and scripts）
+- **build**: 影响构建系统或外部依赖的变更（Changes that affect the build system or external dependencies）
+
+## 格式规范
+
+1. **类型和描述之间使用冒号和空格**：`type: subject`
+2. **类型必须使用小写英文**：**禁止使用中文类型**（如"功能"、"修复"、"文档"等），只能使用 `feat`、`fix`、`docs`、`style`、`refactor`、`test`、`perf`、`chore`、`ci`、`build` 等英文类型
+3. **scope 可选，使用英文**：用于说明提交影响的范围，如 `feat(panorama):`、`fix(map):` 等
+4. **subject 使用中文，祈使语气**：描述应该以动词开头，使用现在时，如 "添加"、"修复"、"更新"
+5. **subject 首字母不需要大写**：简洁明了，不超过 50 个字符（中文按 2 个字符计算）
+6. **subject 结尾不加句号**：简洁明了
+7. **body 可选，使用中文**：详细描述变更的原因和方式，与 subject 之间空一行
+8. **footer 可选**：用于关联 issue 或 breaking changes，格式如 `关联 #123` 或 `BREAKING CHANGE:`
+
+## 语言规范
+
+- **类型（type）和 scope 使用英文**：如 `feat`、`fix`、`feat(panorama)`、`fix(map)` 等
+- **描述（subject）和 body 使用中文**：详细说明变更内容
+
+## 示例
+
+**简单提交：**
+
+```
+feat: 添加用户扫码登录功能
+```
+
+```
+fix: 修复全景图加载失败的问题
+```
+
+**带 scope 的提交：**
+
+```
+feat(panorama): 添加全景图收藏功能
+
+- 支持用户收藏和取消收藏全景图
+- 添加收藏列表页面
+- 实现收藏数据的持久化存储
+```
+
+**带详细描述的提交：**
+
+```
+fix(map): 修复地图标记点击无响应的问题
+
+问题是由于事件处理器没有正确绑定到标记元素。
+本次提交修复了事件绑定问题，并添加了适当的错误处理。
+
+关联 #456
+```
+
+**带 breaking change 的提交：**
+
+```
+refactor(panorama): 优化全景图组件性能
+
+- 使用虚拟滚动优化大列表渲染
+- 添加图片懒加载机制
+- 减少不必要的响应式数据
+
+BREAKING CHANGE: 全景图组件 API 已更改。
+`data` prop 现在是必需的，而不是可选的。
+```
+
+## 注意事项
+
+### 类型使用规范
+
+- ❌ **严格禁止**：`功能: xxx`、`修复: xxx`、`文档: xxx`（使用中文类型）
+- ✅ **必须使用**：`feat: xxx`、`fix: xxx`、`docs: xxx`（使用英文类型）
+- ❌ **避免**：`更新代码`、`修复bug`（过于模糊）
+- ✅ **推荐**：`fix: 修复全景图加载失败的问题`（具体明确）
+- ❌ **避免**：`feat: 添加功能`（描述不清晰）
+- ✅ **推荐**：`feat: 添加用户扫码登录功能`（说明具体功能）
+
+### 语言使用规范
+
+- ❌ **避免**：`已修复bug`、`正在添加功能`（不使用过去时或进行时）
+- ✅ **推荐**：`fix: 修复bug`、`feat: 添加功能`（使用祈使语气，现在时）
+- ❌ **避免**：`feat: add feature`（描述使用英文，应使用中文）
+- ✅ **推荐**：`feat: 添加功能`（类型英文，描述中文）
+- **类型和 scope 必须使用英文**：如 `feat`、`fix`、`feat(panorama)` 等，**禁止使用中文类型**
+- **描述和 body 使用中文**：详细说明变更内容
+
+### 其他规范
+
+- **一次提交只做一件事**：避免在一个提交中混合多种类型的变更
+- **如果提交包含多个相关变更**：可以在 body 中使用列表详细说明
+- **仔细分析代码变更**：确定合适的类型和 scope
+- **使用 scope**：当变更影响特定模块或组件时（如 `panorama`、`map`、`ui`、`request`）

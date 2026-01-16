@@ -1,0 +1,507 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# 代码组织指南
+
+本文档定义了 Vue 3 项目的代码组织规范，确保代码结构清晰、易于维护。
+
+> **参考**：本文档遵循 Vue 3 Composition API 最佳实践和 FSD（Feature-Sliced Design）架构规范。
+
+## 文件结构
+
+### 组件文件组织
+
+- **每个文件应只包含一个主组件**
+- **组件文件名使用 PascalCase**（如 `HomeDataResultsDetail.vue`、`PanoramaMapTools.vue`）
+- **按功能而不是类型组织组件**，遵循 FSD 架构：
+  - `pages/` - 页面级组件（路由级组件）
+  - `widgets/` - 跨页面 UI 模块（大型复合 UI 块）
+  - `features/` - 具体业务特性（用户交互和业务逻辑）
+  - `ui/` - 基础 UI 组件（通用、可复用的 UI 组件）
+  - `hooks/` - Composables（可复用的组合式函数）
+  - `utils/` - 工具函数（通用工具函数）
+  - `types/` - 类型定义（TypeScript 类型）
+- **相关组件应放在同一目录中**，保持代码的内聚性
+- **使用 index 文件从目录导出多个组件**（如 `@/widgets`），提供清晰的公共 API
+- **保持组件文件专注，依赖最少**，遵循单一职责原则
+- **明确公共 API**：每个目录通过 `index.ts` 导出必要的组件和函数，隐藏内部实现细节
+
+### 目录结构示例
+
+```
+src/
+├── pages/                    # 页面层（FSD）
+│   ├── data-results.vue
+│   └── data-make/
+│       └── my-data/
+├── widgets/                   # Widgets 层（FSD）
+│   ├── homeMapPanorama/
+│   │   ├── Main.vue
+│   │   ├── BottomBar.vue
+│   │   ├── LeftControl.vue
+│   │   └── index.ts          # 导出组件
+│   └── PanoramaWorkbench/
+│       ├── index.vue
+│       ├── actions/
+│       └── group/
+├── features/                  # Features 层（FSD）
+│   ├── sharePanorama/
+│   └── addWorks/
+├── hooks/                     # Composables
+│   ├── index.ts
+│   ├── useAuth.ts
+│   └── usePanoramaDetail.ts
+├── ui/                        # 基础 UI 组件
+│   ├── BackBtn.vue
+│   └── DataMakeLayout.vue
+├── utils/                     # 工具函数
+│   └── index.ts
+└── types/                     # 类型定义
+    └── index.ts
+```
+
+### FSD 架构依赖规则
+
+遵循 FSD 架构的依赖规则，确保代码的可维护性和可扩展性：
+
+**依赖方向**（从高到低）：
+
+```
+pages/          # 可以依赖所有下层
+  ↓
+widgets/        # 可以依赖 features 和共享层
+  ↓
+features/       # 可以依赖共享层
+  ↓
+hooks/, utils/, types/, ui/  # 共享层，不依赖业务层
+```
+
+**规则**：
+
+- ✅ `pages/` 可以依赖所有层（`widgets/`、`features/`、`hooks/`、`utils/`、`types/`、`ui/`）
+- ✅ `widgets/` 可以依赖 `features/`、`hooks/`、`utils/`、`types/`、`ui/`
+- ✅ `features/` 可以依赖 `hooks/`、`utils/`、`types/`、`ui/`
+- ❌ **禁止** 共享层（`hooks/`、`utils/`、`types/`、`ui/`）依赖业务层（`features/`、`widgets/`、`pages/`）
+- ❌ **禁止** 同层之间的相互依赖（避免循环依赖）
+
+**最佳实践**：
+
+- 使用 `index.ts` 文件明确导出公共 API
+- 避免在业务层之间直接导入，优先通过 props/events 通信
+- 共享层保持业务无关，可被任何业务层使用
+
+## 导入顺序
+
+### 标准导入顺序
+
+在 `<script setup>` 中，按以下顺序组织导入语句：
+
+```typescript
+// 1. Vue 相关（vue, vue-router, pinia）
+import { ref, computed, watch, onMounted } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import { useStore } from "pinia"
+
+// 2. 第三方库（element-plus, lodash-es, uuid 等）
+import { ElMessage, ElMessageBox } from "element-plus"
+import { CloseBold } from "@element-plus/icons-vue"
+import { v4 as uuidv4 } from "uuid"
+import { debounce } from "lodash-es"
+
+// 3. 项目内部包（@yysl/*）
+import { PanoramaTimeLine, TempPlotEditPanel } from "@yysl/panorama"
+import { ElScrollbarAutoHeight } from "@yysl/ui"
+import { useMobile } from "@yysl/utils"
+import { CreationGetByIdOptions } from "@yysl/request"
+
+// 4. 路径别名导入（@/ 开头的项目内部路径）
+import { usePanoramaDetail } from "@/hooks"
+import { PanoramaToolType } from "@/types"
+import { BackBtn } from "@/ui"
+
+// 5. 相对路径导入（./ 或 ../）
+import MainContent from "./MainContent.vue"
+import BottomBar from "./BottomBar.vue"
+import { useHomeMapPanorameHook } from "./libs/index"
+
+// 6. 类型导入（使用 import type）
+import type { SceneData } from "@yysl/panorama"
+import type { Component } from "vue"
+```
+
+### 导入规范
+
+- **在每个组内按字母顺序排序导入**（可选，但建议保持一致）
+- **在导入组之间留空行**，提高可读性
+- **类型导入使用 `import type`**，与值导入分开
+- **避免混合导入**：同一模块的值和类型应分开导入
+
+## Vue 组件结构
+
+### 组件文件结构顺序
+
+Vue 单文件组件（`.vue`）应按以下顺序组织：
+
+```vue
+<template>
+  <!-- 模板内容 -->
+</template>
+
+<script setup lang="ts">
+<!-- 脚本内容 -->
+</script>
+
+<style lang="scss" scoped>
+<!-- 样式内容（可选） -->
+</style>
+```
+
+### `<script setup>` 内部组织顺序
+
+在 `<script setup lang="ts">` 中，按以下顺序组织代码：
+
+```typescript
+// 1. 导入语句（按上述导入顺序）
+
+// 2. 类型定义（如果需要，可以放在文件顶部或相关代码附近）
+interface Props {
+  params: CreationGetByIdOptions
+  isMobile?: boolean
+}
+
+// 3. Props、Emits、Model 定义
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  (e: "close"): void
+  (e: "change", value: string): void
+}>()
+const model = defineModel<{ value: string }>("model")
+
+// 4. Provide/Inject（如果需要，通常放在组件定义之后）
+provide("panoramaId", panoramaId)
+const injectedValue = inject<string>("panoramaId")
+
+// 5. 自定义 Hooks 调用（优先提取复杂逻辑到 composables）
+const { isMobile: isMobileHook } = useMobile()
+const { data, loading, error } = usePanoramaDetail()
+
+// 6. 响应式数据（ref, reactive）- 按功能分组
+const dialogVisible = ref(false)
+const loading = ref(true)
+
+// 7. 计算属性（computed）- 优先使用 computed 而非方法
+const isMobile = computed(() => {
+  return props.isMobile ?? false
+})
+
+// 8. 监听器（watch）- 避免过度使用，优先考虑 computed
+watch(
+  () => props.params,
+  (newVal) => {
+    // 处理变化
+  },
+  { deep: true },
+)
+
+// 9. 生命周期钩子（放在相关逻辑附近，而不是统一放在一个地方）
+onMounted(() => {
+  // 初始化逻辑
+})
+
+onBeforeUnmount(() => {
+  // 清理逻辑（清理副作用：定时器、事件监听、订阅等）
+})
+
+// 10. 方法/函数定义（按功能分组，而不是按类型）
+const handleClose = () => {
+  dialogVisible.value = false
+  emit("close")
+}
+
+const fetchData = async () => {
+  // 异步操作
+}
+
+// 11. 常量定义（如果需要在组件内部定义）
+const PANORAMA_ID_PREFIX = "panorama-"
+```
+
+### 按功能分组逻辑（推荐）
+
+**行业最佳实践**：在 `<script setup>` 中，**按功能分组逻辑**，而不是严格按类型分组。将相关的响应式数据、计算属性、监听器、生命周期钩子和方法组织在一起。
+
+```typescript
+// ✅ 推荐：按功能分组
+// ===== 对话框功能 =====
+const dialogVisible = ref(false)
+const openDialog = () => {
+  dialogVisible.value = true
+}
+const closeDialog = () => {
+  dialogVisible.value = false
+  emit("close")
+}
+
+// ===== 数据获取功能 =====
+const loading = ref(false)
+const data = ref(null)
+const fetchData = async () => {
+  loading.value = true
+  try {
+    data.value = await api.getData()
+  } finally {
+    loading.value = false
+  }
+}
+watch(() => props.params, fetchData, { immediate: true })
+onMounted(fetchData)
+
+// ===== 移动端适配功能 =====
+const { isMobile } = useMobile()
+const isMobileComputed = computed(() => {
+  return (props.isMobile ?? false) || isMobile.value
+})
+```
+
+这种方式提高了代码的可读性和可维护性，相关逻辑集中在一起，更容易理解和修改。
+
+### 组件组织最佳实践
+
+- **将复杂逻辑提取到自定义 hooks**（Composables），保持 `setup` 函数简洁
+- **保持组件专注于 UI 渲染**，将业务逻辑移到 hooks 或服务中
+- **使用 `computed` 而非方法**计算衍生数据，利用缓存机制提升性能
+- **避免过度使用 `watch`**，优先考虑 `computed`，`watch` 用于副作用处理
+- **在组件卸载时清理副作用**（定时器、事件监听、订阅等），防止内存泄漏
+- **按功能分组逻辑**，将相关的响应式数据、计算属性、监听器和生命周期钩子组织在一起
+- **生命周期钩子放在相关逻辑附近**，而不是统一放在一个地方
+
+## 状态管理
+
+### 本地状态
+
+- **使用 Vue 3 响应式 API**处理组件内部状态：
+  - `ref` - 用于基本类型和对象引用
+  - `reactive` - 用于对象和数组（注意响应式丢失问题）
+  - `computed` - 用于衍生数据
+- **将复杂状态拆分为多个状态变量**，提高可读性
+- **尽可能将状态保持在靠近使用它的地方**，避免不必要的全局状态
+
+### 全局状态（Pinia）
+
+- **使用 Pinia 进行全局状态管理**，禁止使用 Vuex
+- **为相关功能创建独立的 Store 模块**
+- **Store 文件组织**：
+  ```
+  stores/
+  ├── user.ts          # 用户状态
+  ├── panorama.ts      # 全景图状态
+  └── map.ts           # 地图状态
+  ```
+- **避免过度使用全局状态**，优先考虑 props/emits 和 provide/inject
+- **记录共享状态的结构**，使用 TypeScript 类型定义
+
+### Provide/Inject 模式
+
+- **用于跨组件层级传递数据**，避免 prop drilling
+- **在父组件中使用 `provide`**，在子组件中使用 `inject`
+- **使用 Symbol 作为 key**，避免命名冲突（可选）
+
+## Composables（Hooks）组织规范
+
+### Composables 命名规范
+
+- **使用 `use` 前缀**：所有 composable 函数应以 `use` 开头（如 `usePanoramaDetail`、`useAuth`）
+- **描述性命名**：名称应清晰描述 composable 的用途
+- **单一职责**：每个 composable 应只负责一个明确的功能，避免创建"万能" composable
+
+```typescript
+// ✅ 正确：单一职责，描述性命名
+export function usePanoramaDetail() { ... }
+export function useAuth() { ... }
+export function useMobile() { ... }
+
+// ❌ 错误：职责不清，命名模糊
+export function useData() { ... }  // 太宽泛
+export function panoramaDetail() { ... }  // 缺少 use 前缀
+```
+
+### Composables 文件组织
+
+```
+hooks/
+├── index.ts                    # 统一导出
+├── useAuth.ts                  # 认证相关
+├── usePanoramaDetail.ts        # 全景图详情
+├── usePanoramaMapHook/         # 复杂 composable 可以有自己的目录
+│   ├── index.ts
+│   └── PointPopover.vue        # 相关组件
+└── miniprogram/                # 按功能模块分组
+    ├── index.ts
+    └── useMiniprogramMapPanoramaHook.ts
+```
+
+### Composables 结构规范
+
+每个 composable 应按以下结构组织：
+
+```typescript
+/**
+ * Composable 功能描述
+ * @param options - 配置选项
+ * @returns 返回的对象说明
+ */
+export function usePanoramaDetail(options?: Options) {
+  // 1. 类型定义（如果需要）
+  interface State {
+    data: PanoramaData | null
+    loading: boolean
+    error: Error | null
+  }
+
+  // 2. 响应式状态
+  const state = reactive<State>({
+    data: null,
+    loading: false,
+    error: null,
+  })
+
+  // 3. 计算属性
+  const hasData = computed(() => !!state.data)
+
+  // 4. 方法
+  const fetchData = async () => {
+    state.loading = true
+    try {
+      state.data = await api.getPanoramaDetail(options)
+    } catch (error) {
+      state.error = error as Error
+    } finally {
+      state.loading = false
+    }
+  }
+
+  // 5. 生命周期（如果需要）
+  onMounted(() => {
+    fetchData()
+  })
+
+  // 6. 返回公共 API
+  return {
+    // 状态
+    ...toRefs(state),
+    // 计算属性
+    hasData,
+    // 方法
+    fetchData,
+  }
+}
+```
+
+### Composables 文档规范
+
+- **为每个 composable 添加 JSDoc 注释**，说明其用途、参数和返回值
+- **提供使用示例**（在注释中或单独的文档中）
+- **记录副作用**：如果 composable 有副作用（如事件监听、定时器），应在文档中说明
+
+````typescript
+/**
+ * 管理全景图详情数据
+ *
+ * @example
+ * ```typescript
+ * const { data, loading, error, fetchData } = usePanoramaDetail({ id: '123' })
+ * ```
+ *
+ * @param options - 配置选项
+ * @param options.id - 全景图 ID
+ * @returns 返回数据、加载状态、错误信息和刷新方法
+ */
+export function usePanoramaDetail(options: { id: string }) {
+  // ...
+}
+````
+
+## 代码组织原则
+
+### 单一职责原则
+
+- 每个组件、composable、工具函数应只负责一个功能
+- 保持函数和组件小而专注
+- 避免创建"万能"组件或 composable
+
+### 组合优于继承
+
+- 使用组合模式构建复杂组件
+- 通过 props、slots、provide/inject 实现组件通信
+- 通过 composables 组合功能逻辑
+
+### 关注点分离
+
+- **UI 逻辑**：在组件模板和样式中
+- **业务逻辑**：在 composables 中
+- **数据获取**：在 composables 或服务中
+- **工具函数**：在 `utils/` 目录中
+- **类型定义**：在 `types/` 目录中
+
+### 可复用性
+
+- 将可复用的逻辑提取到 composables 中
+- 将可复用的 UI 提取到组件中
+- 将可复用的工具函数提取到 `utils/` 中
+- 将可复用的类型定义提取到 `types/` 中
+
+### 按功能分组
+
+- **在组件中**：按功能分组逻辑，而不是按类型分组
+- **在项目中**：按功能组织文件结构（FSD 架构）
+- **在 composables 中**：将相关逻辑组织在一起
+
+## 代码质量与维护性
+
+### 文件大小控制
+
+- **组件文件**：单个 `.vue` 文件建议不超过 300-400 行，超过时应考虑拆分
+- **Composables**：单个 composable 文件建议不超过 200-300 行，复杂逻辑应拆分为多个 composables
+- **工具函数**：保持函数简洁，单个函数建议不超过 50 行
+
+### 组件复杂度控制
+
+- **避免过深的组件嵌套**：建议不超过 3-4 层嵌套
+- **控制组件的 props 数量**：建议不超过 5-7 个 props，过多时应考虑使用对象或拆分组件
+- **控制组件的状态数量**：单个组件的响应式状态建议不超过 10 个，过多时应考虑提取到 composable
+
+### 代码注释规范
+
+- **使用中文注释**：所有注释必须使用中文编写
+- **为复杂逻辑添加注释**：解释"为什么"而不是"是什么"
+- **为 composables 添加 JSDoc**：说明用途、参数、返回值和示例
+- **为公共 API 添加文档**：在 `index.ts` 中导出的组件和函数应有清晰的文档
+
+### 测试组织（可选）
+
+如果项目包含测试，建议按以下方式组织：
+
+```
+src/
+├── components/
+│   └── Button/
+│       ├── Button.vue
+│       ├── Button.test.ts    # 组件测试
+│       └── index.ts
+├── hooks/
+│   ├── useAuth.ts
+│   └── useAuth.test.ts       # Composable 测试
+└── utils/
+    ├── format.ts
+    └── format.test.ts        # 工具函数测试
+```
+
+**测试原则**：
+
+- 测试文件与源文件放在同一目录
+- 测试文件命名：`*.test.ts` 或 `*.spec.ts`
+- 优先测试业务逻辑和工具函数
+- 组件测试关注用户交互和边界情况

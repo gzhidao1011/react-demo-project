@@ -1,0 +1,587 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# 设计系统
+
+本文档定义了项目的设计系统规范，包括 UI 组件库、样式方案、颜色系统、图标系统等。
+
+> **重要**：实现 UI 时，优先使用 Tailwind CSS 工具类，复杂样式才使用 SCSS。
+
+## UI 组件库
+
+### Element Plus
+
+项目使用 **Element Plus 2.11.7** 作为主要 UI 组件库。
+
+**使用规范**：
+
+- ✅ **必须使用** Element Plus 的标准组件
+- ✅ **必须使用** `ElMessage`、`ElMessageBox` 等全局方法进行消息提示
+- ✅ 使用 Element Plus 的主题变量（`--el-color-primary` 等）保持主题一致性
+- ❌ 禁止直接修改 Element Plus 组件的内部样式（除非通过官方 API）
+
+**常用组件**：
+
+```vue
+<template>
+  <!-- 按钮 -->
+  <el-button type="primary">主要按钮</el-button>
+  <el-button :icon="Search">带图标按钮</el-button>
+
+  <!-- 表单 -->
+  <el-form :model="form" :rules="rules">
+    <el-form-item label="用户名" prop="username">
+      <el-input v-model="form.username" />
+    </el-form-item>
+  </el-form>
+
+  <!-- 消息提示 -->
+  <el-button @click="showMessage">显示消息</el-button>
+</template>
+
+<script setup lang="ts">
+import { ElMessage, ElMessageBox } from "element-plus"
+
+const showMessage = () => {
+  ElMessage.success("操作成功")
+  // 或
+  ElMessageBox.confirm("确定要删除吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+}
+</script>
+```
+
+## 样式方案
+
+### Tailwind CSS + SCSS
+
+项目采用 **Tailwind CSS 3.4.15** 和 **SCSS** 相结合的样式方案。
+
+**样式优先级**：
+
+1. **优先使用 Tailwind CSS**：实现 UI 时，优先使用 Tailwind CSS 工具类
+2. **复杂样式使用 SCSS**：复杂样式或需要动态计算的样式才使用 SCSS
+3. **使用 CSS 变量**：使用 Element Plus 的 CSS 变量（`var(--el-color-primary)`）保持主题一致性
+
+**Tailwind CSS 使用示例**：
+
+```vue
+<template>
+  <!-- ✅ 正确：优先使用 Tailwind CSS -->
+  <div class="flex h-full w-full items-center justify-center rounded-lg bg-white p-4 shadow-md">
+    <div class="text-base font-semibold text-gray-800">内容</div>
+  </div>
+</template>
+```
+
+**SCSS 使用示例**：
+
+```vue
+<template>
+  <!-- ✅ 正确：复杂样式才使用 SCSS -->
+  <div class="custom-animation">内容</div>
+</template>
+
+<style lang="scss" scoped>
+.custom-animation {
+  // 复杂的动画、伪元素等 Tailwind 难以实现的样式
+  animation: slideIn 0.3s ease-out;
+
+  &::before {
+    content: "";
+    position: absolute;
+    // ...
+  }
+}
+</style>
+```
+
+**❌ 错误示例**：
+
+```vue
+<!-- ❌ 错误：能用 Tailwind 实现的样式却写在 <style> 中 -->
+<template>
+  <div class="wrapper">
+    <div class="content">内容</div>
+  </div>
+</template>
+
+<style lang="scss" scoped>
+.wrapper {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+}
+</style>
+```
+
+## 颜色系统
+
+### Element Plus 主题颜色
+
+项目使用 Element Plus 的主题颜色系统，主色为 **#3384FF**。
+
+**主题颜色变量**：
+
+```css
+:root {
+  /* 主色 */
+  --el-color-primary: #3384ff;
+
+  /* 主色浅色变体 */
+  --el-color-primary-light-3: #66a3ff;
+  --el-color-primary-light-5: #99c2ff;
+  --el-color-primary-light-7: #b3d1ff;
+  --el-color-primary-light-8: #cce0ff;
+  --el-color-primary-light-9: #e6f0ff;
+
+  /* 主色深色变体 */
+  --el-color-primary-dark-2: #2d75e6;
+  --el-color-primary-dark-3: #2666cc;
+  --el-color-primary-dark-4: #2057b3;
+  --el-color-primary-dark-5: #1a4899;
+  --el-color-primary-dark-6: #133980;
+  --el-color-primary-dark-7: #0d2a66;
+  --el-color-primary-dark-8: #061b4d;
+  --el-color-primary-dark-9: #000c33;
+}
+```
+
+**使用方式**：
+
+```vue
+<template>
+  <!-- 使用 CSS 变量 -->
+  <div class="text-[var(--el-color-primary)]">主色文本</div>
+  <div class="bg-[var(--el-color-primary)]">主色背景</div>
+  <div class="border-[var(--el-color-primary)]">主色边框</div>
+
+  <!-- 在 Element Plus 组件中使用 -->
+  <el-button type="primary">主要按钮</el-button>
+</template>
+
+<style lang="scss" scoped>
+.custom-class {
+  color: var(--el-color-primary);
+  background-color: var(--el-color-primary-light-9);
+  border-color: var(--el-color-primary);
+}
+</style>
+```
+
+### Element Plus 状态颜色
+
+Element Plus 提供了标准的状态颜色：
+
+- **Primary**：`--el-color-primary` - 主色，用于主要操作和强调
+- **Success**：`--el-color-success` - 成功色，用于成功状态和确认操作
+- **Warning**：`--el-color-warning` - 警告色，用于警告和重要通知
+- **Danger**：`--el-color-danger` - 危险色，用于错误状态和破坏性操作
+- **Info**：`--el-color-info` - 信息色，用于信息提示
+
+**使用示例**：
+
+```vue
+<template>
+  <el-button type="primary">主要按钮</el-button>
+  <el-button type="success">成功按钮</el-button>
+  <el-button type="warning">警告按钮</el-button>
+  <el-button type="danger">危险按钮</el-button>
+  <el-button type="info">信息按钮</el-button>
+
+  <el-message type="success">成功消息</el-message>
+  <el-message type="warning">警告消息</el-message>
+  <el-message type="error">错误消息</el-message>
+</template>
+```
+
+## 图标系统
+
+### Element Plus 图标
+
+**原则**：图标必须从 `@element-plus/icons-vue` 导入，禁止使用其他图标库。
+
+**使用方式**：
+
+```typescript
+// ✅ 正确：从 @element-plus/icons-vue 导入
+import { Search, Loading, ArrowRight, Close, CloseBold } from "@element-plus/icons-vue"
+```
+
+```vue
+<template>
+  <!-- 使用 el-icon 包裹 -->
+  <el-icon><Search /></el-icon>
+
+  <!-- 在按钮中使用 -->
+  <el-button :icon="Search">搜索</el-button>
+  <el-button :icon="Loading">加载中</el-button>
+
+  <!-- 自定义大小和颜色 -->
+  <el-icon :size="20" color="#3384ff"><Close /></el-icon>
+</template>
+
+<script setup lang="ts">
+import { Search, Loading, Close } from "@element-plus/icons-vue"
+</script>
+```
+
+**❌ 错误示例**：
+
+```typescript
+// ❌ 错误：使用其他图标库
+import { Icon } from "@iconify/vue"
+import { Search } from "lucide-vue-next"
+import { SearchIcon } from "heroicons-vue"
+```
+
+### 自定义 SVG 图标
+
+项目中的自定义 SVG 图标位于 `packages/ui/src/assets/icons/` 目录，通过 `@yysl/ui` 包统一导出。
+
+**图标导出位置**：`packages/ui/src/assets/icons/index.ts`
+
+#### 作为 Vue 组件使用（推荐）
+
+使用 `?component` 导入 SVG 作为 Vue 组件，可以直接在模板中使用，支持样式控制和属性传递。
+
+**导出方式**：
+
+```typescript
+// packages/ui/src/assets/icons/index.ts
+export { default as LayerIcon } from "./layerIcon.svg?component"
+export { default as MapIcon } from "./mapIcon.svg?component"
+export { default as PanoramaLayerIcon } from "./panoramaLayerIcon.svg?component"
+```
+
+**使用方式**：
+
+```vue
+<template>
+  <!-- 直接作为组件使用 -->
+  <LayerIcon />
+  <MapIcon />
+
+  <!-- 可以传递属性（如 class、style 等） -->
+  <LayerIcon class="h-6 w-6 text-blue-500" />
+  <MapIcon :style="{ width: '24px', height: '24px', color: '#3384ff' }" />
+
+  <!-- 在组件中作为 prop 传递 -->
+  <SwitchCardMobile :icon="LayerIcon" />
+</template>
+
+<script setup lang="ts">
+// 从 @yysl/ui 导入图标组件
+import { LayerIcon, MapIcon } from "@yysl/ui"
+</script>
+```
+
+**优势**：
+
+- ✅ 可以作为 Vue 组件直接使用
+- ✅ 支持通过 `class` 和 `style` 控制样式
+- ✅ 支持通过属性传递配置（如 `width`、`height`、`fill` 等）
+- ✅ 更好的类型支持
+- ✅ 可以与其他组件组合使用
+
+#### 作为 URL 使用
+
+使用 `?url` 导入 SVG 作为 URL 字符串，适用于需要作为图片源使用的场景。
+
+**使用方式**：
+
+```vue
+<template>
+  <img :src="iconUrl" alt="图标" />
+  <el-image :src="iconUrl" />
+</template>
+
+<script setup lang="ts">
+// 导入为 URL
+import iconUrl from "@yysl/ui/assets/icons/mapIcon.svg?url"
+// 或
+import { XcxErweimaUrl } from "@yysl/ui"
+</script>
+```
+
+**适用场景**：
+
+- 需要作为 `<img>` 标签的 `src` 属性
+- 需要作为背景图片
+- 需要动态切换图标 URL
+
+#### 作为原始字符串使用
+
+使用 `?raw` 导入 SVG 作为原始字符串，适用于需要直接操作 SVG 内容的场景。
+
+**使用方式**：
+
+```typescript
+import svgContent from "@yysl/ui/assets/icons/mapIcon.svg?raw"
+
+// svgContent 是 SVG 的字符串内容
+console.log(svgContent) // "<svg>...</svg>"
+```
+
+**适用场景**：
+
+- 需要动态修改 SVG 内容
+- 需要将 SVG 内容插入到 HTML 中
+- 需要处理 SVG 字符串
+
+#### 图标使用示例
+
+**示例 1：在组件中使用图标组件**
+
+```vue
+<template>
+  <div class="flex items-center gap-2">
+    <LayerIcon class="h-5 w-5 text-[var(--el-color-primary)]" />
+    <span>图层</span>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { LayerIcon } from "@yysl/ui"
+</script>
+```
+
+**示例 2：将图标作为 prop 传递**
+
+```vue
+<template>
+  <SwitchCardMobile title="地图" :actived="actived" :icon="MapIcon" @change="handleChange" />
+</template>
+
+<script setup lang="ts">
+import { SwitchCardMobile, MapIcon } from "@yysl/ui"
+</script>
+```
+
+**示例 3：在列表中使用图标**
+
+```vue
+<template>
+  <div v-for="item in menuItems" :key="item.id">
+    <component :is="item.icon" class="h-6 w-6" />
+    <span>{{ item.label }}</span>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { LayerIcon, MapIcon, PanoramaLayerIcon } from "@yysl/ui"
+
+const menuItems = [
+  { id: 1, label: "图层", icon: LayerIcon },
+  { id: 2, label: "地图", icon: MapIcon },
+  { id: 3, label: "全景图层", icon: PanoramaLayerIcon },
+]
+</script>
+```
+
+#### 可用图标列表
+
+项目中的自定义图标包括：
+
+- **地图相关**：`MapIcon`、`MapCollectIcon`、`MapImportIcon`、`MapPlottingIcon`、`MapToolsIcon` 等
+- **全景相关**：`PanoramaLayerIcon`、`PanoramaComparisonIcon`、`PanoramaTypeIcon` 等
+- **视图相关**：`ViewDelIcon`、`ViewEditIcon`、`ViewSetDefaultIcon` 等
+- **其他**：`LayerIcon`、`DirectionIcon`、`InterestPointIcon`、`ShareIcon`、`SceneIcon` 等
+
+完整列表请查看 `packages/ui/src/assets/icons/index.ts`。
+
+#### 注意事项
+
+1. **优先使用组件方式**：推荐使用 `?component` 导入作为 Vue 组件，更灵活且支持样式控制
+2. **统一从 @yysl/ui 导入**：所有自定义图标都通过 `@yysl/ui` 包统一导出，保持一致性
+3. **图标命名规范**：图标组件使用 PascalCase 命名（如 `LayerIcon`、`MapIcon`）
+4. **样式控制**：使用组件方式时，可以通过 `class` 和 `style` 控制图标样式，支持 Tailwind CSS 类名
+
+## 响应式设计
+
+### 移动端适配
+
+项目支持移动端和桌面端，使用 `useMobile` hook 进行移动端判断。
+
+**使用方式**：
+
+```vue
+<template>
+  <!-- 使用条件类 -->
+  <div :class="{ 'mobile-layer-open': mobilePanelVisible }">
+    <!-- 内容 -->
+  </div>
+
+  <!-- 使用 v-if 条件渲染 -->
+  <div v-if="!isMobile">桌面端内容</div>
+  <div v-if="isMobile">移动端内容</div>
+</template>
+
+<script setup lang="ts">
+import { useMobile } from "@yysl/utils"
+
+const { isMobile } = useMobile()
+const mobilePanelVisible = ref(false)
+</script>
+```
+
+### Tailwind 响应式类
+
+使用 Tailwind CSS 的响应式前缀：
+
+```vue
+<template>
+  <!-- 响应式布局 -->
+  <div class="flex flex-col md:flex-row">
+    <!-- 移动端：垂直布局，桌面端：水平布局 -->
+  </div>
+
+  <!-- 响应式间距 -->
+  <div class="p-4 md:p-8">
+    <!-- 移动端：16px，桌面端：32px -->
+  </div>
+
+  <!-- 响应式字体 -->
+  <div class="text-sm md:text-base lg:text-lg">
+    <!-- 响应式字体大小 -->
+  </div>
+</template>
+```
+
+## 组件使用规范
+
+### Element Plus 组件
+
+**必须使用 Element Plus 的标准组件**，禁止直接使用原生 HTML 元素替代：
+
+```vue
+<!-- ✅ 正确：使用 Element Plus 组件 -->
+<el-button type="primary">按钮</el-button>
+<el-input v-model="value" />
+<el-select v-model="selected">
+  <el-option label="选项1" value="1" />
+</el-select>
+
+<!-- ❌ 错误：使用原生 HTML -->
+<button>按钮</button>
+<input v-model="value" />
+<select v-model="selected">
+  <option value="1">选项1</option>
+</select>
+```
+
+### 消息提示
+
+**必须使用 Element Plus 的全局方法**进行消息提示：
+
+```typescript
+import { ElMessage, ElMessageBox, ElNotification } from "element-plus"
+
+// 成功消息
+ElMessage.success("操作成功")
+
+// 错误消息
+ElMessage.error("操作失败")
+
+// 警告消息
+ElMessage.warning("请注意")
+
+// 确认对话框
+ElMessageBox.confirm("确定要删除吗？", "提示", {
+  confirmButtonText: "确定",
+  cancelButtonText: "取消",
+  type: "warning",
+})
+
+// 通知
+ElNotification({
+  title: "通知标题",
+  message: "通知内容",
+  type: "success",
+})
+```
+
+## 样式最佳实践
+
+### 1. 优先使用 Tailwind CSS
+
+```vue
+<!-- ✅ 推荐 -->
+<div class="flex items-center justify-between rounded-lg bg-white p-4 shadow-md">
+  <span class="text-lg font-semibold text-gray-800">标题</span>
+</div>
+
+<!-- ❌ 不推荐 -->
+<div class="custom-container">
+  <span class="custom-title">标题</span>
+</div>
+<style lang="scss" scoped>
+.custom-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+</style>
+```
+
+### 2. 使用 CSS 变量保持主题一致性
+
+```vue
+<template>
+  <div class="text-[var(--el-color-primary)]">主色文本</div>
+</template>
+
+<!-- ❌ 不推荐：硬编码颜色 -->
+<div class="text-[#3384ff]">主色文本</div>
+```
+
+### 3. 复杂样式使用 SCSS
+
+```vue
+<style lang="scss" scoped>
+.complex-animation {
+  // 复杂的动画、伪元素、媒体查询等
+  animation: slideIn 0.3s ease-out;
+
+  &::before {
+    content: "";
+    position: absolute;
+    // ...
+  }
+
+  @media (max-width: 768px) {
+    // 移动端样式
+  }
+}
+</style>
+```
+
+### 4. 保持样式一致性
+
+- 使用 Element Plus 的主题变量
+- 使用 Tailwind CSS 的标准类名
+- 避免硬编码颜色值
+- 保持间距、圆角、阴影等样式的一致性
+
+## 注意事项
+
+1. **禁止直接使用 axios**：所有 API 请求必须使用 `@yysl/request` 包
+2. **图标必须从 `@element-plus/icons-vue` 导入**：禁止使用其他图标库
+3. **优先使用 Tailwind CSS**：能用 Tailwind 实现的样式不要写在 `<style>` 中
+4. **使用 CSS 变量**：保持主题一致性，使用 `var(--el-color-primary)` 而不是硬编码颜色
+5. **使用 Element Plus 组件**：优先使用 Element Plus 的标准组件，而不是原生 HTML 元素
