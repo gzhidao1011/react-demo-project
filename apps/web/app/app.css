@@ -1,0 +1,8 @@
+@import "@repo/tailwind-config/shared-styles";
+
+html,
+body {
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+}

@@ -1,0 +1,93 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# 项目结构
+
+采用 monorepo 结构（使用 pnpm workspace + Turborepo）。以下是主要目录的概述：
+
+## Apps 目录
+
+- [apps/sulan-web](mdc:apps/sulan-web) - Vue 3 + TypeScript 构建的前端 Web 应用程序（主要应用）
+  - 采用 FSD (Feature-Sliced Design) 架构
+  - 使用 Element Plus 作为 UI 组件库
+  - 使用 Tailwind CSS + SCSS 进行样式开发
+  - 使用 Pinia 进行状态管理
+- [apps/sulan-miniprogram](mdc:apps/sulan-miniprogram) - 微信小程序应用
+
+## Packages 目录
+
+共享包使用 `@yysl/*` 命名空间：
+
+- [packages/map](mdc:packages/map) (`@yysl/map`) - 地图相关功能包
+  - 基于 OpenLayers 实现
+  - 提供地图组件、工具、插件等功能
+- [packages/panorama](mdc:packages/panorama) (`@yysl/panorama`) - 全景图相关功能包
+  - 提供全景图核心功能、组件、hooks 等
+- [packages/request](mdc:packages/request) (`@yysl/request`) - HTTP 请求封装库
+  - 统一处理 API 请求
+  - 提供请求拦截、错误处理等功能
+- [packages/ui](mdc:packages/ui) (`@yysl/ui`) - 共享 UI 组件库
+  - 基于 Element Plus 封装的通用组件
+- [packages/user-store](mdc:packages/user-store) (`@yysl/user-store`) - 用户状态管理包
+  - 使用 Pinia 实现
+  - 提供用户信息、权限等状态管理
+- [packages/utils](mdc:packages/utils) (`@yysl/utils`) - 共享工具函数库
+  - 提供通用工具函数、hooks 等
+- [packages/libs](mdc:packages/libs) (`@yysl/libs`) - 共享基础库
+  - 包含第三方库封装等
+
+## Internal 目录
+
+- [internal](mdc:internal) - 内部工具和脚本
+  - Turborepo 构建配置
+  - Git 工具脚本
+  - 飞书相关工具
+
+## Docs 目录
+
+- [docs](mdc:docs) - 项目文档
+  - 架构文档、使用指南、最佳实践等
+
+## 配置文件
+
+- [package.json](mdc:package.json) - 根包配置
+- [pnpm-workspace.yaml](mdc:pnpm-workspace.yaml) - pnpm workspace 配置
+- [turbo.json](mdc:turbo.json) - Turborepo 配置
+- [tsconfig.base.json](mdc:tsconfig.base.json) - TypeScript 基础配置
+- [tailwind.base.ts](mdc:tailwind.base.ts) - Tailwind CSS 基础配置
+- [postcss.base.ts](mdc:postcss.base.ts) - PostCSS 基础配置
+
+## 包依赖关系
+
+```
+apps/sulan-web
+  ├── @yysl/map
+  ├── @yysl/panorama
+  ├── @yysl/request
+  ├── @yysl/ui
+  ├── @yysl/user-store
+  └── @yysl/utils
+
+@yysl/map
+  ├── @yysl/request
+  └── @yysl/ui
+
+@yysl/panorama
+  ├── @yysl/request
+  ├── @yysl/user-store
+  ├── @yysl/utils
+  └── @yysl/ui
+
+@yysl/request
+  ├── @yysl/utils
+  └── @yysl/user-store
+
+@yysl/ui
+  └── @yysl/utils
+
+@yysl/user-store
+  └── @yysl/utils
+```

@@ -1,0 +1,390 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# API 结构
+
+本文档定义了前端项目的 API 请求结构和规范，确保 API 调用的统一性和可维护性。
+
+> **重要**：所有 API 请求必须使用 `@yysl/request` 包，禁止直接使用 axios。
+
+## 核心请求库
+
+### @yysl/request 包
+
+项目使用 `@yysl/request` 包统一封装所有 HTTP 请求，提供以下功能：
+
+- ✅ 统一的请求拦截器（自动注入 token）
+- ✅ 统一的响应拦截器（错误处理、token 刷新）
+- ✅ 类型安全的 API 调用
+- ✅ 可配置的错误处理
+- ✅ 支持多个 baseURL
+
+**包位置**：`packages/request/`
+
+## 目录结构
+
+```
+packages/request/src/
+├── index.ts                    # 主入口，导出所有 API
+├── request.ts                  # 核心请求封装（axios 封装）
+├── modules/                    # API 模块（按功能划分）
+│   ├── index.ts               # 模块统一导出
+│   ├── airace.ts              # 认证相关
+│   ├── catalog.ts             # 目录相关
+│   ├── creation.ts            # 创作相关（我的数据）
+│   ├── favi.ts                # 收藏相关
+│   ├── meta.ts                # 元数据相关
+│   ├── metaEvent.ts           # 事件元数据
+│   ├── metaHotspot.ts         # 热点元数据
+│   ├── metaPlot.ts            # 标注元数据
+│   ├── metaViewpoint.ts       # 视角元数据
+│   ├── panoramas.ts           # 全景相关
+│   ├── resources.ts           # 资源相关
+│   ├── share.ts               # 分享相关
+│   ├── uploadFile.ts          # 文件上传
+│   ├── userdir.ts             # 用户目录
+│   ├── userdraft.ts           # 用户草稿
+│   ├── amap.ts                # 地图相关
+│   └── convertData.ts         # 数据转换
+├── types/                      # TypeScript 类型定义
+│   ├── index.ts               # 类型统一导出
+│   ├── airace.type.ts
+│   ├── catalog.type.ts
+│   ├── creation.type.ts
+│   ├── favi.type.ts
+│   ├── meta.type.ts
+│   ├── metaEvent.type.ts
+│   ├── metaHotspot.type.ts
+│   ├── metaPlot.type.ts
+│   ├── metaViewpoint.type.ts
+│   ├── panorama.type.ts
+│   ├── resources.type.ts
+│   ├── share.type.ts
+│   ├── userdir.type.ts
+│   └── userdraft.type.ts
+├── utils/                      # 工具函数
+│   ├── errorHandler.ts        # 错误处理
+│   └── customHeaders.ts       # 自定义 Headers
+├── hyPanoramaRequest/          # 会议系统全景 API
+│   ├── index.ts
+│   ├── api.ts
+│   └── request.ts
+└── ykPanoramaRequest/          # 其他全景 API
+    └── index.ts
+```
+
+## API 模块说明
+
+### 核心模块
+
+| 模块         | 文件           | 说明                           |
+| ------------ | -------------- | ------------------------------ |
+| **认证**     | `airace.ts`    | 用户认证、登录、token 刷新     |
+| **创作**     | `creation.ts`  | 我的数据、作品创建、编辑、删除 |
+| **目录**     | `catalog.ts`   | 目录管理、目录树               |
+| **收藏**     | `favi.ts`      | 收藏、取消收藏                 |
+| **全景**     | `panoramas.ts` | 全景图相关操作                 |
+| **分享**     | `share.ts`     | 分享链接生成、分享数据获取     |
+| **资源**     | `resources.ts` | 资源上传、下载                 |
+| **用户目录** | `userdir.ts`   | 用户目录管理                   |
+| **用户草稿** | `userdraft.ts` | 草稿箱管理                     |
+
+### 元数据模块
+
+| 模块       | 文件               | 说明           |
+| ---------- | ------------------ | -------------- |
+| **元数据** | `meta.ts`          | 通用元数据操作 |
+| **事件**   | `metaEvent.ts`     | 事件元数据     |
+| **热点**   | `metaHotspot.ts`   | 热点元数据     |
+| **标注**   | `metaPlot.ts`      | 标注元数据     |
+| **视角**   | `metaViewpoint.ts` | 视角元数据     |
+
+### 其他模块
+
+| 模块         | 文件             | 说明         |
+| ------------ | ---------------- | ------------ |
+| **文件上传** | `uploadFile.ts`  | 文件上传功能 |
+| **地图**     | `amap.ts`        | 地图相关 API |
+| **数据转换** | `convertData.ts` | 数据格式转换 |
+
+## 使用方法
+
+### 1. 基础请求方法
+
+```typescript
+import { get, post, put, del, patch } from "@yysl/request"
+
+// GET 请求
+const data = await get<DataType>("/api/data", { params: { id: "123" } })
+
+// POST 请求
+const result = await post<ResponseType>("/api/user", {
+  name: "test",
+  email: "test@example.com",
+})
+
+// PUT 请求
+await put("/api/user/123", { nickname: "新昵称" })
+
+// DELETE 请求
+await del("/api/user/123")
+
+// PATCH 请求
+await patch("/api/user/123", { status: "active" })
+```
+
+### 2. 使用 API 模块
+
+```typescript
+import { creationGetById, createCreation, deleteCreation } from "@yysl/request"
+import type { CreationGetByIdOptions, CreationGetByIdResponse } from "@yysl/request"
+
+// 获取创作详情
+const detail = await creationGetById<CreationGetByIdResponse>({
+  id: "123",
+  isDraft: 0,
+})
+
+// 创建作品
+const result = await createCreation({
+  title: "作品标题",
+  introduction: "作品简介",
+  isDraft: 0,
+  groups: [],
+})
+
+// 删除作品
+await deleteCreation({ id: "123" })
+```
+
+### 3. 自定义配置
+
+```typescript
+import { get, post } from "@yysl/request"
+import type { RequestConfig } from "@yysl/request"
+
+// 跳过 token 注入（用于公开接口）
+const publicData = await get("/api/public/news", {
+  skipAuth: true,
+} as RequestConfig)
+
+// 自定义错误处理
+const result = await post("/api/user", userData, {
+  showError: false, // 不显示默认错误提示
+  onError: (error) => {
+    // 自定义错误处理
+    console.error("自定义错误处理:", error)
+  },
+} as RequestConfig)
+
+// 其他 axios 配置
+const data = await get("/api/data", {
+  timeout: 5000,
+  headers: {
+    "Custom-Header": "value",
+  },
+} as RequestConfig)
+```
+
+### 4. 在组件中使用
+
+```vue
+<script setup lang="ts">
+import { ref, onMounted } from "vue"
+import { creationGetById } from "@yysl/request"
+import type { CreationGetByIdOptions, CreationGetByIdResponse } from "@yysl/request"
+import { ElMessage } from "element-plus"
+
+const loading = ref(false)
+const detail = ref<CreationGetByIdResponse | null>(null)
+
+const fetchDetail = async () => {
+  try {
+    loading.value = true
+    detail.value = await creationGetById<CreationGetByIdResponse>({
+      id: "123",
+      isDraft: 0,
+    })
+  } catch (error) {
+    ElMessage.error("获取详情失败")
+    console.error("获取详情失败:", error)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchDetail()
+})
+</script>
+```
+
+## 请求流程
+
+```
+组件/Feature
+  ↓
+@yysl/request (封装 axios)
+  ↓
+请求拦截器
+  ├─ 添加 Token（x-authorization-access-token）
+  └─ 添加自定义 Headers
+  ↓
+后端 API
+  ↓
+响应拦截器
+  ├─ 业务错误处理（code !== 0/200）
+  ├─ Token 过期处理（code === 99999）
+  │   └─ 自动刷新 Token → 重试请求
+  ├─ 未授权处理（code === 401）
+  │   └─ 跳转登录页
+  └─ 返回 data 字段
+```
+
+## 类型定义
+
+### 响应数据结构
+
+```typescript
+interface ResponseData<T = any> {
+  code: number
+  msg: string
+  data: T
+  success?: boolean
+}
+```
+
+### 请求配置
+
+```typescript
+interface RequestConfig extends AxiosRequestConfig {
+  /** 是否跳过 token 注入（默认 false） */
+  skipAuth?: boolean
+  /** 是否显示错误提示（默认 true） */
+  showError?: boolean
+  /** 自定义错误处理 */
+  onError?: (error: any) => void
+}
+```
+
+### 类型定义组织
+
+- 每个 API 模块对应一个类型文件（如 `creation.ts` 对应 `creation.type.ts`）
+- 类型文件导出该模块相关的所有接口和类型
+- 所有类型通过 `types/index.ts` 统一导出
+
+## 错误处理
+
+### 自动错误处理
+
+- **业务错误**（`code !== 0 && code !== 200`）：自动显示错误提示
+- **Token 过期**（`code === 99999`）：自动刷新 token 并重试请求
+- **未授权**（`code === 401`）：自动清除用户信息并跳转登录页
+
+### 自定义错误处理
+
+```typescript
+import { get } from "@yysl/request"
+import type { RequestConfig } from "@yysl/request"
+
+// 不显示默认错误提示，自定义处理
+const data = await get("/api/data", {
+  showError: false,
+  onError: (error) => {
+    // 自定义错误处理逻辑
+    if (error.code === 404) {
+      // 处理 404 错误
+    }
+  },
+} as RequestConfig)
+```
+
+## 最佳实践
+
+### 1. 必须使用 @yysl/request
+
+```typescript
+// ✅ 正确：使用 @yysl/request
+import { get, post } from "@yysl/request"
+
+// ❌ 错误：直接使用 axios
+import axios from "axios"
+```
+
+### 2. 使用类型定义
+
+```typescript
+// ✅ 正确：使用类型定义
+import { creationGetById } from "@yysl/request"
+import type { CreationGetByIdOptions, CreationGetByIdResponse } from "@yysl/request"
+
+const detail = await creationGetById<CreationGetByIdResponse>({
+  id: "123",
+  isDraft: 0,
+})
+
+// ❌ 错误：不使用类型
+const detail = await creationGetById({ id: "123" })
+```
+
+### 3. 错误处理
+
+```typescript
+// ✅ 正确：包含错误处理
+try {
+  const data = await get("/api/data")
+} catch (error) {
+  ElMessage.error("获取数据失败")
+  console.error("获取数据失败:", error)
+}
+
+// ❌ 错误：没有错误处理
+const data = await get("/api/data")
+```
+
+### 4. 在 Composables 中封装
+
+```typescript
+// ✅ 推荐：在 composable 中封装 API 调用
+export function usePanoramaDetail(id: string) {
+  const loading = ref(false)
+  const data = ref<PanoramaDetail | null>(null)
+  const error = ref<Error | null>(null)
+
+  const fetchDetail = async () => {
+    try {
+      loading.value = true
+      data.value = await panoramaGetById({ id })
+    } catch (err) {
+      error.value = err as Error
+      ElMessage.error("获取详情失败")
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    loading,
+    data,
+    error,
+    fetchDetail,
+  }
+}
+```
+
+### 5. API 模块组织
+
+- **按功能划分模块**：每个业务功能对应一个模块文件
+- **类型与模块对应**：每个模块有对应的类型文件
+- **统一导出**：通过 `index.ts` 统一导出所有 API
+
+## 注意事项
+
+1. **禁止直接使用 axios**：所有请求必须通过 `@yysl/request` 包
+2. **使用类型定义**：充分利用 TypeScript 类型，提高代码安全性
+3. **错误处理**：所有异步操作必须包含错误处理
+4. **Token 管理**：token 的注入和刷新由请求库自动处理，无需手动管理
+5. **BaseURL 配置**：baseURL 根据环境自动配置，无需手动设置

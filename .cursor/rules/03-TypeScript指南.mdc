@@ -1,0 +1,57 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# TypeScript 类型指南
+
+## 类型安全规则
+
+- **尽可能避免使用 `any` 类型** - 它违背了 TypeScript 的目的
+- 当想要使用 `any` 时，改用 `unknown` 类型并添加适当的类型守卫
+- 始终为函数定义显式返回类型，特别是对于公共 API
+- 使用严格的 null 检查（strictNullChecks）以防止 null/undefined 错误
+
+## 类型复用模式
+
+- **优先扩展现有类型**而不是创建全新的类型
+- 使用 TypeScript 的工具类型来派生新类型：
+  - `Partial<T>` 用于类型的可选版本
+  - `Pick<T, K>` 用于选择特定属性
+  - `Omit<T, K>` 用于排除特定属性
+  - `Readonly<T>` 用于不可变版本的类型
+  - `Record<K, T>` 用于类似字典的对象
+- 使用联合类型和交叉类型来组合现有类型
+
+## 类型示例
+
+```typescript
+// 避免在可以复用现有类型时创建新类型
+// 不好的做法
+interface UserDetails {
+  id: string
+  name: string
+  email: string
+}
+
+// 好的做法 - 扩展现有类型
+// 好的做法
+interface User {
+  id: string
+  name: string
+}
+
+// 复用 User 类型
+type UserWithEmail = User & { email: string }
+
+// 或使用工具类型
+type PartialUser = Partial<User>
+type UserIdAndName = Pick<User, "id" | "name">
+```
+
+## 类型导入
+
+- 始终使用 `import type` 语法显式导入类型
+- 将类型导入与值导入分开分组
+- 最小化为导入的类型创建本地类型别名

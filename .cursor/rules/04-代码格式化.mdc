@@ -1,0 +1,85 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# 代码格式化指南
+
+本文档定义了代码格式化标准，以确保一致性和可读性。
+
+## 格式化工具
+
+项目使用 **Prettier** 进行代码格式化，使用 **prettier-plugin-tailwindcss** 插件自动排序 Tailwind CSS 类名。
+
+VSCode 已配置为保存时自动格式化，默认格式化工具为 Prettier。
+
+## Prettier 配置规则
+
+### 基本格式化规则
+
+- **最大行长度**：120 个字符（`printWidth: 120`）
+- **缩进**：使用 2 个空格，不使用制表符（`tabWidth: 2`, `useTabs: false`）
+- **分号**：不使用分号（`semi: false`）
+- **引号**：使用双引号（`singleQuote: false`）
+- **尾随逗号**：始终添加尾随逗号（`trailingComma: "all"`）
+- **对象括号间距**：在对象字面量的大括号内添加空格（`bracketSpacing: true`）
+- **JSX 括号位置**：多行 JSX 元素的 `>` 放在新行（`bracketSameLine: false`）
+- **箭头函数参数**：始终为箭头函数参数添加括号（`arrowParens: "always"`）
+- **行尾序列**：自动检测（`endOfLine: "auto"`）
+
+### 支持的文件类型
+
+Prettier 会自动格式化以下文件类型：
+
+- JavaScript/TypeScript（`.js`, `.jsx`, `.ts`, `.tsx`）
+- Vue 组件（`.vue`）
+- JSON（`.json`）
+- CSS/SCSS（`.css`, `.scss`）
+- HTML（`.html`）
+- Markdown（`.md`）
+
+### Tailwind CSS 类名排序
+
+项目使用 `prettier-plugin-tailwindcss` 插件，会自动对 Tailwind CSS 类名进行排序，确保类名顺序的一致性。
+
+## Vue 模板格式化
+
+- 当组件有多个属性时，Prettier 会自动将属性换行
+- 对于没有子元素的元素使用自闭合标签
+- 保持模板表达式简单，将复杂逻辑提取到变量中
+- 多行模板的右括号会自动放在新行
+
+## 格式化命令
+
+```bash
+# 格式化所有代码文件
+pnpm format
+
+# 检查代码格式（不修改文件）
+pnpm format:check
+```
+
+**重要**：在提交更改之前，建议运行 `pnpm format:check` 检查格式，或运行 `pnpm format` 自动修复格式问题。
+
+## VSCode 集成
+
+项目已配置 VSCode 设置，支持：
+
+- **保存时自动格式化**：`editor.formatOnSave: true`
+- **默认格式化工具**：Prettier（`esbenp.prettier-vscode`）
+- **支持的文件类型**：Vue、JavaScript、TypeScript、JSON、CSS、SCSS、HTML、Markdown
+
+## 配置文件位置
+
+- Prettier 配置：`.prettierrc.json`
+- Prettier 忽略文件：`.prettierignore`
+- VSCode 设置：`.vscode/settings.json`
+
+## 注意事项
+
+1. **分号使用**：项目配置不使用分号（`semi: false`），代码中不应手动添加分号。
+
+2. **行长度**：虽然最大行长度为 120 字符，但建议保持代码可读性，必要时可以换行。
+
+3. **Tailwind 类名**：使用 Tailwind CSS 时，类名顺序会被自动排序，无需手动调整。
