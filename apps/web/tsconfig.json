@@ -1,12 +1,15 @@
 {
-  "extends": "@repo/typescript-config/base",
-  "include": ["**/*", "**/.server/**/*", "**/.client/**/*", ".react-router/types/**/*"],
   "compilerOptions": {
     "rootDirs": [".", "./.react-router/types"],
     "baseUrl": ".",
+    "noEmit": true,
     "paths": {
       "@/*": ["./app/*"],
       "@/core/*": ["./core/*"]
     }
-  }
+  },
+
+  "exclude": ["node_modules", "dist"],
+  "extends": "@repo/typescript-config/vite.json",
+  "include": ["**/*", "**/.server/**/*", "**/.client/**/*", ".react-router/types/**/*"]
 }

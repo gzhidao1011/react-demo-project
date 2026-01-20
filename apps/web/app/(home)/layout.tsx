@@ -1,5 +1,4 @@
 import { Outlet } from "react-router";
-// types
 import type { Route } from "./+types/layout";
 
 export const meta: Route.MetaFunction = () => [

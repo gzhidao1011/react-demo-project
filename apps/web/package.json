@@ -14,7 +14,9 @@
     "isbot": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "catalog:"
+    "react-router": "catalog:",
+    "@dotenvx/dotenvx": "catalog:",
+    "@repo/utils": "workspace:*"
   },
   "devDependencies": {
     "@react-router/dev": "catalog:",

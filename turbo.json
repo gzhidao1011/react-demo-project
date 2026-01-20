@@ -1,7 +1,7 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": [".npmrc", "biome.json"],
-  "globalEnv": ["APP_VERSION"],
+  "globalEnv": ["VITE_API_BASE_URL"],
   "remoteCache": {
     "enabled": false
   },
