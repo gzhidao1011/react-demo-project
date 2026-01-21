@@ -1,0 +1,28 @@
+server:
+  port: 8080  # 网关端口
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        # 用户服务路由
+        - id: user-service
+          uri: lb://user-service  # lb 表示负载均衡，user-service 是服务名
+          predicates:
+            - Path=/api/users/**  # 匹配路径
+          # 不使用 StripPrefix，直接转发完整路径 /api/users/** 到服务
+        
+        # 订单服务路由
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**
+          # 不使用 StripPrefix，直接转发完整路径 /api/orders/** 到服务
+    
+    nacos:
+      discovery:
+        server-addr: localhost:8848  # Nacos 服务器地址
+        namespace: public
+        group: DEFAULT_GROUP

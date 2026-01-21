@@ -1,0 +1,22 @@
+server:
+  port: 8002
+
+spring:
+  application:
+    name: order-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848  # Nacos 服务器地址
+        namespace: public
+        group: DEFAULT_GROUP
+
+# Dubbo 配置
+dubbo:
+  application:
+    name: order-service
+  registry:
+    address: nacos://localhost:8848  # 使用 Nacos 作为注册中心
+  protocol:
+    name: dubbo
+    port: 20881  # Dubbo 协议端口（每个服务使用不同端口）

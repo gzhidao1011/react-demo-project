@@ -1,0 +1,31 @@
+server:
+  port: 8001  # 服务端口
+
+spring:
+  application:
+    name: user-service  # 服务名称
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848  # Nacos 服务器地址
+        namespace: public  # 命名空间，默认 public
+        group: DEFAULT_GROUP  # 分组，默认 DEFAULT_GROUP
+
+# Dubbo 配置
+dubbo:
+  application:
+    name: user-service
+  registry:
+    address: nacos://localhost:8848  # 使用 Nacos 作为注册中心
+  protocol:
+    name: dubbo
+    port: 20880  # Dubbo 协议端口
+  scan:
+    base-packages: com.example.user.service  # 扫描服务实现类
+
+# 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info  # 暴露健康检查端点
