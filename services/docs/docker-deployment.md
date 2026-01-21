@@ -315,10 +315,32 @@ $env:DOCKERHUB_TOKEN = "your-access-token"
 ```bash
 # 下载 docker-compose.prod.yml 和 docker 目录后
 # 设置环境变量
-export REGISTRY=yourusername
+export REGISTRY=gzhidao1010
 
 # 启动服务
 docker-compose -f docker-compose.prod.yml up -d
+```
+
+#### 6. 项目镜像地址
+
+本项目的 Docker 镜像已发布到 Docker Hub：
+
+| 服务 | 镜像地址 |
+|-----|---------|
+| 用户服务 | `gzhidao1010/user-service` |
+| 订单服务 | `gzhidao1010/order-service` |
+| API 网关 | `gzhidao1010/api-gateway` |
+
+**快速启动（无需构建）：**
+
+```bash
+# 直接拉取并启动所有服务
+docker-compose -f docker-compose.prod.yml up -d
+
+# 或手动拉取镜像
+docker pull gzhidao1010/user-service:latest
+docker pull gzhidao1010/order-service:latest
+docker pull gzhidao1010/api-gateway:latest
 ```
 
 ### 方案二：阿里云容器镜像服务（国内访问快）
@@ -370,16 +392,15 @@ docker push ghcr.io/yourusername/user-service:latest
 
 ```bash
 # 1. 下载配置文件
-curl -O https://raw.githubusercontent.com/yourusername/repo/main/docker-compose.prod.yml
+curl -O https://raw.githubusercontent.com/gzhidao1010/react-demo-project/main/docker-compose.prod.yml
 mkdir -p docker/mysql/init
-curl -o docker/mysql/init/01-init-databases.sql https://raw.githubusercontent.com/yourusername/repo/main/docker/mysql/init/01-init-databases.sql
+curl -o docker/mysql/init/01-init-databases.sql https://raw.githubusercontent.com/gzhidao1010/react-demo-project/main/docker/mysql/init/01-init-databases.sql
 
-# 2. 设置镜像仓库地址
-export REGISTRY=yourusername  # Docker Hub
-# 或
-export REGISTRY=registry.cn-hangzhou.aliyuncs.com/my-namespace  # 阿里云
+# 2. 启动服务（默认使用 gzhidao1010 镜像）
+docker-compose -f docker-compose.prod.yml up -d
 
-# 3. 启动服务
+# 或使用自定义镜像仓库
+export REGISTRY=your-registry
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
@@ -389,16 +410,16 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ```powershell
 # 推送指定版本
-.\docker\scripts\publish.ps1 -Registry "yourusername" -Tag "v1.0.0" -Build -Push
+.\docker\scripts\publish.ps1 -Registry "gzhidao1010" -Tag "v1.0.0" -Build -Push
 
 # 同时推送 latest
-.\docker\scripts\publish.ps1 -Registry "yourusername" -Tag "latest" -Push
+.\docker\scripts\publish.ps1 -Registry "gzhidao1010" -Tag "latest" -Push
 ```
 
 使用指定版本：
 
 ```bash
-export REGISTRY=yourusername
+export REGISTRY=gzhidao1010
 export TAG=v1.0.0
 docker-compose -f docker-compose.prod.yml up -d
 ```

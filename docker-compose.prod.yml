@@ -3,9 +3,9 @@
 #
 # 使用前请修改下方的 REGISTRY 变量为你的镜像仓库地址
 # 例如：
-#   - Docker Hub: yourusername
+#   - Docker Hub: gzhidao1010
 #   - 阿里云: registry.cn-hangzhou.aliyuncs.com/your-namespace
-#   - GitHub: ghcr.io/yourusername
+#   - GitHub: ghcr.io/gzhidao1010
 #
 # 使用方法：
 #   docker-compose -f docker-compose.prod.yml up -d
@@ -13,7 +13,7 @@
 # ================================================================
 
 # 定义镜像仓库地址（使用前请修改）
-x-registry: &registry "yourusername"  # 修改为你的 Docker Hub 用户名或其他仓库地址
+x-registry: &registry "gzhidao1010"  # 修改为你的 Docker Hub 用户名或其他仓库地址
 
 services:
   # ==================== 基础设施服务 ====================
@@ -93,7 +93,7 @@ services:
   # ==================== Java 微服务（使用远程镜像）====================
 
   user-service:
-    image: ${REGISTRY:-yourusername}/user-service:${TAG:-latest}
+    image: ${REGISTRY:-gzhidao1010}/user-service:${TAG:-latest}
     container_name: user-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -118,7 +118,7 @@ services:
     restart: unless-stopped
 
   order-service:
-    image: ${REGISTRY:-yourusername}/order-service:${TAG:-latest}
+    image: ${REGISTRY:-gzhidao1010}/order-service:${TAG:-latest}
     container_name: order-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -145,7 +145,7 @@ services:
     restart: unless-stopped
 
   api-gateway:
-    image: ${REGISTRY:-yourusername}/api-gateway:${TAG:-latest}
+    image: ${REGISTRY:-gzhidao1010}/api-gateway:${TAG:-latest}
     container_name: api-gateway
     environment:
       - SPRING_PROFILES_ACTIVE=docker
