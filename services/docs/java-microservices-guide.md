@@ -1760,7 +1760,100 @@ services/
 
 ## 七、数据库集成
 
-### 7.1 添加 MySQL 支持
+### 7.1 安装 MySQL
+
+#### 方法一：使用 Docker（推荐）
+
+```bash
+# 运行 MySQL 8.0 容器
+docker run -d \
+  --name mysql \
+  -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -e MYSQL_DATABASE=user_db \
+  -v mysql-data:/var/lib/mysql \
+  mysql:8.0
+
+# 参数说明：
+# -d: 后台运行
+# --name mysql: 容器名称
+# -p 3306:3306: 映射端口
+# -e MYSQL_ROOT_PASSWORD=root123: 设置 root 密码
+# -e MYSQL_DATABASE=user_db: 创建默认数据库（仅创建 user_db）
+# -v mysql-data:/var/lib/mysql: 数据持久化
+```
+
+**创建 order_db 数据库**：
+
+Docker 启动时只会自动创建 `user_db`，需要手动创建 `order_db`：
+
+```bash
+# 等待 MySQL 完全启动后执行（约 10-20 秒）
+docker exec mysql mysql -uroot -proot123 -e "CREATE DATABASE IF NOT EXISTS order_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 验证数据库是否创建成功
+docker exec mysql mysql -uroot -proot123 -e "SHOW DATABASES;"
+```
+
+> **注意**：如果在 Windows 的 Git Bash 或 MinTTY 中执行，不要使用 `-it` 参数，否则会报错 `the input device is not a TTY`。
+
+**验证 MySQL 是否启动成功**：
+
+```bash
+# 查看容器状态
+docker ps
+
+# 连接 MySQL（需要等待几秒让 MySQL 完全启动）
+# Windows CMD/PowerShell:
+docker exec -it mysql mysql -uroot -proot123
+
+# Windows Git Bash/MinTTY（不使用 -it）:
+docker exec mysql mysql -uroot -proot123 -e "SHOW DATABASES;"
+
+# 在 MySQL 命令行中
+mysql> SHOW DATABASES;
+mysql> USE user_db;
+mysql> exit
+```
+
+**常用 Docker 命令**：
+
+```bash
+# 停止 MySQL
+docker stop mysql
+
+# 启动已停止的 MySQL
+docker start mysql
+
+# 重启 MySQL
+docker restart mysql
+
+# 查看 MySQL 日志
+docker logs mysql
+
+# 删除 MySQL 容器（数据会保留在 volume 中）
+docker rm -f mysql
+
+# 删除数据 volume（谨慎操作！）
+docker volume rm mysql-data
+```
+
+#### 方法二：直接安装 MySQL
+
+1. **下载 MySQL**
+   - 访问：https://dev.mysql.com/downloads/mysql/
+   - 下载 MySQL Community Server 8.0
+
+2. **安装配置**
+   - 安装时设置 root 密码
+   - 启动 MySQL 服务
+
+3. **创建数据库**
+   ```sql
+   CREATE DATABASE user_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+### 7.2 添加 MySQL 支持
 
 #### 在 `pom.xml` 添加依赖
 
@@ -1785,9 +1878,9 @@ services/
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/user_db?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
+    url: jdbc:mysql://localhost:3306/user_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4&allowPublicKeyRetrieval=true
     username: root
-    password: your_password  # 修改为你的 MySQL 密码
+    password: root123  # 与 Docker 安装时设置的密码一致
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -1795,8 +1888,15 @@ spring:
     show-sql: true  # 显示 SQL 语句
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true  # 格式化 SQL 输出
 ```
+
+> **配置说明**：
+> - `serverTimezone=Asia/Shanghai`：设置时区为中国时区
+> - `characterEncoding=utf8mb4`：支持 emoji 等特殊字符
+> - `allowPublicKeyRetrieval=true`：允许公钥检索（MySQL 8.0 需要）
+> - `ddl-auto=update`：自动更新表结构，生产环境建议改为 `validate` 或 `none`
 
 #### 创建实体类
 
