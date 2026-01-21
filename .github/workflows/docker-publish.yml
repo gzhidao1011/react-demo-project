@@ -1,0 +1,136 @@
+# ==================== Docker 镜像自动构建和推送 ====================
+# 
+# 触发条件：
+#   - 推送到 main 分支的 services 目录变更
+#   - 手动触发
+#   - 创建版本标签 (v*)
+#
+# 配置步骤：
+#   1. 在 GitHub 仓库 Settings -> Secrets and variables -> Actions 添加：
+#      - DOCKERHUB_USERNAME: 你的 Docker Hub 用户名
+#      - DOCKERHUB_TOKEN: Docker Hub Access Token（在 Docker Hub 账户设置中创建）
+#
+# ================================================================
+
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+    tags:
+      - 'v*'
+  
+  # 允许手动触发
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '镜像标签 (默认: latest)'
+        required: false
+        default: 'latest'
+
+env:
+  # Docker Hub 用户名（从 secrets 获取）
+  REGISTRY: docker.io
+  # 镜像前缀
+  IMAGE_PREFIX: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        service:
+          - name: user-service
+            context: ./services/user-service
+          - name: order-service
+            context: ./services/order-service
+          - name: api-gateway
+            context: ./services/api-gateway
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 设置 JDK 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      # 3. 构建 Java 项目
+      - name: Build with Maven
+        working-directory: ./services
+        run: mvn clean package -DskipTests -pl ${{ matrix.service.name }} -am -B
+
+      # 4. 设置 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 5. 登录 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 6. 提取元数据（标签、版本等）
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}
+          tags: |
+            # 分支名
+            type=ref,event=branch
+            # 版本标签
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # latest 标签（仅 main 分支）
+            type=raw,value=latest,enable={{is_default_branch}}
+            # 手动输入的标签
+            type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
+            # commit SHA
+            type=sha,prefix=
+
+      # 7. 构建并推送 Docker 镜像
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.context }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 8. 输出镜像信息
+      - name: Image digest
+        run: |
+          echo "Image: ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}"
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+
+  # 构建完成后的通知
+  notify:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Docker Images Published 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Image |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| user-service | \`${{ secrets.DOCKERHUB_USERNAME }}/user-service\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| order-service | \`${{ secrets.DOCKERHUB_USERNAME }}/order-service\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| api-gateway | \`${{ secrets.DOCKERHUB_USERNAME }}/api-gateway\` |" >> $GITHUB_STEP_SUMMARY

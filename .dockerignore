@@ -1,0 +1,54 @@
+# ==================== Docker 忽略文件 ====================
+
+# IDE 文件
+.idea/
+.vscode/
+.cursor/
+*.iml
+
+# Node.js
+node_modules/
+.pnpm-store/
+
+# 构建输出
+**/target/
+**/build/
+**/dist/
+**/.next/
+
+# 日志文件
+**/*.log
+**/logs/
+
+# 本地配置
+.env
+.env.local
+*.local
+
+# Git
+.git/
+.gitignore
+
+# 文档
+docs/
+*.md
+!README.md
+
+# 测试文件
+**/src/test/
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+.turbo/
+
+# OS 文件
+.DS_Store
+Thumbs.db
+
+# pnpm
+pnpm-lock.yaml

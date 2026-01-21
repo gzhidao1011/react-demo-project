@@ -1,0 +1,197 @@
+# ==================== Docker Compose 配置 ====================
+# 微服务架构完整部署配置
+# 
+# 使用方法：
+#   启动所有服务：docker-compose up -d
+#   启动基础设施：docker-compose up -d mysql nacos sentinel
+#   先构建后启动：docker-compose up -d --build
+#   查看日志：docker-compose logs -f [service-name]
+#   停止服务：docker-compose down
+#   清理数据：docker-compose down -v
+#
+# 注意：首次启动前需要先构建 jar 包：
+#   cd services && mvn clean package -DskipTests
+#
+# ============================================================
+
+services:
+  # ==================== 基础设施服务 ====================
+  
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Nacos 注册中心/配置中心
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    container_name: nacos
+    environment:
+      - MODE=standalone
+      - PREFER_HOST_MODE=hostname
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - MYSQL_SERVICE_HOST=mysql
+      - MYSQL_SERVICE_PORT=3306
+      - MYSQL_SERVICE_DB_NAME=nacos
+      - MYSQL_SERVICE_USER=root
+      - MYSQL_SERVICE_PASSWORD=root123
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=10000&socketTimeout=30000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+      - NACOS_AUTH_ENABLE=false
+      - JVM_XMS=256m
+      - JVM_XMX=512m
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    volumes:
+      - nacos-data:/home/nacos/data
+      - nacos-logs:/home/nacos/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/console/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Sentinel 控制台
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.6
+    container_name: sentinel
+    environment:
+      - JAVA_OPTS=-Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858
+    ports:
+      - "8858:8858"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ==================== Java 微服务 ====================
+
+  # 用户服务
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    image: microservices/user-service:latest
+    container_name: user-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_SERVER_ADDR=nacos:8848
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=user_db
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=root123
+      - DOCKER_HOST_IP=user-service
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    ports:
+      - "8001:8001"
+      - "20880:20880"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # 订单服务
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    image: microservices/order-service:latest
+    container_name: order-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_SERVER_ADDR=nacos:8848
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=order_db
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=root123
+      - DOCKER_HOST_IP=order-service
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    ports:
+      - "8002:8002"
+      - "20881:20881"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # API 网关
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    image: microservices/api-gateway:latest
+    container_name: api-gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_SERVER_ADDR=nacos:8848
+      - SENTINEL_DASHBOARD=sentinel:8858
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    ports:
+      - "8080:8080"
+    depends_on:
+      nacos:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+# ==================== 网络配置 ====================
+networks:
+  microservices-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ==================== 数据卷配置 ====================
+volumes:
+  mysql-data:
+    driver: local
+  nacos-data:
+    driver: local
+  nacos-logs:
+    driver: local
