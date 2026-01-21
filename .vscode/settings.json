@@ -20,5 +20,5 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "java.compile.nullAnalysis.mode": "automatic",
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "automatic"
 }

@@ -9,6 +9,7 @@
 - [三、创建第一个微服务](#三创建第一个微服务)
 - [四、服务注册与发现](#四服务注册与发现)
 - [五、API 网关](#五api-网关)
+  - [5.4 网关流量控制（Sentinel）](#54-网关流量控制sentinel)
 - [六、服务间通信](#六服务间通信)
 - [七、数据库集成](#七数据库集成)
 - [八、运行和测试](#八运行和测试)
@@ -387,6 +388,7 @@ microservices-demo/
 
     <!-- 子模块列表 -->
     <modules>
+        <module>api-common</module>
         <module>user-service</module>
         <module>order-service</module>
         <module>api-gateway</module>
@@ -410,6 +412,22 @@ microservices-demo/
                 <version>${spring-cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud Alibaba (Nacos, Sentinel) -->
+            <!-- 注意：Spring Cloud Alibaba 版本需要与 Spring Cloud 版本兼容 -->
+            <!-- Spring Cloud 2023.0.x 需要 Spring Cloud Alibaba 2023.0.x.x -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>2023.0.1.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Dubbo Spring Boot Starter -->
+            <dependency>
+                <groupId>org.apache.dubbo</groupId>
+                <artifactId>dubbo-spring-boot-starter</artifactId>
+                <version>3.2.10</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -1085,6 +1103,195 @@ public class ApiGatewayApplication {
    - ✅ 服务是否正常启动（查看启动日志，确认端口）
    - ✅ 直接访问服务是否正常（先测试 http://localhost:8001/api/users）
 
+### 5.4 网关流量控制（Sentinel）
+
+在生产环境中，API 网关需要具备流量控制能力，防止后端服务被流量冲垮。我们使用 **Alibaba Sentinel** 实现限流、熔断、降级。
+
+#### 1. 添加 Sentinel 依赖
+
+修改 `api-gateway/pom.xml`，添加依赖：
+
+```xml
+<!-- Sentinel 核心依赖 -->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+</dependency>
+
+<!-- Sentinel 适配 Spring Cloud Gateway -->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
+</dependency>
+
+<!-- Sentinel 数据源（用于持久化规则到 Nacos，可选） -->
+<dependency>
+    <groupId>com.alibaba.csp</groupId>
+    <artifactId>sentinel-datasource-nacos</artifactId>
+</dependency>
+```
+
+#### 2. 配置 Sentinel
+
+修改 `api-gateway/src/main/resources/application.yml`：
+
+```yaml
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      # 全局超时配置
+      httpclient:
+        connect-timeout: 3000       # 连接超时 3 秒
+        response-timeout: 10s       # 响应超时 10 秒
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**
+    
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
+    
+    # Sentinel 配置
+    sentinel:
+      transport:
+        port: 8719                    # Sentinel 客户端端口
+        dashboard: localhost:8858     # Sentinel 控制台地址（可选）
+      eager: true                     # 启动时就连接控制台
+      scg:
+        fallback:
+          mode: response              # 限流后返回响应
+          response-status: 429        # HTTP 状态码
+          response-body: '{"code": 429, "message": "请求过于频繁，请稍后再试", "success": false}'
+          content-type: application/json;charset=UTF-8
+```
+
+#### 3. 创建限流规则配置类
+
+创建 `api-gateway/src/main/java/com/example/gateway/config/SentinelGatewayConfig.java`：
+
+```java
+package com.example.gateway.config;
+
+import com.alibaba.csp.sentinel.adapter.gateway.common.rule.GatewayFlowRule;
+import com.alibaba.csp.sentinel.adapter.gateway.common.rule.GatewayRuleManager;
+import com.alibaba.csp.sentinel.adapter.gateway.sc.callback.BlockRequestHandler;
+import com.alibaba.csp.sentinel.adapter.gateway.sc.callback.GatewayCallbackManager;
+import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+@Configuration
+public class SentinelGatewayConfig {
+
+    @PostConstruct
+    public void init() {
+        initGatewayRules();
+        initBlockHandler();
+    }
+
+    /**
+     * 配置限流规则
+     */
+    private void initGatewayRules() {
+        Set<GatewayFlowRule> rules = new HashSet<>();
+
+        // 用户服务：每秒最多 100 个请求
+        rules.add(new GatewayFlowRule("user-service")
+                .setCount(100)        // QPS 阈值
+                .setIntervalSec(1)    // 统计窗口 1 秒
+                .setBurst(20));       // 突发流量允许 +20
+
+        // 订单服务：每秒最多 50 个请求
+        rules.add(new GatewayFlowRule("order-service")
+                .setCount(50)
+                .setIntervalSec(1)
+                .setBurst(10));
+
+        GatewayRuleManager.loadRules(rules);
+    }
+
+    /**
+     * 自定义限流响应
+     */
+    private void initBlockHandler() {
+        GatewayCallbackManager.setBlockHandler(new BlockRequestHandler() {
+            @Override
+            public Mono<ServerResponse> handleRequest(ServerWebExchange exchange, Throwable t) {
+                Map<String, Object> result = new HashMap<>();
+                result.put("code", 429);
+                result.put("message", "请求过于频繁，请稍后再试");
+                result.put("success", false);
+                result.put("timestamp", System.currentTimeMillis());
+                
+                return ServerResponse
+                        .status(HttpStatus.TOO_MANY_REQUESTS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(result);
+            }
+        });
+    }
+}
+```
+
+#### 4. 限流规则说明
+
+| 路由 | QPS 限制 | 突发流量 | 说明 |
+|------|---------|---------|------|
+| `user-service` | 100/秒 | +20 | 用户服务 |
+| `order-service` | 50/秒 | +10 | 订单服务（操作较重） |
+
+#### 5. 测试限流
+
+当请求超过限流阈值时，返回：
+
+```json
+{
+  "code": 429,
+  "message": "请求过于频繁，请稍后再试",
+  "success": false,
+  "timestamp": 1705825200000
+}
+```
+
+#### 6. Sentinel 控制台（可选）
+
+如需可视化监控和动态调整规则，可启动 Sentinel Dashboard：
+
+```bash
+# 下载: https://github.com/alibaba/Sentinel/releases
+# 启动控制台
+java -Dserver.port=8858 -jar sentinel-dashboard-1.8.7.jar
+
+# 访问: http://localhost:8858
+# 账号/密码: sentinel/sentinel
+```
+
+> **说明**：Sentinel 控制台不是必须的。即使不启动控制台，限流功能也能正常工作（规则在代码中配置）。控制台主要用于：
+> - 实时流量监控
+> - 动态调整限流规则（无需重启服务）
+
 ---
 
 ## 六、服务间通信
@@ -1234,11 +1441,20 @@ server:
 spring:
   application:
     name: user-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848  # Nacos 服务器地址
+        namespace: public
+        group: DEFAULT_GROUP
 
 # Dubbo 配置
 dubbo:
   application:
     name: user-service
+    # 重要：禁用应用级服务发现注册，避免与 Spring Cloud 服务发现冲突
+    # 不配置此项会导致 Gateway 访问时出现 500 错误
+    register-mode: interface  # 只注册接口级服务，不注册应用级服务
   registry:
     address: nacos://localhost:8848  # 使用 Nacos 作为注册中心
   protocol:
@@ -1246,7 +1462,20 @@ dubbo:
     port: 20880  # Dubbo 协议端口
   scan:
     base-packages: com.example.user.service  # 扫描服务实现类
+
+# 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
 ```
+
+> ⚠️ **重要提示**：`register-mode: interface` 是关键配置！
+> 
+> **问题**：Dubbo 默认会将应用级服务（包含 RPC 端口 20880）注册到 Nacos，导致 Spring Cloud Gateway 的负载均衡器有时会将 HTTP 请求路由到 Dubbo RPC 端口，从而出现 500 错误。
+> 
+> **解决**：设置 `register-mode: interface` 后，Dubbo 只注册接口级服务，不会干扰 Spring Cloud 的服务发现。
 
 #### 4. 创建服务接口（在 user-service 中）
 
@@ -1319,7 +1548,7 @@ public class UserServiceImpl implements UserService {
 }
 ```
 
-#### 4.1 更新 UserController（可选，推荐）
+#### 4.1 更新 UserController
 
 为了保持数据一致性，让 `UserController` 也使用 `UserService`：
 
@@ -1388,11 +1617,19 @@ server:
 spring:
   application:
     name: order-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
 
 # Dubbo 配置
 dubbo:
   application:
     name: order-service
+    # 重要：与 user-service 相同，必须配置此项
+    register-mode: interface
   registry:
     address: nacos://localhost:8848  # 使用 Nacos 作为注册中心
   protocol:

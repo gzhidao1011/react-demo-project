@@ -15,6 +15,8 @@ spring:
 dubbo:
   application:
     name: user-service
+    # 禁用应用级服务发现注册，避免与 Spring Cloud 服务发现冲突
+    register-mode: interface  # 只注册接口级服务，不注册应用级服务
   registry:
     address: nacos://localhost:8848  # 使用 Nacos 作为注册中心
   protocol:

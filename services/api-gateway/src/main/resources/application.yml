@@ -6,6 +6,10 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      # 全局超时配置
+      httpclient:
+        connect-timeout: 3000       # 连接超时 3 秒
+        response-timeout: 10s       # 响应超时 10 秒
       routes:
         # 用户服务路由
         - id: user-service
@@ -26,3 +30,18 @@ spring:
         server-addr: localhost:8848  # Nacos 服务器地址
         namespace: public
         group: DEFAULT_GROUP
+    
+    # Sentinel 配置
+    sentinel:
+      transport:
+        port: 8719                    # Sentinel 客户端端口（与控制台通信）
+        dashboard: localhost:8858     # Sentinel 控制台地址
+      # 饥饿加载，启动时就连接控制台
+      eager: true
+      # Gateway 限流配置
+      scg:
+        fallback:
+          mode: response              # 限流后返回响应
+          response-status: 429        # HTTP 状态码 429 Too Many Requests
+          response-body: '{"code": 429, "message": "请求过于频繁，请稍后再试", "success": false}'
+          content-type: application/json;charset=UTF-8
