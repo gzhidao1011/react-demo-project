@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  * 用户服务实现类
  * 使用 MySQL 数据库存储用户数据
  */
-@DubboService  // 标记为 Dubbo 服务，会被注册到注册中心
+@DubboService(interfaceClass = UserService.class)  // 明确指定接口类，标记为 Dubbo 服务
 @Service
 public class UserServiceImpl implements UserService {
     

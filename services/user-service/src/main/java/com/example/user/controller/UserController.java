@@ -1,11 +1,14 @@
 package com.example.user.controller;
 
+import com.example.api.common.Result;
+import com.example.api.common.ResultCode;
+import com.example.api.exception.BusinessException;
 import com.example.api.model.User;
 import com.example.api.service.UserService;
 import com.example.user.entity.UserEntity;
 import com.example.user.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,38 +31,31 @@ public class UserController {
      * 获取所有用户
      */
     @GetMapping
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
+    public Result<List<User>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        return Result.success(users);
     }
     
     /**
      * 根据 ID 获取用户
      */
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable("id") Long id) {
+    public Result<User> getUserById(@PathVariable("id") Long id) {
         User user = userService.getUserById(id);
         if (user == null) {
-            return ResponseEntity.notFound().build();
+            throw new BusinessException(ResultCode.USER_NOT_FOUND);
         }
-        return ResponseEntity.ok(user);
+        return Result.success(user);
     }
     
     /**
      * 创建用户
      */
     @PostMapping
-    public ResponseEntity<?> createUser(@RequestBody User user) {
-        // 参数校验
-        if (user.getName() == null || user.getName().isBlank()) {
-            return ResponseEntity.badRequest().body("用户名不能为空");
-        }
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            return ResponseEntity.badRequest().body("邮箱不能为空");
-        }
-        
+    public Result<User> createUser(@Valid @RequestBody User user) {
         // 检查邮箱是否已存在
         if (userRepository.existsByEmail(user.getEmail())) {
-            return ResponseEntity.badRequest().body("邮箱已存在: " + user.getEmail());
+            throw new BusinessException(ResultCode.EMAIL_ALREADY_EXISTS, "邮箱已存在: " + user.getEmail());
         }
         
         UserEntity entity = new UserEntity();
@@ -69,46 +65,53 @@ public class UserController {
         
         UserEntity saved = userRepository.save(entity);
         
-        User result = new User();
-        result.setId(saved.getId());
-        result.setName(saved.getName());
-        result.setEmail(saved.getEmail());
-        result.setPhone(saved.getPhone());
-        
-        return ResponseEntity.ok(result);
+        User result = convertToDto(saved);
+        return Result.success("用户创建成功", result);
     }
     
     /**
      * 更新用户
      */
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable("id") Long id, @RequestBody User user) {
-        return userRepository.findById(id)
-                .map(entity -> {
-                    entity.setName(user.getName());
-                    entity.setEmail(user.getEmail());
-                    entity.setPhone(user.getPhone());
-                    UserEntity saved = userRepository.save(entity);
-                    
-                    User result = new User();
-                    result.setId(saved.getId());
-                    result.setName(saved.getName());
-                    result.setEmail(saved.getEmail());
-                    result.setPhone(saved.getPhone());
-                    return ResponseEntity.ok(result);
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public Result<User> updateUser(@PathVariable("id") Long id, @Valid @RequestBody User user) {
+        UserEntity entity = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ResultCode.USER_NOT_FOUND));
+        
+        // 如果修改了邮箱，检查新邮箱是否已被其他用户使用
+        if (!entity.getEmail().equals(user.getEmail()) && userRepository.existsByEmail(user.getEmail())) {
+            throw new BusinessException(ResultCode.EMAIL_ALREADY_EXISTS, "邮箱已存在: " + user.getEmail());
+        }
+        
+        entity.setName(user.getName());
+        entity.setEmail(user.getEmail());
+        entity.setPhone(user.getPhone());
+        UserEntity saved = userRepository.save(entity);
+        
+        User result = convertToDto(saved);
+        return Result.success("用户更新成功", result);
     }
     
     /**
      * 删除用户
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable("id") Long id) {
+    public Result<Void> deleteUser(@PathVariable("id") Long id) {
         if (!userRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new BusinessException(ResultCode.USER_NOT_FOUND);
         }
         userRepository.deleteById(id);
-        return ResponseEntity.ok().build();
+        return Result.success();
+    }
+    
+    /**
+     * 将实体类转换为 DTO
+     */
+    private User convertToDto(UserEntity entity) {
+        User user = new User();
+        user.setId(entity.getId());
+        user.setName(entity.getName());
+        user.setEmail(entity.getEmail());
+        user.setPhone(entity.getPhone());
+        return user;
     }
 }

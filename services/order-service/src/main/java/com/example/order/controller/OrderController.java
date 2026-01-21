@@ -1,13 +1,19 @@
 package com.example.order.controller;
 
+import com.example.api.common.Result;
+import com.example.api.common.ResultCode;
+import com.example.api.exception.BusinessException;
+import com.example.api.model.CreateOrderRequest;
 import com.example.api.model.User;
 import com.example.api.service.UserService;
 import com.example.order.entity.OrderEntity;
 import com.example.order.model.Order;
 import com.example.order.repository.OrderRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -20,6 +26,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/orders")
+@Validated  // 启用方法级别的参数校验
 public class OrderController {
     
     @DubboReference  // 引用远程服务，Dubbo 会自动从注册中心查找服务
@@ -32,78 +39,87 @@ public class OrderController {
      * 获取所有订单
      */
     @GetMapping
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll().stream()
+    public Result<List<Order>> getAllOrders() {
+        List<Order> orders = orderRepository.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+        return Result.success(orders);
     }
     
     /**
      * 根据 ID 获取订单
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable("id") Long id) {
-        return orderRepository.findById(id)
-                .map(entity -> ResponseEntity.ok(convertToDto(entity)))
-                .orElse(ResponseEntity.notFound().build());
+    public Result<Order> getOrderById(@PathVariable("id") Long id) {
+        OrderEntity entity = orderRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ResultCode.ORDER_NOT_FOUND));
+        return Result.success(convertToDto(entity));
     }
     
     /**
      * 根据用户 ID 获取订单
      */
     @GetMapping("/user/{userId}")
-    public List<Order> getOrdersByUserId(@PathVariable("userId") Long userId) {
-        return orderRepository.findByUserId(userId).stream()
+    public Result<List<Order>> getOrdersByUserId(@PathVariable("userId") Long userId) {
+        List<Order> orders = orderRepository.findByUserId(userId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+        return Result.success(orders);
     }
     
     /**
      * 创建订单
      */
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody Order order) {
+    public Result<Order> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         // 验证用户是否存在
-        User user = userService.getUserById(order.getUserId());
+        User user = userService.getUserById(request.getUserId());
         if (user == null) {
-            return ResponseEntity.badRequest().build();
+            throw new BusinessException(ResultCode.USER_NOT_FOUND, "用户不存在，无法创建订单");
         }
         
         OrderEntity entity = new OrderEntity();
-        entity.setUserId(order.getUserId());
-        entity.setProductName(order.getProductName());
-        entity.setPrice(BigDecimal.valueOf(order.getPrice()));
-        entity.setQuantity(order.getQuantity() != null ? order.getQuantity() : 1);
+        entity.setUserId(request.getUserId());
+        entity.setProductName(request.getProductName());
+        entity.setPrice(BigDecimal.valueOf(request.getPrice()));
+        entity.setQuantity(request.getQuantity() != null ? request.getQuantity() : 1);
         entity.setStatus("待支付");
         
         OrderEntity saved = orderRepository.save(entity);
-        return ResponseEntity.ok(convertToDto(saved));
+        return Result.success("订单创建成功", convertToDto(saved));
     }
     
     /**
      * 更新订单状态
      */
     @PutMapping("/{id}/status")
-    public ResponseEntity<Order> updateOrderStatus(@PathVariable("id") Long id, @RequestParam("status") String status) {
-        return orderRepository.findById(id)
-                .map(entity -> {
-                    entity.setStatus(status);
-                    OrderEntity saved = orderRepository.save(entity);
-                    return ResponseEntity.ok(convertToDto(saved));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public Result<Order> updateOrderStatus(
+            @PathVariable("id") Long id, 
+            @RequestParam("status") @NotBlank(message = "订单状态不能为空") String status) {
+        
+        // 校验状态值是否合法
+        if (!isValidStatus(status)) {
+            throw new BusinessException(ResultCode.ORDER_STATUS_ERROR, "无效的订单状态: " + status);
+        }
+        
+        OrderEntity entity = orderRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ResultCode.ORDER_NOT_FOUND));
+        
+        entity.setStatus(status);
+        OrderEntity saved = orderRepository.save(entity);
+        return Result.success("订单状态更新成功", convertToDto(saved));
     }
     
     /**
      * 删除订单
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(@PathVariable("id") Long id) {
+    public Result<Void> deleteOrder(@PathVariable("id") Long id) {
         if (!orderRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new BusinessException(ResultCode.ORDER_NOT_FOUND);
         }
         orderRepository.deleteById(id);
-        return ResponseEntity.ok().build();
+        return Result.success();
     }
     
     /**
@@ -118,5 +134,18 @@ public class OrderController {
         order.setQuantity(entity.getQuantity());
         order.setStatus(entity.getStatus());
         return order;
+    }
+    
+    /**
+     * 校验订单状态是否合法
+     */
+    private boolean isValidStatus(String status) {
+        return status != null && (
+                "待支付".equals(status) ||
+                "已支付".equals(status) ||
+                "已发货".equals(status) ||
+                "已完成".equals(status) ||
+                "已取消".equals(status)
+        );
     }
 }
