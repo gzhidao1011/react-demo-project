@@ -1,13 +1,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { toast, toastError } from "@repo/propel";
 import { type RegisterFormData, registerSchema } from "@repo/schemas";
 import type { RegisterRequest } from "@repo/services";
 import { authRegister } from "@repo/services";
-import { FieldValues, UseFormSetError, useForm } from "react-hook-form";
+import { Button, Card, CardContent, Input, Label } from "@repo/ui";
+import { useState } from "react";
+import type { FieldValues, UseFormSetError } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 
 export default function SignUpPage() {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -56,225 +62,236 @@ export default function SignUpPage() {
     }
   };
 
-  // 输入框样式类
-  const inputBaseClasses =
-    "block w-full rounded-lg bg-[var(--color-bg-input)] dark:bg-[var(--color-bg-input-dark)]/50 px-3 py-2.5 text-base text-[var(--color-text-primary)] outline-1 -outline-offset-1 outline-[var(--color-border)] placeholder:text-[var(--color-text-tertiary)] focus:outline-2 focus:-outline-offset-2 focus:outline-[var(--color-border-focus)] focus:bg-[var(--color-bg-input-focus)] dark:focus:bg-[var(--color-bg-input-focus-dark)] sm:text-sm/6 dark:text-[var(--color-text-primary-dark)] dark:outline-[var(--color-border-dark)] dark:placeholder:text-[var(--color-text-tertiary-dark)] dark:focus:outline-[var(--color-primary-light)] transition-colors";
-
-  const inputErrorClasses =
-    "outline-[var(--color-error)] focus:outline-[var(--color-error)] dark:outline-[var(--color-error)]";
-
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
         {/* 卡片容器 */}
-        <div className="bg-[var(--color-bg-card)] dark:bg-[var(--color-bg-card-dark)] rounded-2xl shadow-2xl p-8 sm:p-10 backdrop-blur-sm border border-[var(--color-white)]/20 dark:border-[var(--color-gray-700)]/50">
-          {/* 标题区域 */}
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]">
-              创建账户
-            </h1>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary-dark)]">
-              已有账户？{" "}
-              <button
-                type="button"
-                onClick={() => navigate("/sign-in")}
-                className="font-semibold cursor-pointer text-[var(--color-primary)] hover:text-[var(--color-primary-light)] dark:text-[var(--color-primary-lighter)] dark:hover:text-[var(--color-primary-lightest)] transition-colors"
-              >
-                立即登录
-              </button>
-            </p>
-          </div>
+        <Card className="rounded-2xl shadow-2xl p-8 sm:p-10 backdrop-blur-sm border-[var(--color-white)]/20 dark:border-[var(--color-gray-700)]/50">
+          <CardContent className="p-0">
+            {/* 标题区域 */}
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]">
+                创建账户
+              </h1>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary-dark)]">
+                已有账户？{" "}
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => navigate("/sign-in")}
+                  className="p-0 h-auto font-semibold"
+                >
+                  立即登录
+                </Button>
+              </p>
+            </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-            {/* 表单级错误提示（仅显示错误，成功消息使用 Toast） */}
-            {errors.root && errors.root.type !== "success" && (
-              <div
-                className="rounded-md bg-[var(--color-error-50)] p-4 dark:bg-[var(--color-error-900)]/20"
-                role="alert"
-              >
-                <p className="text-sm text-[var(--color-error-800)] dark:text-[var(--color-error-light)]">
-                  {errors.root.message}
-                </p>
-              </div>
-            )}
-
-            {/* 用户名 */}
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]"
-              >
-                用户名 <span className="text-[var(--color-error)]">*</span>
-              </label>
-              <div className="mt-2">
-                <input
-                  id="username"
-                  type="text"
-                  autoComplete="username"
-                  {...register("username")}
-                  aria-invalid={errors.username ? "true" : "false"}
-                  aria-describedby={errors.username ? "username-error" : undefined}
-                  className={`${inputBaseClasses} ${errors.username ? inputErrorClasses : ""}`}
-                  placeholder="请输入用户名（3-20个字符）"
-                />
-              </div>
-              {errors.username && (
-                <p
-                  id="username-error"
-                  className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+              {/* 表单级错误提示（仅显示错误，成功消息使用 Toast） */}
+              {errors.root && errors.root.type !== "success" && (
+                <div
+                  className="rounded-md bg-[var(--color-error-50)] p-4 dark:bg-[var(--color-error-900)]/20"
                   role="alert"
                 >
-                  {errors.username.message}
-                </p>
+                  <p className="text-sm text-[var(--color-error-800)] dark:text-[var(--color-error-light)]">
+                    {errors.root.message}
+                  </p>
+                </div>
               )}
-            </div>
 
-            {/* 邮箱 */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]"
-              >
-                邮箱地址 <span className="text-[var(--color-error)]">*</span>
-              </label>
-              <div className="mt-2">
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  {...register("email")}
-                  aria-invalid={errors.email ? "true" : "false"}
-                  aria-describedby={errors.email ? "email-error" : undefined}
-                  className={`${inputBaseClasses} ${errors.email ? inputErrorClasses : ""}`}
-                  placeholder="example@email.com"
-                />
+              {/* 用户名 */}
+              <div>
+                <Label htmlFor="username">
+                  用户名 <span className="text-[var(--color-error)]">*</span>
+                </Label>
+                <div className="mt-2">
+                  <Input
+                    id="username"
+                    type="text"
+                    autoComplete="username"
+                    {...register("username")}
+                    aria-invalid={errors.username ? "true" : "false"}
+                    aria-describedby={errors.username ? "username-error" : undefined}
+                    className={
+                      errors.username ? "border-[var(--color-error)] focus-visible:ring-[var(--color-error)]" : ""
+                    }
+                    placeholder="请输入用户名（3-20个字符）"
+                  />
+                </div>
+                {errors.username && (
+                  <p
+                    id="username-error"
+                    className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
+                    role="alert"
+                  >
+                    {errors.username.message}
+                  </p>
+                )}
               </div>
-              {errors.email && (
-                <p
-                  id="email-error"
-                  className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
-                  role="alert"
-                >
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
 
-            {/* 密码 */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]"
-              >
-                密码 <span className="text-[var(--color-error)]">*</span>
-              </label>
-              <div className="mt-2">
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="new-password"
-                  {...register("password")}
-                  aria-invalid={errors.password ? "true" : "false"}
-                  aria-describedby={errors.password ? "password-error" : undefined}
-                  className={`${inputBaseClasses} ${errors.password ? inputErrorClasses : ""}`}
-                  placeholder="至少 6 个字符"
-                />
+              {/* 邮箱 */}
+              <div>
+                <Label htmlFor="email">
+                  邮箱地址 <span className="text-[var(--color-error)]">*</span>
+                </Label>
+                <div className="mt-2">
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    {...register("email")}
+                    aria-invalid={errors.email ? "true" : "false"}
+                    aria-describedby={errors.email ? "email-error" : undefined}
+                    className={
+                      errors.email ? "border-[var(--color-error)] focus-visible:ring-[var(--color-error)]" : ""
+                    }
+                    placeholder="example@email.com"
+                  />
+                </div>
+                {errors.email && (
+                  <p
+                    id="email-error"
+                    className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
+                    role="alert"
+                  >
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
-              {errors.password && (
-                <p
-                  id="password-error"
-                  className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
-                  role="alert"
-                >
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
 
-            {/* 确认密码 */}
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]"
-              >
-                确认密码 <span className="text-[var(--color-error)]">*</span>
-              </label>
-              <div className="mt-2">
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  {...register("confirmPassword")}
-                  aria-invalid={errors.confirmPassword ? "true" : "false"}
-                  aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
-                  className={`${inputBaseClasses} ${errors.confirmPassword ? inputErrorClasses : ""}`}
-                  placeholder="请再次输入密码"
-                />
+              {/* 密码 */}
+              <div>
+                <Label htmlFor="password">
+                  密码 <span className="text-[var(--color-error)]">*</span>
+                </Label>
+                <div className="mt-2 relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    {...register("password")}
+                    aria-invalid={errors.password ? "true" : "false"}
+                    aria-describedby={errors.password ? "password-error" : undefined}
+                    className={
+                      errors.password
+                        ? "border-[var(--color-error)] focus-visible:ring-[var(--color-error)] pr-10"
+                        : "pr-10"
+                    }
+                    placeholder="至少 6 个字符"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+                    aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                  >
+                    {showPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p
+                    id="password-error"
+                    className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
+                    role="alert"
+                  >
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
-              {errors.confirmPassword && (
-                <p
-                  id="confirmPassword-error"
-                  className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
-                  role="alert"
-                >
-                  {errors.confirmPassword.message}
-                </p>
-              )}
-            </div>
 
-            {/* 手机号（可选） */}
-            <div>
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]"
-              >
-                手机号{" "}
-                <span className="text-sm text-[var(--color-text-disabled)] dark:text-[var(--color-text-tertiary-dark)]">
-                  (可选)
-                </span>
-              </label>
-              <div className="mt-2">
-                <input
-                  id="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  {...register("phone")}
-                  aria-invalid={errors.phone ? "true" : "false"}
-                  aria-describedby={errors.phone ? "phone-error" : undefined}
-                  className={`${inputBaseClasses} ${errors.phone ? inputErrorClasses : ""}`}
-                  placeholder="13800138000 或 +1-555-123-4567"
-                />
+              {/* 确认密码 */}
+              <div>
+                <Label htmlFor="confirmPassword">
+                  确认密码 <span className="text-[var(--color-error)]">*</span>
+                </Label>
+                <div className="mt-2 relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    {...register("confirmPassword")}
+                    aria-invalid={errors.confirmPassword ? "true" : "false"}
+                    aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
+                    className={
+                      errors.confirmPassword
+                        ? "border-[var(--color-error)] focus-visible:ring-[var(--color-error)] pr-10"
+                        : "pr-10"
+                    }
+                    placeholder="请再次输入密码"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+                    aria-label={showConfirmPassword ? "隐藏密码" : "显示密码"}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeSlashIcon className="h-5 w-5" />
+                    ) : (
+                      <EyeIcon className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p
+                    id="confirmPassword-error"
+                    className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
+                    role="alert"
+                  >
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
               </div>
-              {errors.phone && (
-                <p
-                  id="phone-error"
-                  className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
-                  role="alert"
-                >
-                  {errors.phone.message}
-                </p>
-              )}
-            </div>
 
-            {/* 提交按钮 */}
-            <div className="flex items-center justify-end gap-x-6 pt-4">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="text-sm cursor-pointer font-semibold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)] hover:text-[var(--color-text-secondary)] dark:hover:text-[var(--color-text-tertiary-dark)]"
-              >
-                取消
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded-lg cursor-pointer bg-[var(--color-primary)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-[var(--color-primary-light)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[var(--color-primary-light)] dark:shadow-[var(--color-primary)]/50 dark:hover:bg-[var(--color-primary-lighter)] dark:focus-visible:outline-[var(--color-primary-light)] transition-all hover:shadow-xl"
-              >
-                {isSubmitting ? "注册中..." : "注册"}
-              </button>
-            </div>
-          </form>
-        </div>
+              {/* 手机号（可选） */}
+              <div>
+                <Label htmlFor="phone">
+                  手机号{" "}
+                  <span className="text-sm text-[var(--color-text-disabled)] dark:text-[var(--color-text-tertiary-dark)]">
+                    (可选)
+                  </span>
+                </Label>
+                <div className="mt-2">
+                  <Input
+                    id="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    {...register("phone")}
+                    aria-invalid={errors.phone ? "true" : "false"}
+                    aria-describedby={errors.phone ? "phone-error" : undefined}
+                    className={
+                      errors.phone ? "border-[var(--color-error)] focus-visible:ring-[var(--color-error)]" : ""
+                    }
+                    placeholder="13800138000 或 +1-555-123-4567"
+                  />
+                </div>
+                {errors.phone && (
+                  <p
+                    id="phone-error"
+                    className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
+                    role="alert"
+                  >
+                    {errors.phone.message}
+                  </p>
+                )}
+              </div>
+
+              {/* 提交按钮 */}
+              <div className="flex items-center justify-end gap-x-6 pt-4">
+                <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
+                  取消
+                </Button>
+                <Button type="submit" disabled={isSubmitting} className="shadow-lg hover:shadow-xl">
+                  {isSubmitting ? "注册中..." : "注册"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

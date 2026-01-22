@@ -6,7 +6,8 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./app/*"],
-      "@/core/*": ["./core/*"]
+      "@/core/*": ["./core/*"],
+      "@repo/ui/@/*": ["../../packages/ui/src/*"]
     }
   },
 

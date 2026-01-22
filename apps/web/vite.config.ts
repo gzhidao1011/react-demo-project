@@ -36,4 +36,7 @@ export default defineConfig({
     tsconfigPaths({ projects: [path.resolve(__dirname, "tsconfig.json")] }),
     devtoolsJson(),
   ],
+  optimizeDeps: {
+    include: ["@headlessui/react", "@heroicons/react"],
+  },
 });

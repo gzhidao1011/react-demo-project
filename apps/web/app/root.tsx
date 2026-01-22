@@ -1,6 +1,4 @@
-// biome-ignore assist/source/organizeImports: <explanation>
-import { hydrateRoot } from "react-dom/client";
-import { ToastProvider } from "@repo/propel";
+import { Toaster } from "@repo/propel";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -29,7 +27,7 @@ export default function App() {
   return (
     <>
       <Outlet />
-      <ToastProvider />
+      <Toaster />
     </>
   );
 }

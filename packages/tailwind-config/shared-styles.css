@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 配置 Tailwind 扫描 workspace 包中的组件 */
+@source "../ui/src/**/*.{ts,tsx}";
+
 @theme {
   /* ===== 主色系 (Primary) ===== */
   --color-primary: #4f46e5; /* indigo-600 */

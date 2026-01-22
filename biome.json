@@ -18,5 +18,8 @@
     "parser": {
       "tailwindDirectives": true
     }
+  },
+  "files": {
+    "ignore": ["**/*.css"]
   }
 }

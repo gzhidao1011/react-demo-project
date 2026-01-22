@@ -23,12 +23,14 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "typescript": "catalog:",
-    "react-hot-toast": "catalog:",
     "@repo/utils": "workspace:*",
     "react-hook-form": "catalog:"
   },
   "dependencies": {
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "@repo/ui": "workspace:*",
+    "@heroicons/react": "catalog:",
+    "sonner": "^2.0.7"
   }
 }

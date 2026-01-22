@@ -1,9 +1,15 @@
 import { handleServerError } from "@repo/utils";
 import type { FieldValues, UseFormSetError } from "react-hook-form";
-import toastModule, { Toaster } from "react-hot-toast";
+import { toast } from "sonner";
+import { Toaster } from "@repo/ui";
 
-export const toast = toastModule;
+// 直接导出 sonner 的 toast
+export { toast };
 
+// 导出 Toaster 组件
+export { Toaster };
+
+// 处理服务器错误的工具函数
 export function toastError(error: unknown, setError: UseFormSetError<FieldValues>) {
   console.error("注册失败:", error);
   // 统一处理错误：内联错误显示 + 系统级错误 Toast
@@ -12,32 +18,4 @@ export function toastError(error: unknown, setError: UseFormSetError<FieldValues
   if (result.shouldShowToast && result.toastMessage) {
     toast.error(result.toastMessage);
   }
-}
-
-export function ToastProvider() {
-  return (
-    <Toaster
-      position="top-right"
-      toastOptions={{
-        duration: 3000,
-        style: {
-          background: "var(--color-bg-card)",
-          color: "var(--color-text-primary)",
-          border: "1px solid var(--color-border)",
-        },
-        success: {
-          iconTheme: {
-            primary: "var(--color-success)",
-            secondary: "white",
-          },
-        },
-        error: {
-          iconTheme: {
-            primary: "var(--color-error)",
-            secondary: "white",
-          },
-        },
-      }}
-    />
-  );
 }
