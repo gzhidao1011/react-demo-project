@@ -1,10 +1,9 @@
 import path from "node:path";
-import { defineConfig } from "vite";
-import tailwindcss from "@tailwindcss/vite";
-import { reactRouter } from "@react-router/dev/vite";
-import devtoolsJson from "vite-plugin-devtools-json";
 import * as dotenv from "@dotenvx/dotenvx";
-import { joinUrlPath } from "@repo/utils";
+import { reactRouter } from "@react-router/dev/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import devtoolsJson from "vite-plugin-devtools-json";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 dotenv.config({ path: path.resolve(__dirname, ".env") });
@@ -17,10 +16,8 @@ const viteEnv = Object.keys(process.env)
     return a;
   }, {});
 
-const basePath = joinUrlPath(process.env.VITE_ADMIN_BASE_PATH ?? "", "/") ?? "/";
-
 export default defineConfig({
-  base: basePath,
+  base: "/",
   define: {
     "process.env": JSON.stringify(viteEnv),
   },

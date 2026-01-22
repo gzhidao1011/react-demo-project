@@ -1,0 +1,517 @@
+---
+description: React 表单验证规范，使用 React Hook Form + Zod
+globs:
+alwaysApply: true
+---
+
+# 表单验证规范
+
+本文档定义了项目中使用 React Hook Form + Zod 进行表单验证的规范和最佳实践。
+
+> **重要**：所有表单验证必须使用 React Hook Form + Zod，禁止使用原生表单验证或手动状态管理。
+
+## 核心原则
+
+1. **使用 React Hook Form + Zod**：统一使用 `react-hook-form` 和 `zod` 进行表单验证
+2. **类型安全**：通过 Zod schema 自动生成 TypeScript 类型
+3. **实时验证**：使用 `onBlur` 模式提供即时反馈
+4. **可访问性**：必须包含 ARIA 属性和错误提示
+5. **性能优化**：使用非受控组件，最小化 re-render
+
+## 依赖安装
+
+项目已配置以下依赖（在 `pnpm-workspace.yaml` 中）：
+
+```yaml
+"react-hook-form": 7.54.2
+"zod": 3.24.1
+"@hookform/resolvers": 3.9.1
+```
+
+### 依赖说明
+
+- **`react-hook-form`**：表单状态管理和验证的核心库
+- **`zod`**：TypeScript 优先的 schema 验证库，用于定义验证规则
+- **`@hookform/resolvers`**：连接 React Hook Form 和验证库的适配器，提供 `zodResolver` 等 resolver
+
+## @hookform/resolvers 详解
+
+### 什么是 Resolver？
+
+Resolver 是 React Hook Form 和验证库之间的桥梁。它负责：
+1. 将 Zod schema 转换为 React Hook Form 可以理解的验证函数
+2. 处理验证错误并转换为 React Hook Form 的错误格式
+3. 确保类型安全，让 TypeScript 能够正确推断类型
+
+### zodResolver 使用
+
+**✅ 正确**：必须从 `@hookform/resolvers/zod` 导入 `zodResolver`
+
+```typescript
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+// 定义 schema
+const schema = z.object({
+  email: z.string().email("请输入有效的邮箱地址"),
+});
+
+// 在 useForm 中使用 zodResolver
+const {
+  register,
+  handleSubmit,
+  formState: { errors },
+} = useForm({
+  resolver: zodResolver(schema), // 关键：使用 zodResolver 连接 Zod 和 React Hook Form
+  mode: "onBlur",
+});
+```
+
+### 为什么需要 @hookform/resolvers？
+
+1. **解耦设计**：React Hook Form 不直接依赖特定的验证库，通过 resolver 适配器支持多种验证库
+2. **类型安全**：`zodResolver` 确保 Zod schema 的类型能够正确传递给 React Hook Form
+3. **错误格式转换**：自动将 Zod 的错误格式转换为 React Hook Form 期望的格式
+4. **统一接口**：提供统一的 resolver 接口，支持 Zod、Yup、Joi 等多种验证库
+
+### 其他 Resolver（可选）
+
+`@hookform/resolvers` 还支持其他验证库：
+
+```typescript
+// Yup resolver（如果使用 Yup）
+import { yupResolver } from "@hookform/resolvers/yup";
+
+// Joi resolver（如果使用 Joi）
+import { joiResolver } from "@hookform/resolvers/joi";
+```
+
+**注意**：项目统一使用 Zod，不需要其他 resolver。
+
+### 常见问题
+
+**Q: 为什么不能直接使用 Zod 验证？**
+
+A: React Hook Form 需要特定的错误格式和验证时机控制。`zodResolver` 负责：
+- 在正确的时机（onBlur、onChange 等）触发验证
+- 将 Zod 错误转换为 React Hook Form 的错误格式
+- 确保类型安全
+
+**Q: 可以不使用 resolver 吗？**
+
+A: 不推荐。虽然可以手动调用 Zod 验证，但会失去：
+- 自动错误格式转换
+- 类型安全
+- 与 React Hook Form 的深度集成
+
+## Zod Schema 定义
+
+### 基础 Schema 结构
+
+**✅ 推荐**：先定义基础 schema，再添加跨字段验证
+
+```typescript
+import { z } from "zod";
+
+// 1. 定义基础 schema
+const baseRegisterSchema = z.object({
+  username: z
+    .string()
+    .min(1, "用户名不能为空")
+    .min(3, "用户名至少需要 3 个字符")
+    .max(20, "用户名不能超过 20 个字符")
+    .regex(/^[a-zA-Z0-9_]+$/, "用户名只能包含字母、数字和下划线"),
+  email: z
+    .string()
+    .min(1, "邮箱不能为空")
+    .email("请输入有效的邮箱地址"),
+  password: z
+    .string()
+    .min(1, "密码不能为空")
+    .min(6, "密码至少需要 6 个字符")
+    .max(50, "密码不能超过 50 个字符"),
+  confirmPassword: z.string().min(1, "请确认密码"),
+  phone: z.string().optional(),
+});
+
+// 2. 添加跨字段验证
+const registerSchema = baseRegisterSchema.refine(
+  (data) => data.password === data.confirmPassword,
+  {
+    message: "两次输入的密码不一致",
+    path: ["confirmPassword"], // 指定错误字段
+  },
+);
+
+// 3. 从 schema 推断类型
+type RegisterFormData = z.infer<typeof registerSchema>;
+```
+
+### Schema 定义最佳实践
+
+1. **使用描述性错误消息**：错误消息应该清晰、具体，帮助用户理解问题
+2. **链式验证**：使用 `.min()`, `.max()`, `.email()`, `.regex()` 等链式方法
+3. **可选字段处理**：使用 `.optional()` 或 `.nullable()` 处理可选字段
+4. **自定义验证**：使用 `.refine()` 进行复杂验证逻辑
+5. **跨字段验证**：使用 schema 级别的 `.refine()` 进行跨字段验证
+
+**示例**：
+
+```typescript
+// ✅ 正确：链式验证，清晰的错误消息
+const emailSchema = z
+  .string()
+  .min(1, "邮箱不能为空")
+  .email("请输入有效的邮箱地址");
+
+// ✅ 正确：可选字段
+const phoneSchema = z
+  .string()
+  .optional()
+  .refine(
+    (val) => {
+      if (!val || val.trim() === "") return true;
+      // 自定义验证逻辑
+      return /^1[3-9]\d{9}$/.test(val);
+    },
+    {
+      message: "请输入有效的手机号码",
+    },
+  );
+
+// ❌ 错误：错误消息不清晰
+const badSchema = z.string().min(1, "错误");
+```
+
+## React Hook Form 使用
+
+### 基础配置
+
+```typescript
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const {
+  register,
+  handleSubmit,
+  formState: { errors, isSubmitting },
+  setError,
+  clearErrors,
+} = useForm<RegisterFormData>({
+  resolver: zodResolver(registerSchema), // 使用 Zod resolver
+  mode: "onBlur", // 在失去焦点时验证（推荐）
+  defaultValues: {
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phone: "",
+  },
+});
+```
+
+### 验证模式
+
+| 模式 | 说明 | 使用场景 |
+|------|------|---------|
+| `onBlur` | 失去焦点时验证 | **推荐**：提供即时反馈，不会过于频繁 |
+| `onChange` | 每次输入都验证 | 需要实时反馈的场景 |
+| `onSubmit` | 提交时验证 | 不推荐：用户体验差 |
+| `onTouched` | 触摸后验证 | 适合移动端 |
+
+**推荐使用 `onBlur` 模式**：平衡了用户体验和性能。
+
+### 表单提交处理
+
+**✅ 推荐实现**：包含完整的错误处理、超时机制和错误清理
+
+```typescript
+const onSubmit = async (data: RegisterFormData) => {
+  // 清除之前的错误
+  clearErrors();
+
+  // 创建 AbortController 用于取消请求和超时处理
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), 30000); // 30秒超时
+
+  try {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: data.username.trim(),
+        email: data.email.trim(),
+        password: data.password,
+        phone: data.phone?.trim() || undefined,
+      }),
+      signal: abortController.signal, // 支持取消和超时
+    });
+
+    // 检查响应状态
+    if (!response.ok) {
+      // 安全解析错误响应
+      let errorData;
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+          errorData = await response.json();
+        } else {
+          errorData = { message: await response.text() };
+        }
+      } catch (parseError) {
+        // JSON 解析失败，使用默认错误
+        errorData = {
+          message: `服务器错误 (${response.status})`,
+        };
+      }
+
+      // 处理字段级错误
+      if (errorData.errors && Array.isArray(errorData.errors)) {
+        errorData.errors.forEach(
+          (error: { field: string; message: string }) => {
+            setError(error.field as keyof RegisterFormData, {
+              type: "server",
+              message: error.message,
+            });
+          },
+        );
+      }
+
+      // 处理通用错误
+      if (errorData.message) {
+        setError("root", {
+          type: "server",
+          message: errorData.message,
+        });
+      } else {
+        setError("root", {
+          type: "server",
+          message: `请求失败 (${response.status})`,
+        });
+      }
+      return;
+    }
+
+    // 解析成功响应（可能没有响应体）
+    try {
+      await response.json();
+    } catch {
+      // 忽略解析错误，可能没有响应体
+    }
+
+    // 清除所有错误
+    clearErrors();
+
+    // 成功处理
+    navigate("/sign-in", { replace: true });
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    // 处理不同类型的错误
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        // 请求被取消或超时
+        setError("root", {
+          type: "timeout",
+          message: "请求超时，请检查网络连接后重试",
+        });
+      } else if (error.message.includes("Failed to fetch")) {
+        // 网络错误
+        setError("root", {
+          type: "network",
+          message: "网络连接失败，请检查网络设置",
+        });
+      } else {
+        // 其他错误
+        setError("root", {
+          type: "server",
+          message: error.message || "操作失败，请重试",
+        });
+      }
+    } else {
+      setError("root", {
+        type: "server",
+        message: "操作失败，请检查网络连接",
+      });
+    }
+
+    console.error("提交失败:", error);
+  }
+};
+```
+
+**关键改进点**：
+
+1. **clearErrors()**：提交开始时清除之前的错误，成功后再次清除
+2. **超时处理**：使用 AbortController 实现 30 秒超时
+3. **JSON 解析错误处理**：安全解析响应，处理非 JSON 响应
+4. **错误类型细化**：区分 timeout、network、server 错误
+5. **更友好的错误消息**：针对不同错误类型提供具体提示
+
+## 表单字段实现
+
+### 输入框组件
+
+**✅ 推荐**：包含完整的可访问性支持
+
+```tsx
+<div>
+  <label
+    htmlFor="username"
+    className="block text-sm font-medium text-[var(--color-text-primary)]"
+  >
+    用户名 <span className="text-[var(--color-error)]">*</span>
+  </label>
+  <div className="mt-2">
+    <input
+      id="username"
+      type="text"
+      autoComplete="username"
+      {...register("username")}
+      aria-invalid={errors.username ? "true" : "false"}
+      aria-describedby={errors.username ? "username-error" : undefined}
+      className={`${inputBaseClasses} ${
+        errors.username ? inputErrorClasses : ""
+      }`}
+      placeholder="请输入用户名（3-20个字符）"
+    />
+  </div>
+  {errors.username && (
+    <p
+      id="username-error"
+      className="mt-1 text-sm text-[var(--color-error-dark)]"
+      role="alert"
+    >
+      {errors.username.message}
+    </p>
+  )}
+</div>
+```
+
+### 可访问性要求
+
+所有表单字段必须包含：
+
+1. **`aria-invalid`**：标识字段是否有错误
+2. **`aria-describedby`**：关联错误消息元素
+3. **`role="alert"`**：错误消息元素必须有此属性
+4. **`id` 和 `htmlFor`**：label 和 input 必须正确关联
+5. **`autoComplete`**：提供自动完成提示
+
+### 样式类定义
+
+```typescript
+// 输入框基础样式
+const inputBaseClasses =
+  "block w-full rounded-lg bg-[var(--color-bg-input)] dark:bg-[var(--color-bg-input-dark)]/50 px-3 py-2.5 text-base text-[var(--color-text-primary)] outline-1 -outline-offset-1 outline-[var(--color-border)] placeholder:text-[var(--color-text-tertiary)] focus:outline-2 focus:-outline-offset-2 focus:outline-[var(--color-border-focus)] focus:bg-[var(--color-bg-input-focus)] dark:focus:bg-[var(--color-bg-input-focus-dark)] sm:text-sm/6 dark:text-[var(--color-text-primary-dark)] dark:outline-[var(--color-border-dark)] dark:placeholder:text-[var(--color-text-tertiary-dark)] dark:focus:outline-[var(--color-primary-light)] transition-colors";
+
+// 错误状态样式
+const inputErrorClasses =
+  "outline-[var(--color-error)] focus:outline-[var(--color-error)] dark:outline-[var(--color-error)]";
+```
+
+## 错误处理
+
+### 客户端验证错误
+
+React Hook Form 会自动处理客户端验证错误，通过 `errors` 对象访问：
+
+```tsx
+{errors.username && (
+  <p
+    id="username-error"
+    className="mt-1 text-sm text-[var(--color-error-dark)]"
+    role="alert"
+  >
+    {errors.username.message}
+  </p>
+)}
+```
+
+### 服务器端错误
+
+使用 `setError` 设置服务器端错误：
+
+```typescript
+// 字段级错误
+setError("username", {
+  type: "server",
+  message: "用户名已存在",
+});
+
+// 通用错误（表单级别）
+setError("root", {
+  type: "server",
+  message: "注册失败，请重试",
+});
+```
+
+### 通用错误显示
+
+```tsx
+{errors.root && (
+  <div
+    className="rounded-md bg-[var(--color-error-50)] p-4 dark:bg-[var(--color-error-900)]/20"
+    role="alert"
+  >
+    <p className="text-sm text-[var(--color-error-800)] dark:text-[var(--color-error-light)]">
+      {errors.root.message}
+    </p>
+  </div>
+)}
+```
+
+## 提交按钮
+
+```tsx
+<button
+  type="submit"
+  disabled={isSubmitting}
+  className="rounded-lg cursor-pointer bg-[var(--color-primary)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-[var(--color-primary-light)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+>
+  {isSubmitting ? "提交中..." : "提交"}
+</button>
+```
+
+**要点**：
+- 使用 `isSubmitting` 禁用按钮，防止重复提交
+- 显示加载状态（"提交中..."）
+- 使用 `disabled` 属性，配合样式显示禁用状态
+
+## 完整示例
+
+参考 `apps/web/app/(all)/sign-up/page.tsx` 查看完整的表单实现示例。
+
+## 最佳实践总结
+
+1. ✅ **使用 React Hook Form + Zod**：统一验证方案
+2. ✅ **类型安全**：使用 `z.infer<typeof schema>` 自动生成类型
+3. ✅ **实时验证**：使用 `mode: "onBlur"` 提供即时反馈
+4. ✅ **可访问性**：包含完整的 ARIA 属性和错误提示
+5. ✅ **错误处理**：区分客户端和服务器端错误
+6. ✅ **性能优化**：使用非受控组件，最小化 re-render
+7. ✅ **用户体验**：清晰的错误消息，加载状态提示
+8. ✅ **代码复用**：将样式类提取为常量，便于复用
+
+## 禁止的做法
+
+1. ❌ **禁止使用原生表单验证**：不要使用 HTML5 的 `required`、`pattern` 等属性进行验证
+2. ❌ **禁止手动状态管理**：不要使用 `useState` 手动管理表单状态和错误
+3. ❌ **禁止在提交时验证**：不要使用 `mode: "onSubmit"`，用户体验差
+4. ❌ **禁止硬编码验证逻辑**：所有验证规则应该在 Zod schema 中定义
+5. ❌ **禁止忽略可访问性**：必须包含 ARIA 属性和错误提示
+
+## 注意事项
+
+1. **Schema 定义顺序**：先定义基础 schema，再添加跨字段验证，避免循环引用
+2. **类型推断**：在 schema 定义完成后，再使用 `z.infer` 推断类型
+3. **错误消息**：使用中文错误消息，保持与项目规范一致
+4. **国际化支持**：手机号等字段应支持多种格式（中国、美国、国际格式）
+5. **数据清理**：提交前使用 `.trim()` 清理字符串字段
+6. **错误清理**：提交开始时调用 `clearErrors()` 清除之前的错误，成功后再次清除
+7. **超时处理**：使用 AbortController 实现请求超时，防止长时间等待
+8. **JSON 解析安全**：使用 try/catch 包装 `response.json()`，处理非 JSON 响应
+9. **错误类型细化**：区分 timeout、network、server 错误，提供更友好的错误提示

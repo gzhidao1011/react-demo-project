@@ -1,13 +1,14 @@
 {
   "name": "@repo/propel",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
+    ".": "./src/index.ts",
     "./*": [
-      "./src/*.ts",
-      "./src/*.tsx"
+      "./src/*.ts"
     ]
   },
   "scripts": {
@@ -21,7 +22,10 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "react-hot-toast": "catalog:",
+    "@repo/utils": "workspace:*",
+    "react-hook-form": "catalog:"
   },
   "dependencies": {
     "react": "catalog:",

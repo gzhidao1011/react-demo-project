@@ -1,5 +1,140 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: red;
+  /* ===== 主色系 (Primary) ===== */
+  --color-primary: #4f46e5; /* indigo-600 */
+  --color-primary-light: #6366f1; /* indigo-500 */
+  --color-primary-lighter: #818cf8; /* indigo-400 */
+  --color-primary-lightest: #a5b4fc; /* indigo-300 */
+  --color-primary-dark: #4338ca; /* indigo-700 */
+  --color-primary-darker: #3730a3; /* indigo-800 */
+  
+  /* 主色背景变体 */
+  --color-primary-50: #eef2ff; /* indigo-50 */
+  --color-primary-100: #e0e7ff; /* indigo-100 */
+  --color-primary-200: #c7d2fe; /* indigo-200 */
+
+  /* ===== 次要色系 (Secondary) ===== */
+  --color-secondary: #9333ea; /* purple-600 */
+  --color-secondary-light: #a855f7; /* purple-500 */
+  --color-secondary-lighter: #c084fc; /* purple-400 */
+  --color-secondary-50: #faf5ff; /* purple-50 */
+  --color-secondary-200: #e9d5ff; /* purple-200 */
+
+  /* ===== 强调色系 (Accent) ===== */
+  --color-accent: #ec4899; /* pink-500 */
+  --color-accent-light: #f472b6; /* pink-400 */
+  --color-accent-200: #fbcfe8; /* pink-200 */
+
+  /* ===== 错误色系 (Error) ===== */
+  --color-error: #ef4444; /* red-500 */
+  --color-error-light: #f87171; /* red-400 */
+  --color-error-dark: #dc2626; /* red-600 */
+  --color-error-50: #fef2f2; /* red-50 */
+  --color-error-800: #991b1b; /* red-800 */
+  --color-error-900: #7f1d1d; /* red-900 */
+
+  /* ===== 成功色系 (Success) ===== */
+  --color-success: #10b981; /* emerald-500 */
+  --color-success-light: #34d399; /* emerald-400 */
+  --color-success-50: #ecfdf5; /* emerald-50 */
+
+  /* ===== 警告色系 (Warning) ===== */
+  --color-warning: #f59e0b; /* amber-500 */
+  --color-warning-light: #fbbf24; /* amber-400 */
+  --color-warning-50: #fffbeb; /* amber-50 */
+
+  /* ===== 信息色系 (Info) ===== */
+  --color-info: #3b82f6; /* blue-500 */
+  --color-info-light: #60a5fa; /* blue-400 */
+  --color-info-50: #eff6ff; /* blue-50 */
+
+  /* ===== 中性色系 (Neutral/Gray) ===== */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* ===== 基础色 ===== */
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* ===== 语义化颜色变量 ===== */
+  /* 背景色 */
+  --color-bg-primary: var(--color-white);
+  --color-bg-secondary: var(--color-gray-50);
+  --color-bg-tertiary: var(--color-gray-100);
+  --color-bg-card: var(--color-white);
+  --color-bg-input: var(--color-gray-50);
+  --color-bg-input-focus: var(--color-white);
+
+  /* 暗色模式背景 */
+  --color-bg-primary-dark: var(--color-gray-900);
+  --color-bg-secondary-dark: var(--color-gray-800);
+  --color-bg-tertiary-dark: var(--color-gray-700);
+  --color-bg-card-dark: var(--color-gray-800);
+  --color-bg-input-dark: var(--color-gray-700);
+  --color-bg-input-focus-dark: var(--color-gray-700);
+
+  /* 文本色 */
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-tertiary: var(--color-gray-400);
+  --color-text-disabled: var(--color-gray-500);
+  --color-text-primary-dark: var(--color-white);
+  --color-text-secondary-dark: var(--color-gray-400);
+  --color-text-tertiary-dark: var(--color-gray-500);
+
+  /* 边框色 */
+  --color-border: var(--color-gray-300);
+  --color-border-light: var(--color-gray-200);
+  --color-border-dark: var(--color-gray-600);
+  --color-border-focus: var(--color-primary);
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+/* 暗色模式自动切换 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-primary: var(--color-bg-primary-dark);
+    --color-bg-secondary: var(--color-bg-secondary-dark);
+    --color-bg-tertiary: var(--color-bg-tertiary-dark);
+    --color-bg-card: var(--color-bg-card-dark);
+    --color-bg-input: var(--color-bg-input-dark);
+    --color-bg-input-focus: var(--color-bg-input-focus-dark);
+
+    --color-text-primary: var(--color-text-primary-dark);
+    --color-text-secondary: var(--color-text-secondary-dark);
+    --color-text-tertiary: var(--color-text-tertiary-dark);
+
+    --color-border: var(--color-border-dark);
+  }
+}
+
+/* 显式暗色模式类 */
+.dark {
+  --color-bg-primary: var(--color-bg-primary-dark);
+  --color-bg-secondary: var(--color-bg-secondary-dark);
+  --color-bg-tertiary: var(--color-bg-tertiary-dark);
+  --color-bg-card: var(--color-bg-card-dark);
+  --color-bg-input: var(--color-bg-input-dark);
+  --color-bg-input-focus: var(--color-bg-input-focus-dark);
+
+  --color-text-primary: var(--color-text-primary-dark);
+  --color-text-secondary: var(--color-text-secondary-dark);
+  --color-text-tertiary: var(--color-text-tertiary-dark);
+
+  --color-border: var(--color-border-dark);
 }

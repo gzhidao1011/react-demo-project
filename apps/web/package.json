@@ -16,7 +16,15 @@
     "react-dom": "catalog:",
     "react-router": "catalog:",
     "@dotenvx/dotenvx": "catalog:",
-    "@repo/utils": "workspace:*"
+    "@repo/utils": "workspace:*",
+    "@repo/services": "workspace:*",
+    "@repo/schemas": "workspace:*",
+    "@heroicons/react": "catalog:",
+    "react-hook-form": "catalog:",
+    "zod": "catalog:",
+    "@hookform/resolvers": "catalog:",
+    "@repo/propel": "workspace:*",
+    "react-hot-toast": "catalog:"
   },
   "devDependencies": {
     "@react-router/dev": "catalog:",

@@ -1,0 +1,622 @@
+---
+description: 表单错误处理和用户反馈规范，使用混合方案（内联错误 + Toast 通知）
+globs:
+alwaysApply: true
+---
+
+# 表单错误处理规范
+
+本文档定义了项目中使用混合方案进行表单错误处理和用户反馈的规范和最佳实践。
+
+> **重要**：所有表单错误处理必须使用混合方案（内联错误 + Toast 通知），确保用户能够及时、清晰地看到反馈。
+
+## 核心原则
+
+1. **混合方案**：结合内联错误和 Toast 通知，提供最佳用户体验
+2. **错误优先内联**：字段级和表单级错误优先显示在表单内
+3. **成功使用 Toast**：成功消息仅使用 Toast 通知，避免消息重复
+4. **可访问性**：所有错误提示必须包含 ARIA 属性和角色
+5. **一致性**：统一使用 `handleServerError` 函数处理错误
+6. **Toast 使用细化**：仅对系统级错误（网络、服务器）显示 Toast，字段级错误不显示
+
+## API 响应结构
+
+项目使用统一的 API 响应结构 `ApiResponseBase<T>`：
+
+```typescript
+export interface ApiResponseBase<T> {
+  code: number;        // 业务状态码（0 或 200 表示成功）
+  message: string;     // 错误消息
+  data: T | null;      // 响应数据
+  timestamp?: number;  // 时间戳
+  traceId?: string;    // 追踪 ID
+  errors?: Array<{     // 字段级错误数组
+    field: string;      // 字段名
+    message: string;    // 错误消息
+    code?: string;      // 错误代码
+  }>;
+}
+```
+
+### 错误处理流程
+
+1. **API 调用**：服务函数返回 `Promise<AxiosResponse<ApiResponseBase<T>>>`
+2. **错误提取**：从 `response.data` 提取 `ApiResponseBase`
+3. **业务判断**：检查 `code` 字段（`code !== 0 && code !== 200` 表示业务错误）
+4. **错误分类**：
+   - 如果有 `errors` 数组 → **字段级错误**
+   - 如果是网络/服务器错误 → **系统级错误**
+   - 其他业务错误 → **表单级错误**
+5. **错误显示**：根据错误类型选择显示方式（内联或 Toast）
+
+## 错误处理策略
+
+### 混合方案（最佳实践）
+
+项目采用混合方案，结合内联错误和 Toast 通知：
+
+| 消息类型 | 显示方式 | 使用场景 | 实现方式 |
+|---------|---------|---------|---------|
+| **字段级错误** | 内联显示（字段下方） | 用户名已存在、邮箱格式错误等 | `setError(field, ...)` |
+| **表单级错误** | 表单顶部显示 | 业务错误、验证失败等 | `setError("root", ...)` |
+| **成功消息** | Toast 通知 | 注册成功、登录成功等 | `toast.success()` |
+| **系统级错误** | Toast 通知 | 网络错误、服务器错误（5xx） | `toast.error()` |
+
+### 错误处理决策流程
+
+```
+API 调用失败
+    ↓
+检查错误类型
+    ↓
+┌─────────────────────────────────────┐
+│ 是否有 errors 数组？                 │
+└─────────────────────────────────────┘
+    │                    │
+   是                    否
+    ↓                    ↓
+字段级错误              检查是否为系统错误
+    ↓                    │
+setError(field)         │
+    ↓                    │
+不显示 Toast           是系统错误？
+    │                    │
+    └──────────┬─────────┘
+               │
+          ┌────┴────┐
+          │         │
+        是         否
+          │         │
+          ↓         ↓
+    系统级错误   表单级错误
+          │         │
+          ↓         ↓
+    setError(root) setError(root)
+          │         │
+          ↓         ↓
+    显示 Toast   不显示 Toast
+```
+
+### 错误提示优先级
+
+1. **字段级错误**：显示在对应输入框下方（最高优先级）
+2. **表单级错误**：显示在表单顶部（中等优先级）
+3. **Toast 通知**：用于成功消息和系统级错误（网络、服务器）
+
+## 依赖安装
+
+项目已配置以下依赖：
+
+```yaml
+"react-hot-toast": 2.4.1
+```
+
+### 依赖说明
+
+- **`react-hot-toast`**：轻量级 Toast 通知库，用于非阻塞式用户反馈
+
+## 工具函数
+
+### handleServerError
+
+处理服务器端错误并设置到 React Hook Form。
+
+**位置**：`packages/utils/src/form-errors.ts`
+
+**函数签名**：
+
+```typescript
+function handleServerError<TFieldValues extends FieldValues = FieldValues>(
+  error: unknown,
+  setError: UseFormSetError<TFieldValues>,
+  defaultMessage?: string
+): ErrorHandleResult
+```
+
+**返回值 `ErrorHandleResult`**：
+
+```typescript
+interface ErrorHandleResult {
+  type: "field" | "form" | "system";  // 错误类型
+  shouldShowToast: boolean;            // 是否应显示 Toast
+  toastMessage?: string;               // Toast 消息（仅系统级错误）
+}
+```
+
+**错误类型说明**：
+- `"field"`：字段级错误，已设置到对应字段，`shouldShowToast = false`
+- `"form"`：表单级错误，已设置到 root，`shouldShowToast = false`
+- `"system"`：系统级错误，已设置到 root，`shouldShowToast = true`，包含 `toastMessage`
+
+**使用方式**：
+
+```typescript
+import { handleServerError } from "@repo/utils";
+import toast from "react-hot-toast";
+
+try {
+  await authService.register(data);
+} catch (error) {
+  // ✅ 统一处理：内联错误显示 + 系统级错误 Toast
+  const result = handleServerError(error, setError, "注册失败，请检查网络连接");
+  
+  // 统一处理 Toast：仅对系统级错误显示
+  if (result.shouldShowToast && result.toastMessage) {
+    toast.error(result.toastMessage);
+  }
+}
+```
+
+**功能**：
+- 自动识别字段级错误（`errors` 数组）和通用错误
+- 字段级错误显示在对应字段下方
+- 通用错误显示在表单顶部
+- 系统级错误（网络、服务器）额外显示 Toast
+- 自动判断错误类型并返回处理结果
+
+### 成功消息处理
+
+**推荐方式**：仅使用 Toast 通知（符合主流做法，避免消息重复）
+
+**使用方式**：
+
+```typescript
+import toast from "react-hot-toast";
+
+try {
+  await authRegister(data);
+  
+  // ✅ 推荐：仅使用 Toast（简洁、非阻塞式）
+  toast.success("注册成功！正在跳转到登录页...", {
+    duration: 2000,
+  });
+  
+  // 延迟跳转，让用户看到成功提示
+  setTimeout(() => {
+    navigate("/sign-in", { replace: true });
+  }, 2000);
+} catch (error) {
+  handleServerError(error, setError);
+}
+```
+
+**理由**：
+- Toast 通知足够明显，用户能立即看到
+- 非阻塞式，不影响表单布局
+- 符合 GitHub、Stripe、Vercel 等主流产品做法
+- 避免消息重复，提升用户体验
+
+## Toast 配置
+
+### 全局配置
+
+**配置位置**：在应用的根组件中配置 Toaster，通常是 `apps/web/app/root.tsx`（React Router）或主布局文件。
+
+**配置方式**：
+
+```tsx
+// apps/web/app/root.tsx
+import { Toaster } from "react-hot-toast";
+import { Outlet } from "react-router";
+
+export default function RootLayout() {
+  return (
+    <html>
+      <body>
+        <Outlet />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: "var(--color-bg-card)",
+              color: "var(--color-text-primary)",
+              border: "1px solid var(--color-border)",
+            },
+            success: {
+              iconTheme: {
+                primary: "var(--color-success)",
+                secondary: "white",
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: "var(--color-error)",
+                secondary: "white",
+              },
+            },
+          }}
+        />
+      </body>
+    </html>
+  );
+}
+```
+
+**注意事项**：
+- 确保 `Toaster` 组件在应用的最外层，以便全局可用
+- 配置应支持暗色模式（使用 CSS 变量）
+- 根据项目需求调整 `position`（可选值：`top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right`）
+
+### Toast 使用场景
+
+**✅ 推荐使用 Toast**：
+- 成功消息（注册、登录、保存等）**仅使用 Toast**
+- 系统级错误（网络错误、服务器错误 5xx）
+- 操作确认（删除、更新等）
+
+**❌ 不推荐使用 Toast**：
+- 字段级验证错误（应使用内联错误，已在内联显示）
+- 表单级业务错误（应使用表单顶部显示，已在内联显示）
+- 必须用户注意的错误（应使用内联或模态框）
+
+**原则**：避免消息重复，如果错误已在内联显示，不再显示 Toast
+
+## 表单错误显示
+
+### 字段级错误
+
+**✅ 正确实现**：
+
+```tsx
+<div>
+  <label htmlFor="username">用户名</label>
+  <input
+    id="username"
+    {...register("username")}
+    aria-invalid={errors.username ? "true" : "false"}
+    aria-describedby={errors.username ? "username-error" : undefined}
+    className={errors.username ? inputErrorClasses : ""}
+  />
+  {errors.username && (
+    <p
+      id="username-error"
+      className="mt-1 text-sm text-[var(--color-error-dark)]"
+      role="alert"
+    >
+      {errors.username.message}
+    </p>
+  )}
+</div>
+```
+
+### 表单级错误
+
+**✅ 正确实现**（仅显示错误，成功消息使用 Toast）：
+
+```tsx
+{/* 表单级错误提示（仅显示错误，成功消息使用 Toast） */}
+{errors.root && errors.root.type !== "success" && (
+  <div
+    className="rounded-md bg-[var(--color-error-50)] p-4 dark:bg-[var(--color-error-900)]/20"
+    role="alert"
+  >
+    <p className="text-sm text-[var(--color-error-800)] dark:text-[var(--color-error-light)]">
+      {errors.root.message}
+    </p>
+  </div>
+)}
+```
+
+## 完整示例
+
+### 示例 1：注册表单错误处理
+
+```typescript
+import { handleServerError } from "@repo/utils";
+import toast from "react-hot-toast";
+
+const onSubmit = async (data: RegisterFormData) => {
+  clearErrors();
+
+  try {
+    const registerData: RegisterRequest = {
+      username: data.username.trim(),
+      email: data.email.trim(),
+      password: data.password,
+      phone: data.phone?.trim() || undefined,
+    };
+
+    await authRegister(registerData);
+
+    // ✅ 优化后：仅使用 Toast（符合主流做法，避免消息重复）
+    toast.success("注册成功！正在跳转到登录页...", {
+      duration: 2000,
+    });
+
+    // 延迟跳转，让用户看到成功提示
+    setTimeout(() => {
+      navigate("/sign-in", { replace: true });
+    }, 2000);
+  } catch (error) {
+    console.error("注册失败:", error);
+    // ✅ 统一处理：内联错误显示 + 系统级错误 Toast
+    const result = handleServerError(error, setError, "注册失败，请检查网络连接");
+    
+    // 统一处理 Toast：仅对系统级错误显示
+    if (result.shouldShowToast && result.toastMessage) {
+      toast.error(result.toastMessage);
+    }
+  }
+};
+```
+
+### 示例 2：登录表单错误处理
+
+```typescript
+import { handleServerError } from "@repo/utils";
+import toast from "react-hot-toast";
+
+const onSubmit = async (data: LoginFormData) => {
+  clearErrors();
+
+  try {
+    await authService.login({
+      username: data.username.trim(),
+      password: data.password,
+    });
+
+    // ✅ 成功：仅使用 Toast
+    toast.success("登录成功！", {
+      duration: 2000,
+    });
+
+    // 延迟跳转
+    setTimeout(() => {
+      navigate("/dashboard", { replace: true });
+    }, 2000);
+  } catch (error) {
+    console.error("登录失败:", error);
+    // ✅ 统一处理错误
+    const result = handleServerError(error, setError, "登录失败，请检查用户名和密码");
+    
+    if (result.shouldShowToast && result.toastMessage) {
+      toast.error(result.toastMessage);
+    }
+  }
+};
+```
+
+### 示例 3：编辑表单错误处理
+
+```typescript
+import { handleServerError } from "@repo/utils";
+import toast from "react-hot-toast";
+
+const onSubmit = async (data: EditFormData) => {
+  clearErrors();
+
+  try {
+    await updateUserProfile(data);
+
+    // ✅ 成功：仅使用 Toast
+    toast.success("保存成功！", {
+      duration: 2000,
+    });
+  } catch (error) {
+    console.error("保存失败:", error);
+    // ✅ 统一处理错误
+    const result = handleServerError(error, setError, "保存失败，请重试");
+    
+    if (result.shouldShowToast && result.toastMessage) {
+      toast.error(result.toastMessage);
+    }
+  }
+};
+```
+
+### 示例 4：删除操作（确认 + Toast）
+
+使用自定义模态框组件，提供更好的用户体验和样式控制。
+
+```tsx
+import { useState } from "react";
+import { isSystemError, getSystemErrorToastMessage } from "@repo/utils";
+import toast from "react-hot-toast";
+
+const DeleteModal = ({ isOpen, onClose, onConfirm, itemName }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+  itemName: string;
+}) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await onConfirm();
+      onClose();
+      toast.success("删除成功！", { duration: 2000 });
+    } catch (error) {
+      console.error("删除失败:", error);
+      if (error instanceof Error) {
+        const isSystem = isSystemError(error);
+        if (isSystem) {
+          toast.error(getSystemErrorToastMessage(error) || "删除失败，请重试");
+        } else {
+          toast.error(error.message || "删除失败，请重试");
+        }
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-[var(--color-bg-card)] rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
+          确认删除
+        </h3>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-6">
+          确定要删除 "{itemName}" 吗？此操作不可撤销。
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            disabled={isDeleting}
+            className="px-4 py-2 rounded-lg bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]/80 disabled:opacity-50"
+          >
+            取消
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 rounded-lg bg-[var(--color-error)] text-white hover:bg-[var(--color-error-dark)] disabled:opacity-50"
+          >
+            {isDeleting ? "删除中..." : "确认删除"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+**使用方式**：
+
+```tsx
+const [showDeleteModal, setShowDeleteModal] = useState(false);
+const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+const handleDeleteClick = (id: string) => {
+  setItemToDelete(id);
+  setShowDeleteModal(true);
+};
+
+const handleDeleteConfirm = async () => {
+  if (!itemToDelete) return;
+  await deleteItem(itemToDelete);
+  refetch();
+};
+
+// 在组件中使用
+<DeleteModal
+  isOpen={showDeleteModal}
+  onClose={() => setShowDeleteModal(false)}
+  onConfirm={handleDeleteConfirm}
+  itemName={itemToDelete || ""}
+/>
+```
+
+**说明**：
+- 使用自定义模态框提供更好的用户体验和样式控制
+- 支持加载状态显示，防止重复提交
+- 删除操作通常不需要表单，错误直接使用 Toast 显示
+- 成功消息使用 Toast，简洁明了
+
+## 最佳实践
+
+### 1. 错误处理顺序
+
+```typescript
+// ✅ 正确：先清除错误，再统一处理新错误
+import { handleServerError } from "@repo/utils";
+import toast from "react-hot-toast";
+
+clearErrors();
+try {
+  await submitForm();
+} catch (error) {
+  // 统一处理：内联错误显示 + 系统级错误 Toast
+  const result = handleServerError(error, setError);
+  if (result.shouldShowToast && result.toastMessage) {
+    toast.error(result.toastMessage);
+  }
+}
+```
+
+### 2. 成功处理
+
+```typescript
+// ✅ 正确：仅使用 Toast（推荐，符合主流做法）
+toast.success("操作成功！", {
+  duration: 2000,
+});
+setTimeout(() => {
+  navigate("/next", { replace: true });
+}, 2000);
+```
+
+### 3. 错误类型区分
+
+- **字段级错误**：使用 `setError(field, ...)` 显示在字段下方，**不显示 Toast**
+- **表单级错误**：使用 `setError("root", ...)` 显示在表单顶部，**不显示 Toast**
+- **系统级错误**：网络错误、服务器错误（5xx）显示 Toast
+- **成功消息**：**仅使用** `toast.success()`，不显示表单顶部消息
+
+### 4. 可访问性
+
+所有错误提示必须包含：
+- `aria-invalid="true"` 在错误字段上
+- `aria-describedby` 关联错误消息
+- `role="alert"` 在错误消息元素上
+- 错误消息必须可见且可读
+
+## 禁止的做法
+
+1. ❌ **禁止只使用 Toast 显示字段级错误**：字段级错误必须使用内联显示
+2. ❌ **禁止成功消息重复**：成功消息仅使用 Toast，不要同时在表单顶部显示
+3. ❌ **禁止错误消息重复**：如果错误已在内联显示，不要同时显示 Toast
+4. ❌ **禁止忽略成功提示**：关键操作必须显示成功反馈
+5. ❌ **禁止直接跳转**：成功操作应显示提示后再跳转
+6. ❌ **禁止硬编码错误消息**：使用统一的错误处理函数
+7. ❌ **禁止忽略可访问性**：必须包含 ARIA 属性
+
+## 注意事项
+
+1. **Toast 持续时间**：默认 3 秒，可根据消息长度调整（成功消息建议 2 秒）
+2. **延迟跳转**：成功操作建议延迟 1.5-2 秒再跳转，让用户看到反馈
+3. **错误清理**：提交前调用 `clearErrors()` 清除之前的错误
+4. **避免消息重复**：如果错误已在内联显示，不要同时显示 Toast
+5. **成功消息简化**：成功消息仅使用 Toast，避免在表单顶部重复显示
+6. **系统错误识别**：仅对网络错误、服务器错误（5xx）显示 Toast
+7. **主题支持**：Toast 和错误消息必须支持暗色模式
+
+## 性能优化
+
+### 大量字段错误处理
+
+当表单有大量字段且可能同时出现多个错误时：
+
+1. **批量设置错误**：`handleServerError` 已优化为批量处理，使用 `forEach` 循环设置所有字段错误
+2. **避免重复渲染**：React Hook Form 内部使用批处理机制，减少不必要的重新渲染
+3. **错误消息缓存**：对于相同的错误，避免重复设置（React Hook Form 会自动处理）
+
+### 错误消息长度
+
+- **保持简洁**：错误消息建议不超过 50 个字符，过长可能影响布局
+- **长消息处理**：对于必须显示的长消息，考虑：
+  - 使用 `title` 属性显示完整消息
+  - 使用工具提示（Tooltip）显示详细信息
+  - 在错误消息区域支持换行
+
+## 参考资源
+
+- [React Hook Form 错误处理](https://react-hook-form.com/get-started#HandleErrors)
+- [react-hot-toast 文档](https://react-hot-toast.com/)
+- [WCAG 2.1 错误识别](https://www.w3.org/WAI/WCAG21/Understanding/error-identification.html)
+- [表单可访问性指南](https://www.w3.org/WAI/tutorials/forms/notifications/)
