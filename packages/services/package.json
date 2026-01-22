@@ -25,6 +25,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "@repo/utils": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "axios": "catalog:"

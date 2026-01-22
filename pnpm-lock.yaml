@@ -340,6 +340,9 @@ importers:
 
   packages/services:
     dependencies:
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../utils
       axios:
         specifier: 'catalog:'
         version: 1.13.2

@@ -1,5 +1,7 @@
-import type { AxiosInstance, AxiosRequestConfig } from "axios";
+import type { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 import axios from "axios";
+import { getAccessToken } from "@repo/utils";
+
 /**
  * API 响应结构
  */
@@ -29,6 +31,28 @@ export abstract class APIServiceBase {
       baseURL,
       withCredentials: true,
     });
+
+    // 添加请求拦截器，自动携带 token
+    this.axiosInstance.interceptors.request.use(
+      (config: InternalAxiosRequestConfig) => {
+        // 白名单路径不需要 Token
+        const whiteList = ["/auth/login", "/auth/register", "/auth/refresh"];
+        if (config.url && whiteList.some((path) => config.url?.includes(path))) {
+          return config;
+        }
+
+        // 获取 token 并添加到请求头
+        const token = getAccessToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      },
+    );
   }
 
   /**

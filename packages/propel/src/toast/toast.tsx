@@ -10,10 +10,14 @@ export { toast };
 export { Toaster };
 
 // 处理服务器错误的工具函数
-export function toastError(error: unknown, setError: UseFormSetError<FieldValues>) {
-  console.error("注册失败:", error);
+export function toastError(
+  error: unknown,
+  setError: UseFormSetError<FieldValues>,
+  defaultMessage = "操作失败，请检查网络连接",
+) {
+  console.error("操作失败:", error);
   // 统一处理错误：内联错误显示 + 系统级错误 Toast
-  const result = handleServerError(error, setError, "注册失败，请检查网络连接");
+  const result = handleServerError(error, setError, defaultMessage);
   // 统一处理 Toast：仅对系统级错误显示
   if (result.shouldShowToast && result.toastMessage) {
     toast.error(result.toastMessage);

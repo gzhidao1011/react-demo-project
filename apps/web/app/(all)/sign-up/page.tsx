@@ -58,7 +58,7 @@ export default function SignUpPage() {
         navigate("/sign-in", { replace: true });
       }, 2000);
     } catch (error) {
-      toastError(error, setError as UseFormSetError<FieldValues>);
+      toastError(error, setError as UseFormSetError<FieldValues>, "注册失败，请检查网络连接");
     }
   };
 

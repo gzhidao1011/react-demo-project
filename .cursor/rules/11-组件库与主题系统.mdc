@@ -1,0 +1,642 @@
+# 组件库与主题系统
+
+本文档定义了项目使用的组件库和亮色/暗色主题系统的规范和最佳实践。
+
+> **重要**：所有 UI 组件必须使用项目统一的组件库，主题切换必须使用统一的主题系统。
+
+## 组件库架构
+
+项目采用**分层组件库架构**，结合多个优秀的开源库构建统一的 UI 组件系统。
+
+### 核心组件库
+
+#### 1. Radix UI（底层组件库）
+
+**作用**：提供无样式、可访问的底层组件原语（Primitives）
+
+**位置**：`packages/ui/src/components/ui/`
+
+**使用的组件**：
+- `@radix-ui/react-slot` - 用于 Button 组件的 `asChild` 功能
+- `@radix-ui/react-switch` - Switch 开关组件
+- `@radix-ui/react-label` - Label 标签组件
+
+**特点**：
+- ✅ 完全无样式，提供完整的可访问性支持
+- ✅ 支持键盘导航和屏幕阅读器
+- ✅ 高度可定制，通过 className 控制样式
+
+**使用示例**：
+
+```tsx
+import { Switch } from "@repo/ui";
+
+<Switch checked={enabled} onCheckedChange={setEnabled} />
+```
+
+#### 2. shadcn/ui 风格（组件设计模式）
+
+**作用**：提供统一的组件设计模式和样式规范
+
+**位置**：`packages/ui/src/components/ui/`
+
+**组件列表**：
+- `button.tsx` - 按钮组件
+- `input.tsx` - 输入框组件
+- `label.tsx` - 标签组件
+- `card.tsx` - 卡片组件
+- `switch.tsx` - 开关组件
+- `sonner.tsx` - Toast 通知组件
+
+**设计特点**：
+- ✅ 基于 Radix UI 构建，提供完整的可访问性
+- ✅ 使用 `class-variance-authority` (cva) 管理组件变体
+- ✅ 使用 `clsx` + `tailwind-merge` 合并类名
+- ✅ 支持 `asChild` 模式（通过 Radix UI Slot）
+- ✅ 完全可定制，通过 props 控制样式
+
+**使用示例**：
+
+```tsx
+import { Button } from "@repo/ui";
+
+<Button variant="default" size="lg">
+  提交
+</Button>
+
+<Button variant="outline" size="sm">
+  取消
+</Button>
+```
+
+#### 3. Headless UI（无样式组件）
+
+**作用**：提供复杂的交互组件（如 Dropdown、Dialog 等）
+
+**位置**：`packages/ui/src/components/headless/`
+
+**特点**：
+- ✅ 完全无样式，专注于交互逻辑
+- ✅ 提供完整的键盘导航和可访问性支持
+- ✅ 通过 className 完全控制样式
+
+**使用示例**：
+
+```tsx
+import { Dropdown } from "@repo/ui";
+
+<Dropdown>
+  <Dropdown.Button>菜单</Dropdown.Button>
+  <Dropdown.Items>
+    <Dropdown.Item>选项 1</Dropdown.Item>
+    <Dropdown.Item>选项 2</Dropdown.Item>
+  </Dropdown.Items>
+</Dropdown>
+```
+
+#### 4. Heroicons（图标库）
+
+**作用**：提供统一的图标系统
+
+**包名**：`@heroicons/react`
+
+**使用方式**：
+
+```tsx
+import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
+
+<SunIcon className="h-5 w-5" />
+<MoonIcon className="h-6 w-6" />
+```
+
+**图标尺寸**：
+- `24/solid` 或 `24/outline`：24x24 图标
+- `16/solid` 或 `16/outline`：16x16 图标
+
+#### 5. Sonner（Toast 通知）
+
+**作用**：提供轻量级的 Toast 通知功能
+
+**包名**：`sonner`
+
+**位置**：
+- 组件：`packages/ui/src/components/ui/sonner.tsx`
+- Hook：`packages/propel/src/toast/toast.tsx`
+
+**使用方式**：
+
+```tsx
+import { toast } from "@repo/propel";
+import { Toaster } from "@repo/propel";
+
+// 在根组件中添加 Toaster（通常在 apps/web/app/root.tsx）
+<Toaster />
+
+// 在组件中使用
+toast.success("操作成功！");
+toast.error("操作失败！");
+toast.info("提示信息");
+```
+
+### 样式管理工具
+
+#### class-variance-authority (cva)
+
+**作用**：管理组件的样式变体（variants）
+
+**使用示例**：
+
+```tsx
+import { cva, type VariantProps } from "class-variance-authority";
+
+const buttonVariants = cva(
+  "base-classes", // 基础样式
+  {
+    variants: {
+      variant: {
+        default: "bg-[var(--color-primary)] text-white",
+        outline: "border border-[var(--color-border)]",
+      },
+      size: {
+        sm: "h-9 px-3",
+        default: "h-10 px-4",
+        lg: "h-11 px-8",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+);
+```
+
+#### clsx + tailwind-merge
+
+**作用**：合并和去重 Tailwind CSS 类名
+
+**工具函数**：`packages/ui/src/lib/utils.ts`
+
+**导入方式**：从 `@repo/ui` 直接导入
+
+```tsx
+import { cn } from "@repo/ui";
+
+// cn 函数会自动合并类名并处理冲突
+<div className={cn("base-class", isActive && "active-class", className)} />
+```
+
+## 主题系统
+
+### 主题架构
+
+项目使用**自定义主题系统**，支持亮色、暗色和系统自动三种模式。
+
+### 主题 Hook
+
+**位置**：`packages/propel/src/theme/use-theme.ts`
+
+**功能**：
+- 管理主题状态（light/dark/system）
+- 持久化用户选择到 localStorage
+- 监听系统主题变化
+- 自动应用主题到 DOM
+
+**使用方式**：
+
+```tsx
+import { useTheme } from "@repo/propel";
+
+function MyComponent() {
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  
+  // theme: "light" | "dark" | "system" - 用户选择的主题
+  // resolvedTheme: "light" | "dark" - 实际应用的主题
+  // setTheme: (theme: "light" | "dark" | "system") => void
+  
+  return (
+    <button onClick={() => setTheme("dark")}>
+      切换到暗色模式
+    </button>
+  );
+}
+```
+
+### 主题切换组件
+
+**位置**：`packages/propel/src/theme/toggle-mode.tsx`
+
+**组件**：`ToggleMode`
+
+**使用方式**：
+
+```tsx
+import { ToggleMode } from "@repo/propel";
+
+// 基础使用
+<ToggleMode />
+
+// 显示标签
+<ToggleMode showLabel />
+
+// 自定义样式
+<ToggleMode className="custom-class" iconSize="h-6 w-6" />
+```
+
+### 主题实现原理
+
+#### 1. 主题类切换
+
+主题通过 `document.documentElement.classList` 添加/移除 `dark` 和 `light` 类来切换：
+
+```typescript
+// 应用暗色主题
+document.documentElement.classList.remove("light");
+document.documentElement.classList.add("dark");
+
+// 应用亮色主题
+document.documentElement.classList.remove("dark");
+document.documentElement.classList.add("light");
+```
+
+#### 2. CSS 变量系统
+
+主题通过 CSS 变量实现，定义在 `packages/tailwind-config/shared-styles.css`：
+
+**亮色模式变量**：
+```css
+:root {
+  --color-bg-primary: var(--color-white);
+  --color-bg-card: var(--color-white);
+  --color-text-primary: var(--color-gray-900);
+  /* ... */
+}
+```
+
+**暗色模式变量**：
+```css
+.dark {
+  --color-bg-primary: var(--color-bg-primary-dark);
+  --color-bg-card: var(--color-bg-card-dark);
+  --color-text-primary: var(--color-text-primary-dark);
+  /* ... */
+}
+```
+
+#### 3. 防止闪烁
+
+在 `apps/web/app/root.tsx` 中使用内联脚本，在页面渲染前设置主题，防止闪烁：
+
+```tsx
+<script
+  dangerouslySetInnerHTML={{
+    __html: `
+      (function() {
+        const THEME_STORAGE_KEY = 'theme-preference';
+        const stored = localStorage.getItem(THEME_STORAGE_KEY);
+        const theme = stored || 'system';
+        let isDark = false;
+        
+        if (theme === 'system') {
+          isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        } else {
+          isDark = theme === 'dark';
+        }
+        
+        const root = document.documentElement;
+        root.classList.remove('dark', 'light');
+        if (isDark) {
+          root.classList.add('dark');
+        } else {
+          root.classList.add('light');
+        }
+      })();
+    `,
+  }}
+/>
+```
+
+### 主题模式
+
+#### 1. 亮色模式（light）
+
+用户明确选择亮色模式，无论系统设置如何，始终显示亮色主题。
+
+#### 2. 暗色模式（dark）
+
+用户明确选择暗色模式，无论系统设置如何，始终显示暗色主题。
+
+#### 3. 系统模式（system）
+
+跟随系统主题设置，自动在亮色和暗色之间切换。
+
+**实现**：
+- 使用 `window.matchMedia("(prefers-color-scheme: dark)")` 检测系统主题
+- 监听 `change` 事件，自动更新主题
+- 当用户手动切换主题时，退出系统模式
+
+### 主题持久化
+
+**存储键**：`theme-preference`
+
+**存储位置**：`localStorage`
+
+**存储值**：
+- `"light"` - 亮色模式
+- `"dark"` - 暗色模式
+- 不存储或 `null` - 系统模式
+
+**实现**：
+
+```typescript
+// 保存用户选择
+if (theme !== "system") {
+  localStorage.setItem("theme-preference", theme);
+} else {
+  localStorage.removeItem("theme-preference");
+}
+```
+
+### 在组件中使用主题
+
+**推荐方式**：使用 CSS 变量
+
+```tsx
+<div className="bg-[var(--color-bg-card)] text-[var(--color-text-primary)]">
+  内容
+</div>
+```
+
+**说明**：使用 CSS 变量可以保持主题一致性，自动支持亮色和暗色模式切换，无需手动处理主题状态。
+
+### 主题颜色系统
+
+项目定义了完整的主题颜色系统，包括：
+
+#### 主色系（Primary）
+- `--color-primary`: #4f46e5 (indigo-600)
+- `--color-primary-light`: #6366f1 (indigo-500)
+- `--color-primary-dark`: #4338ca (indigo-700)
+- 以及 50-800 的完整色阶
+
+#### 次要色系（Secondary）
+- `--color-secondary`: #9333ea (purple-600)
+- 以及完整的色阶变体
+
+#### 强调色系（Accent）
+- `--color-accent`: #ec4899 (pink-500)
+- 以及完整的色阶变体
+
+#### 状态色系
+- **错误**：`--color-error` (red-500)
+- **成功**：`--color-success` (emerald-500)
+- **警告**：`--color-warning` (amber-500)
+- **信息**：`--color-info` (blue-500)
+
+#### 语义化颜色变量
+
+**背景色**：
+- `--color-bg-primary` / `--color-bg-primary-dark`
+- `--color-bg-secondary` / `--color-bg-secondary-dark`
+- `--color-bg-card` / `--color-bg-card-dark`
+- `--color-bg-input` / `--color-bg-input-dark`
+
+**文本色**：
+- `--color-text-primary` / `--color-text-primary-dark`
+- `--color-text-secondary` / `--color-text-secondary-dark`
+- `--color-text-tertiary` / `--color-text-tertiary-dark`
+
+**边框色**：
+- `--color-border` / `--color-border-dark`
+- `--color-border-focus`
+
+**完整定义**：参考 `packages/tailwind-config/shared-styles.css`
+
+## 组件开发规范
+
+### 1. 使用项目组件库
+
+**✅ 正确**：使用项目统一的组件库
+
+```tsx
+import { Button, Input, Switch } from "@repo/ui";
+import { ToggleMode } from "@repo/propel";
+```
+
+**❌ 错误**：直接使用第三方组件库
+
+```tsx
+// ❌ 禁止：直接使用 Ant Design、Material-UI 等
+import { Button } from "antd";
+```
+
+### 2. 组件样式规范
+
+**✅ 正确**：使用 CSS 变量和 Tailwind 类
+
+```tsx
+<Button
+  className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-light)]"
+>
+  按钮
+</Button>
+```
+
+**❌ 错误**：硬编码颜色值
+
+```tsx
+// ❌ 禁止：硬编码颜色
+<Button className="bg-indigo-600 hover:bg-indigo-500">
+  按钮
+</Button>
+```
+
+### 3. 主题支持
+
+**✅ 正确**：所有组件必须支持暗色模式
+
+```tsx
+<div className="bg-[var(--color-bg-card)] text-[var(--color-text-primary)]">
+  内容
+</div>
+```
+
+**❌ 错误**：只支持亮色模式
+
+```tsx
+// ❌ 禁止：只使用固定颜色
+<div className="bg-white text-gray-900">
+  内容
+</div>
+```
+
+### 4. 组件变体管理
+
+**✅ 正确**：使用 cva 管理组件变体
+
+```tsx
+import { cva } from "class-variance-authority";
+
+const buttonVariants = cva("base-classes", {
+  variants: {
+    variant: {
+      default: "bg-[var(--color-primary)]",
+      outline: "border border-[var(--color-border)]",
+    },
+  },
+});
+```
+
+**❌ 错误**：手动拼接类名
+
+```tsx
+// ❌ 禁止：手动拼接类名
+const getButtonClass = (variant: string) => {
+  return `base-class ${variant === "default" ? "bg-primary" : "border"}`;
+};
+```
+
+## 最佳实践
+
+### 1. 组件导入
+
+**统一从包导入**：
+
+```tsx
+// ✅ 正确：从包统一导入
+import { Button, Input, Switch } from "@repo/ui";
+import { ToggleMode, useTheme } from "@repo/propel";
+import { toast } from "@repo/propel";
+import { cn } from "@repo/ui";
+```
+
+### 2. 样式合并
+
+**使用 cn 函数**：
+
+```tsx
+import { cn } from "@repo/ui";
+
+<div className={cn("base-class", isActive && "active-class", className)} />
+```
+
+### 3. 主题切换
+
+**使用 ToggleMode 组件**：
+
+```tsx
+import { ToggleMode } from "@repo/propel";
+
+// 在导航栏或设置页面使用
+<ToggleMode showLabel />
+```
+
+### 4. Toast 通知
+
+**使用统一的 toast 函数**：
+
+```tsx
+import { toast } from "@repo/propel";
+
+// 成功提示
+toast.success("操作成功！");
+
+// 错误提示
+toast.error("操作失败！");
+
+// 信息提示
+toast.info("提示信息");
+```
+
+### 5. 图标使用
+
+**使用 Heroicons**：
+
+```tsx
+import { SunIcon, MoonIcon } from "@heroicons/react/24/solid";
+
+<SunIcon className="h-5 w-5" />
+```
+
+## 完整示例
+
+### 示例 1：使用组件和主题
+
+```tsx
+import { Button, Card, CardContent } from "@repo/ui";
+import { ToggleMode } from "@repo/propel";
+import { cn } from "@repo/ui";
+
+export function MyComponent() {
+  return (
+    <Card className="bg-[var(--color-bg-card)]">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+            标题
+          </h2>
+          <ToggleMode />
+        </div>
+        <Button variant="default" className="mt-4">
+          操作按钮
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+### 示例 2：创建支持主题的组件
+
+```tsx
+import { cn } from "@repo/ui";
+
+interface CustomCardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function CustomCard({ children, className }: CustomCardProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg border border-[var(--color-border)]",
+        "bg-[var(--color-bg-card)] p-4",
+        "text-[var(--color-text-primary)]",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+```
+
+## 注意事项
+
+1. **禁止直接使用第三方组件库**：所有 UI 组件必须通过 `@repo/ui` 包统一管理
+2. **必须支持暗色模式**：所有组件必须使用 CSS 变量，确保暗色模式正常工作
+3. **使用统一的样式工具**：使用 `cn` 函数合并类名，使用 `cva` 管理组件变体
+4. **保持组件一致性**：遵循 shadcn/ui 的设计模式，保持组件 API 一致性
+5. **可访问性优先**：所有组件基于 Radix UI 或 Headless UI 构建，确保可访问性
+6. **主题切换无闪烁**：确保在根组件中使用内联脚本设置主题，防止闪烁
+7. **持久化用户选择**：主题选择会自动保存到 localStorage，下次访问时恢复
+8. **CSS 变量优先**：在组件中使用主题时，优先使用 CSS 变量而非 Tailwind 的 `dark:` 前缀
+9. **Toaster 位置**：Toaster 组件必须在根组件（`apps/web/app/root.tsx`）中添加，确保全局可用
+
+## 与其他文档的关联
+
+- **设计系统**：参考 `.cursor/rules/07-设计系统.mdc` 了解颜色系统和样式方案
+- **代码组织**：参考 `.cursor/rules/05-代码组织.mdc` 了解组件文件组织规范
+- **代码风格**：参考 `.cursor/rules/01-代码风格.mdc` 了解 CSS 和样式编写规范
+
+## 参考资源
+
+- [Radix UI 文档](https://www.radix-ui.com/)
+- [shadcn/ui 文档](https://ui.shadcn.com/)
+- [Headless UI 文档](https://headlessui.com/)
+- [Heroicons 文档](https://heroicons.com/)
+- [Sonner 文档](https://sonner.emilkowal.ski/)
+- [class-variance-authority 文档](https://cva.style/)
+- [Tailwind CSS 暗色模式](https://tailwindcss.com/docs/dark-mode)
