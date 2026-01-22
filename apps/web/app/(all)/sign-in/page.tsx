@@ -92,30 +92,22 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-sm">
         {/* 卡片容器 */}
-        <Card className="rounded-2xl shadow-2xl p-8 sm:p-10 backdrop-blur-sm border-[var(--color-white)]/20 dark:border-[var(--color-gray-700)]/50">
-          <CardContent className="p-0">
+        <Card className="border-[var(--color-border)] bg-[var(--color-bg-card)]">
+          <CardContent className="p-6">
             {/* 标题区域 */}
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]">
+            <div className="mb-6 space-y-2 text-center">
+              <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] dark:text-[var(--color-text-primary-dark)]">
                 登录账户
               </h1>
-              <p className="mt-2 text-sm text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary-dark)]">
-                还没有账户？{" "}
-                <Button
-                  type="button"
-                  variant="link"
-                  onClick={() => navigate("/sign-up")}
-                  className="p-0 h-auto font-semibold"
-                >
-                  立即注册
-                </Button>
+              <p className="text-sm text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary-dark)]">
+                输入您的凭据以访问您的账户
               </p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               {/* 表单级错误提示（仅显示错误，成功消息使用 Toast） */}
               {errors.root && errors.root.type !== "success" && (
                 <div
@@ -129,28 +121,26 @@ export default function SignInPage() {
               )}
 
               {/* 用户名 */}
-              <div>
-                <Label htmlFor="username">
-                  用户名 <span className="text-[var(--color-error)]">*</span>
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium">
+                  用户名
                 </Label>
-                <div className="mt-2">
-                  <Input
-                    id="username"
-                    type="text"
-                    autoComplete="username"
-                    {...register("username")}
-                    aria-invalid={errors.username ? "true" : "false"}
-                    aria-describedby={errors.username ? "username-error" : undefined}
-                    className={
-                      errors.username ? "border-[var(--color-error)] focus-visible:ring-[var(--color-error)]" : ""
-                    }
-                    placeholder="请输入用户名"
-                  />
-                </div>
+                <Input
+                  id="username"
+                  type="text"
+                  autoComplete="username"
+                  {...register("username")}
+                  aria-invalid={errors.username ? "true" : "false"}
+                  aria-describedby={errors.username ? "username-error" : undefined}
+                  className={
+                    errors.username ? "border-[var(--color-error)] focus-visible:ring-[var(--color-error)]" : ""
+                  }
+                  placeholder="请输入用户名"
+                />
                 {errors.username && (
                   <p
                     id="username-error"
-                    className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
+                    className="text-sm text-[var(--color-error)] dark:text-[var(--color-error-light)]"
                     role="alert"
                   >
                     {errors.username.message}
@@ -159,11 +149,13 @@ export default function SignInPage() {
               </div>
 
               {/* 密码 */}
-              <div>
-                <Label htmlFor="password">
-                  密码 <span className="text-[var(--color-error)]">*</span>
-                </Label>
-                <div className="mt-2 relative">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    密码
+                  </Label>
+                </div>
+                <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -184,13 +176,13 @@ export default function SignInPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
                     aria-label={showPassword ? "隐藏密码" : "显示密码"}
                   >
-                    {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                    {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
                   <p
                     id="password-error"
-                    className="mt-1 text-sm text-[var(--color-error-dark)] dark:text-[var(--color-error-light)]"
+                    className="text-sm text-[var(--color-error)] dark:text-[var(--color-error-light)]"
                     role="alert"
                   >
                     {errors.password.message}
@@ -216,15 +208,23 @@ export default function SignInPage() {
               </div>
 
               {/* 提交按钮 */}
-              <div className="flex items-center justify-end gap-x-6 pt-4">
-                <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
-                  取消
-                </Button>
-                <Button type="submit" disabled={isSubmitting} className="shadow-lg hover:shadow-xl">
-                  {isSubmitting ? "登录中..." : "登录"}
-                </Button>
-              </div>
+              <Button type="submit" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? "登录中..." : "登录"}
+              </Button>
             </form>
+
+            {/* 注册链接 */}
+            <div className="mt-6 text-center text-sm text-[var(--color-text-secondary)] dark:text-[var(--color-text-secondary-dark)]">
+              还没有账户？{" "}
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => navigate("/sign-up")}
+                className="p-0 h-auto font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-light)]"
+              >
+                立即注册
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
