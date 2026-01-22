@@ -26,10 +26,21 @@
   animation-delay: 4s;
 }
 
-/* 网格背景图案 */
+/* 网格背景图案 - 使用主题变量支持系统主题 */
 .bg-grid-pattern {
   background-image: 
-    linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-color, rgba(99, 102, 241, 0.1)) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color, rgba(99, 102, 241, 0.1)) 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+/* 亮色模式网格颜色 */
+.light .bg-grid-pattern,
+:root:not(.dark) .bg-grid-pattern {
+  --grid-color: rgba(99, 102, 241, 0.1);
+}
+
+/* 暗色模式网格颜色 */
+.dark .bg-grid-pattern {
+  --grid-color: rgba(129, 140, 248, 0.15);
 }

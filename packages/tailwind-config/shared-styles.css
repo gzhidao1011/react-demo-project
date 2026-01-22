@@ -16,6 +16,7 @@
   --color-primary-50: #eef2ff; /* indigo-50 */
   --color-primary-100: #e0e7ff; /* indigo-100 */
   --color-primary-200: #c7d2fe; /* indigo-200 */
+  --color-primary-800: #3730a3; /* indigo-800 (暗色模式装饰用) */
 
   /* ===== 次要色系 (Secondary) ===== */
   --color-secondary: #9333ea; /* purple-600 */
@@ -23,11 +24,13 @@
   --color-secondary-lighter: #c084fc; /* purple-400 */
   --color-secondary-50: #faf5ff; /* purple-50 */
   --color-secondary-200: #e9d5ff; /* purple-200 */
+  --color-secondary-800: #6b21a8; /* purple-800 (暗色模式装饰用) */
 
   /* ===== 强调色系 (Accent) ===== */
   --color-accent: #ec4899; /* pink-500 */
   --color-accent-light: #f472b6; /* pink-400 */
   --color-accent-200: #fbcfe8; /* pink-200 */
+  --color-accent-800: #9f1239; /* pink-800 (暗色模式装饰用) */
 
   /* ===== 错误色系 (Error) ===== */
   --color-error: #ef4444; /* red-500 */
@@ -106,11 +109,23 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+  /* 装饰元素颜色（默认亮色模式） */
+  --decor-blob-primary: var(--color-primary-200);
+  --decor-blob-secondary: var(--color-secondary-200);
+  --decor-blob-accent: var(--color-accent-200);
+  --decor-gradient-from: var(--color-primary-50);
+  --decor-gradient-via: var(--color-white);
+  --decor-gradient-to: var(--color-secondary-50);
+  --decor-opacity: 0.3;
+  --decor-opacity-small: 0.2;
+  --decor-grid-opacity: 0.05;
 }
 
-/* 暗色模式自动切换 */
+/* 暗色模式自动切换（仅在未手动设置主题时生效） */
+/* 注意：当 .dark 类存在时，会覆盖媒体查询的设置 */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.dark):not(.light) {
     --color-bg-primary: var(--color-bg-primary-dark);
     --color-bg-secondary: var(--color-bg-secondary-dark);
     --color-bg-tertiary: var(--color-bg-tertiary-dark);
@@ -126,7 +141,7 @@
   }
 }
 
-/* 显式暗色模式类 */
+/* 显式暗色模式类（优先级高于媒体查询） */
 .dark {
   --color-bg-primary: var(--color-bg-primary-dark);
   --color-bg-secondary: var(--color-bg-secondary-dark);
@@ -140,4 +155,42 @@
   --color-text-tertiary: var(--color-text-tertiary-dark);
 
   --color-border: var(--color-border-dark);
+
+  /* 装饰元素颜色（暗色模式） */
+  --decor-blob-primary: var(--color-primary-800);
+  --decor-blob-secondary: var(--color-secondary-800);
+  --decor-blob-accent: var(--color-accent-800);
+  --decor-gradient-from: var(--color-gray-900);
+  --decor-gradient-via: var(--color-gray-800);
+  --decor-gradient-to: var(--color-gray-900);
+  --decor-opacity: 0.2;
+  --decor-opacity-small: 0.1;
+  --decor-grid-opacity: 0.1;
+}
+
+/* 显式亮色模式类（用于覆盖系统暗色模式） */
+.light {
+  --color-bg-primary: var(--color-white);
+  --color-bg-secondary: var(--color-gray-50);
+  --color-bg-tertiary: var(--color-gray-100);
+  --color-bg-card: var(--color-white);
+  --color-bg-input: var(--color-gray-50);
+  --color-bg-input-focus: var(--color-white);
+
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-tertiary: var(--color-gray-400);
+
+  --color-border: var(--color-gray-300);
+
+  /* 装饰元素颜色（亮色模式） */
+  --decor-blob-primary: var(--color-primary-200);
+  --decor-blob-secondary: var(--color-secondary-200);
+  --decor-blob-accent: var(--color-accent-200);
+  --decor-gradient-from: var(--color-primary-50);
+  --decor-gradient-via: var(--color-white);
+  --decor-gradient-to: var(--color-secondary-50);
+  --decor-opacity: 0.3;
+  --decor-opacity-small: 0.2;
+  --decor-grid-opacity: 0.05;
 }

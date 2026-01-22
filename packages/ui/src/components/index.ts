@@ -4,6 +4,7 @@ export * from "./ui/input";
 export * from "./ui/label";
 export * from "./ui/card";
 export * from "./ui/sonner";
+export * from "./ui/switch";
 
 // Headless UI 组件
 export * from "./headless/dropdown";
