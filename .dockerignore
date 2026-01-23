@@ -50,5 +50,6 @@ docs/
 .DS_Store
 Thumbs.db
 
-# pnpm
-pnpm-lock.yaml
+# 注意：pnpm-lock.yaml 不应该被忽略
+# 构建时需要 lockfile 来确保依赖版本一致
+# 如果 lockfile 变更，应该让 Docker 层缓存失效（这是正确的行为）

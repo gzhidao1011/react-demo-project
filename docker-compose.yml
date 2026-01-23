@@ -179,6 +179,76 @@ services:
       - microservices-network
     restart: unless-stopped
 
+  # ==================== 前端应用 ====================
+
+  # Web 应用（不暴露端口，仅内部访问）
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        APP_NAME: web
+    image: microservices/web:latest
+    container_name: web
+    # 不暴露端口，仅通过反向代理访问
+    expose:
+      - "80"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Docs 应用（不暴露端口，仅内部访问）
+  docs:
+    build:
+      context: .
+      dockerfile: apps/docs/Dockerfile
+      args:
+        APP_NAME: docs
+    image: microservices/docs:latest
+    container_name: docs
+    # 不暴露端口，仅通过反向代理访问
+    expose:
+      - "80"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Nginx 反向代理（根据域名路由）
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "8888:80"  # 使用 8888 端口避免 Windows 端口冲突
+      - "8443:443"  # HTTPS 支持（使用 8443 端口）
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro  # SSL 证书（可选）
+    depends_on:
+      - web
+      - docs
+      - api-gateway
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 # ==================== 网络配置 ====================
 networks:
   microservices-network:
