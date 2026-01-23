@@ -166,10 +166,21 @@ export default function SignUpPage() {
                 )}
               </div>
 
-              {/* 提交按钮 */}
-              <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? "注册中..." : "创建账户"}
-              </Button>
+              {/* 按钮组 */}
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/")}
+                  disabled={isSubmitting}
+                  className="flex-1"
+                >
+                  取消
+                </Button>
+                <Button type="submit" disabled={isSubmitting} className="flex-1">
+                  {isSubmitting ? "注册中..." : "创建账户"}
+                </Button>
+              </div>
             </form>
 
             {/* 登录链接 */}

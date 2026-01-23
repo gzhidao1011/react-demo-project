@@ -48,7 +48,20 @@ export default function SignInPage({
               <Input id="password" type="text" required />
             </div>
             <div className="space-y-2">
-              <Button type="submit" className="w-full">登录</Button>
+              {/* 按钮组 */}
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/")}
+                  className="flex-1"
+                >
+                  取消
+                </Button>
+                <Button type="submit" className="flex-1">
+                  登录
+                </Button>
+              </div>
               <p className="text-center text-sm text-muted-foreground">
                 没有账户？{" "}
                 <Button type="button" variant="link" onClick={() => navigate("/sign-up")} className="p-0 h-auto">
