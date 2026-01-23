@@ -10,6 +10,10 @@
   "devDependencies": {
     "postcss": "catalog:",
     "tailwindcss": "catalog:",
-    "@tailwindcss/postcss": "catalog:"
+    "@tailwindcss/postcss": "catalog:",
+    "tw-animate-css": "catalog:",
+    "shadcn": "catalog:",
+    "tailwind-merge": "catalog:",
+    "@fontsource-variable/inter": "catalog:"
   }
 }

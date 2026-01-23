@@ -1,196 +1,131 @@
 @import "tailwindcss";
-
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
 /* 配置 Tailwind 扫描 workspace 包中的组件 */
 @source "../ui/src/**/*.{ts,tsx}";
 
-@theme {
-  /* ===== 主色系 (Primary) ===== */
-  --color-primary: #4f46e5; /* indigo-600 */
-  --color-primary-light: #6366f1; /* indigo-500 */
-  --color-primary-lighter: #818cf8; /* indigo-400 */
-  --color-primary-lightest: #a5b4fc; /* indigo-300 */
-  --color-primary-dark: #4338ca; /* indigo-700 */
-  --color-primary-darker: #3730a3; /* indigo-800 */
-  
-  /* 主色背景变体 */
-  --color-primary-50: #eef2ff; /* indigo-50 */
-  --color-primary-100: #e0e7ff; /* indigo-100 */
-  --color-primary-200: #c7d2fe; /* indigo-200 */
-  --color-primary-800: #3730a3; /* indigo-800 (暗色模式装饰用) */
+@custom-variant dark (&:is(.dark *));
 
-  /* ===== 次要色系 (Secondary) ===== */
-  --color-secondary: #9333ea; /* purple-600 */
-  --color-secondary-light: #a855f7; /* purple-500 */
-  --color-secondary-lighter: #c084fc; /* purple-400 */
-  --color-secondary-50: #faf5ff; /* purple-50 */
-  --color-secondary-200: #e9d5ff; /* purple-200 */
-  --color-secondary-800: #6b21a8; /* purple-800 (暗色模式装饰用) */
-
-  /* ===== 强调色系 (Accent) ===== */
-  --color-accent: #ec4899; /* pink-500 */
-  --color-accent-light: #f472b6; /* pink-400 */
-  --color-accent-200: #fbcfe8; /* pink-200 */
-  --color-accent-800: #9f1239; /* pink-800 (暗色模式装饰用) */
-
-  /* ===== 错误色系 (Error) ===== */
-  --color-error: #ef4444; /* red-500 */
-  --color-error-light: #f87171; /* red-400 */
-  --color-error-dark: #dc2626; /* red-600 */
-  --color-error-50: #fef2f2; /* red-50 */
-  --color-error-800: #991b1b; /* red-800 */
-  --color-error-900: #7f1d1d; /* red-900 */
-
-  /* ===== 成功色系 (Success) ===== */
-  --color-success: #10b981; /* emerald-500 */
-  --color-success-light: #34d399; /* emerald-400 */
-  --color-success-50: #ecfdf5; /* emerald-50 */
-
-  /* ===== 警告色系 (Warning) ===== */
-  --color-warning: #f59e0b; /* amber-500 */
-  --color-warning-light: #fbbf24; /* amber-400 */
-  --color-warning-50: #fffbeb; /* amber-50 */
-
-  /* ===== 信息色系 (Info) ===== */
-  --color-info: #3b82f6; /* blue-500 */
-  --color-info-light: #60a5fa; /* blue-400 */
-  --color-info-50: #eff6ff; /* blue-50 */
-
-  /* ===== 中性色系 (Neutral/Gray) ===== */
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
-
-  /* ===== 基础色 ===== */
-  --color-white: #ffffff;
-  --color-black: #000000;
-
-  /* ===== 语义化颜色变量 ===== */
-  /* 背景色 */
-  --color-bg-primary: var(--color-white);
-  --color-bg-secondary: var(--color-gray-50);
-  --color-bg-tertiary: var(--color-gray-100);
-  --color-bg-card: var(--color-white);
-  --color-bg-input: var(--color-gray-50);
-  --color-bg-input-focus: var(--color-white);
-
-  /* 暗色模式背景 */
-  --color-bg-primary-dark: var(--color-gray-900);
-  --color-bg-secondary-dark: var(--color-gray-800);
-  --color-bg-tertiary-dark: var(--color-gray-700);
-  --color-bg-card-dark: var(--color-gray-800);
-  --color-bg-input-dark: var(--color-gray-700);
-  --color-bg-input-focus-dark: var(--color-gray-700);
-
-  /* 文本色 */
-  --color-text-primary: var(--color-gray-900);
-  --color-text-secondary: var(--color-gray-600);
-  --color-text-tertiary: var(--color-gray-400);
-  --color-text-disabled: var(--color-gray-500);
-  --color-text-primary-dark: var(--color-white);
-  --color-text-secondary-dark: var(--color-gray-400);
-  --color-text-tertiary-dark: var(--color-gray-500);
-
-  /* 边框色 */
-  --color-border: var(--color-gray-300);
-  --color-border-light: var(--color-gray-200);
-  --color-border-dark: var(--color-gray-600);
-  --color-border-focus: var(--color-primary);
-
-  /* 阴影 */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-
-  /* 装饰元素颜色（默认亮色模式） */
-  --decor-blob-primary: var(--color-primary-200);
-  --decor-blob-secondary: var(--color-secondary-200);
-  --decor-blob-accent: var(--color-accent-200);
-  --decor-gradient-from: var(--color-primary-50);
-  --decor-gradient-via: var(--color-white);
-  --decor-gradient-to: var(--color-secondary-50);
-  --decor-opacity: 0.3;
-  --decor-opacity-small: 0.2;
-  --decor-grid-opacity: 0.05;
+:root {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.488 0.243 264.376);
+    --primary-foreground: oklch(0.97 0.014 254.604);
+    --secondary: oklch(0.967 0.001 286.375);
+    --secondary-foreground: oklch(0.21 0.006 285.885);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.58 0.22 27);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.809 0.105 251.813);
+    --chart-2: oklch(0.623 0.214 259.815);
+    --chart-3: oklch(0.546 0.245 262.881);
+    --chart-4: oklch(0.488 0.243 264.376);
+    --chart-5: oklch(0.424 0.199 265.638);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.546 0.245 262.881);
+    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
 }
 
-/* 暗色模式自动切换（仅在未手动设置主题时生效） */
-/* 注意：当 .dark 类存在时，会覆盖媒体查询的设置 */
-@media (prefers-color-scheme: dark) {
-  :root:not(.dark):not(.light) {
-    --color-bg-primary: var(--color-bg-primary-dark);
-    --color-bg-secondary: var(--color-bg-secondary-dark);
-    --color-bg-tertiary: var(--color-bg-tertiary-dark);
-    --color-bg-card: var(--color-bg-card-dark);
-    --color-bg-input: var(--color-bg-input-dark);
-    --color-bg-input-focus: var(--color-bg-input-focus-dark);
-
-    --color-text-primary: var(--color-text-primary-dark);
-    --color-text-secondary: var(--color-text-secondary-dark);
-    --color-text-tertiary: var(--color-text-tertiary-dark);
-
-    --color-border: var(--color-border-dark);
-  }
-}
-
-/* 显式暗色模式类（优先级高于媒体查询） */
 .dark {
-  --color-bg-primary: var(--color-bg-primary-dark);
-  --color-bg-secondary: var(--color-bg-secondary-dark);
-  --color-bg-tertiary: var(--color-bg-tertiary-dark);
-  --color-bg-card: var(--color-bg-card-dark);
-  --color-bg-input: var(--color-bg-input-dark);
-  --color-bg-input-focus: var(--color-bg-input-focus-dark);
-
-  --color-text-primary: var(--color-text-primary-dark);
-  --color-text-secondary: var(--color-text-secondary-dark);
-  --color-text-tertiary: var(--color-text-tertiary-dark);
-
-  --color-border: var(--color-border-dark);
-
-  /* 装饰元素颜色（暗色模式） */
-  --decor-blob-primary: var(--color-primary-800);
-  --decor-blob-secondary: var(--color-secondary-800);
-  --decor-blob-accent: var(--color-accent-800);
-  --decor-gradient-from: var(--color-gray-900);
-  --decor-gradient-via: var(--color-gray-800);
-  --decor-gradient-to: var(--color-gray-900);
-  --decor-opacity: 0.2;
-  --decor-opacity-small: 0.1;
-  --decor-grid-opacity: 0.1;
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.42 0.18 266);
+    --primary-foreground: oklch(0.97 0.014 254.604);
+    --secondary: oklch(0.274 0.006 286.033);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.371 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.809 0.105 251.813);
+    --chart-2: oklch(0.623 0.214 259.815);
+    --chart-3: oklch(0.546 0.245 262.881);
+    --chart-4: oklch(0.488 0.243 264.376);
+    --chart-5: oklch(0.424 0.199 265.638);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.623 0.214 259.815);
+    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* 显式亮色模式类（用于覆盖系统暗色模式） */
-.light {
-  --color-bg-primary: var(--color-white);
-  --color-bg-secondary: var(--color-gray-50);
-  --color-bg-tertiary: var(--color-gray-100);
-  --color-bg-card: var(--color-white);
-  --color-bg-input: var(--color-gray-50);
-  --color-bg-input-focus: var(--color-white);
+@theme inline {
+    --font-sans: 'Inter Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 12px);
+    --radius-4xl: calc(var(--radius) + 16px);
+}
 
-  --color-text-primary: var(--color-gray-900);
-  --color-text-secondary: var(--color-gray-600);
-  --color-text-tertiary: var(--color-gray-400);
-
-  --color-border: var(--color-gray-300);
-
-  /* 装饰元素颜色（亮色模式） */
-  --decor-blob-primary: var(--color-primary-200);
-  --decor-blob-secondary: var(--color-secondary-200);
-  --decor-blob-accent: var(--color-accent-200);
-  --decor-gradient-from: var(--color-primary-50);
-  --decor-gradient-via: var(--color-white);
-  --decor-gradient-to: var(--color-secondary-50);
-  --decor-opacity: 0.3;
-  --decor-opacity-small: 0.2;
-  --decor-grid-opacity: 0.05;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply font-sans bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
 }

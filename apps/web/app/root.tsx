@@ -1,4 +1,5 @@
 import { Toaster } from "@repo/propel";
+import { useTheme } from "@repo/propel";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -11,7 +12,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head suppressHydrationWarning>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {/* 内联脚本：在页面渲染前设置主题，防止闪烁 */}
+        {/* 在页面渲染前初始化主题，防止闪烁 */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -51,6 +52,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  // 使用 useTheme hook 确保主题能够响应系统变化
+  useTheme();
+
   return (
     <>
       <Outlet />

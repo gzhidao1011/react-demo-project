@@ -4,7 +4,7 @@ import type { ApiResponseBase } from "./api.service.base";
  * 注册请求参数
  */
 export interface RegisterRequest {
-  username: string;
+  username?: string;
   email: string;
   password: string;
   phone?: string;

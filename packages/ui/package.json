@@ -4,10 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./components": "./src/components/index.ts",
-    "./lib": "./src/lib/index.ts",
-    "./code": "./src/code.tsx"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "lint": "biome check --write",
@@ -32,7 +29,8 @@
     "clsx": "^2.1.1",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^2.6.0"
+    "sonner": "catalog:",
+    "tailwind-merge": "catalog:",
+    "radix-ui": "catalog:"
   }
 }

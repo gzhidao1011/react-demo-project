@@ -7,7 +7,6 @@ import { passwordSchema, usernameSchema } from "../common";
 export const loginSchema = z.object({
   username: usernameSchema,
   password: passwordSchema,
-  rememberMe: z.boolean().optional().default(false),
 });
 
 /**

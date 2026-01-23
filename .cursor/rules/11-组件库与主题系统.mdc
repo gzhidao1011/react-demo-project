@@ -497,6 +497,187 @@ const getButtonClass = (variant: string) => {
 };
 ```
 
+### 5. 使用 shadcn/ui 默认样式
+
+**核心原则**：优先使用组件默认样式，避免重复添加组件已有的样式类。
+
+#### 5.1 使用组件默认样式
+
+**✅ 正确**：使用组件默认样式，不重复添加
+
+```tsx
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@repo/ui";
+
+// ✅ 正确：Card 组件已有默认样式，无需重复添加
+<Card>
+  <CardHeader className="text-center">
+    <CardTitle>标题</CardTitle>
+    <CardDescription>描述</CardDescription>
+  </CardHeader>
+  <CardContent>
+    内容
+  </CardContent>
+</Card>
+```
+
+**❌ 错误**：重复添加组件已有的样式
+
+```tsx
+// ❌ 错误：Card 组件已有 border 和 bg 样式，无需重复添加
+<Card className="border-[var(--color-border)] bg-[var(--color-bg-card)]">
+  <CardContent className="p-6">
+    {/* ... */}
+  </CardContent>
+</Card>
+```
+
+#### 5.2 使用组件子组件
+
+**✅ 正确**：使用 shadcn/ui 提供的子组件
+
+```tsx
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@repo/ui";
+
+<Card>
+  <CardHeader className="text-center">
+    <CardTitle>创建账户</CardTitle>
+    <CardDescription>输入您的信息以创建新账户</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* 表单内容 */}
+  </CardContent>
+</Card>
+```
+
+**❌ 错误**：手动创建标题和描述区域
+
+```tsx
+// ❌ 错误：手动创建标题区域，而不是使用 CardHeader/CardTitle/CardDescription
+<Card>
+  <div className="mb-6 space-y-2 text-center">
+    <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+      创建账户
+    </h1>
+    <p className="text-sm text-[var(--color-text-secondary)]">
+      输入您的信息以创建新账户
+    </p>
+  </div>
+  <CardContent>
+    {/* ... */}
+  </CardContent>
+</Card>
+```
+
+#### 5.3 使用 Tailwind 标准颜色类
+
+**✅ 正确**：使用 Tailwind 标准颜色类（适用于错误消息、辅助文本等）
+
+```tsx
+// ✅ 正确：使用 Tailwind 标准颜色类
+{errors.username && (
+  <p className="text-sm text-red-500 dark:text-red-400" role="alert">
+    {errors.username.message}
+  </p>
+)}
+
+<div className="text-sm text-gray-600">
+  辅助文本
+</div>
+```
+
+**❌ 错误**：过度使用自定义 CSS 变量
+
+```tsx
+// ❌ 错误：对于简单的错误消息，使用自定义 CSS 变量过于复杂
+{errors.username && (
+  <p className="text-sm text-[var(--color-error)] dark:text-[var(--color-error-light)]" role="alert">
+    {errors.username.message}
+  </p>
+)}
+```
+
+#### 5.4 避免覆盖组件内置样式
+
+**✅ 正确**：只在需要时添加额外的样式类
+
+```tsx
+// ✅ 正确：只添加必要的额外样式（如居中）
+<CardHeader className="text-center">
+  <CardTitle>标题</CardTitle>
+</CardHeader>
+
+// ✅ 正确：使用组件变体而不是覆盖样式
+<Button variant="link" className="p-0 h-auto">
+  链接按钮
+</Button>
+```
+
+**❌ 错误**：覆盖组件内置样式
+
+```tsx
+// ❌ 错误：覆盖 Button 组件的默认样式
+<Button 
+  variant="link" 
+  className="p-0 h-auto font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-light)]"
+>
+  链接按钮
+</Button>
+// Button 的 link 变体已有默认样式，无需重复添加
+```
+
+#### 5.5 错误状态样式
+
+**✅ 正确**：使用 Tailwind 标准颜色类处理错误状态
+
+```tsx
+// ✅ 正确：使用 Tailwind 标准颜色类
+<Input
+  className={errors.username ? "border-red-500 focus-visible:ring-red-500" : ""}
+/>
+
+{errors.root && (
+  <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20" role="alert">
+    <p className="text-sm text-red-800 dark:text-red-400">
+      {errors.root.message}
+    </p>
+  </div>
+)}
+```
+
+**❌ 错误**：使用自定义 CSS 变量处理错误状态
+
+```tsx
+// ❌ 错误：对于错误状态，使用 Tailwind 标准颜色类更简洁
+<Input
+  className={errors.username ? "border-[var(--color-error)] focus-visible:ring-[var(--color-error)]" : ""}
+/>
+```
+
+#### 5.6 图标按钮样式
+
+**✅ 正确**：使用 Tailwind 标准颜色类
+
+```tsx
+<button
+  type="button"
+  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+>
+  <EyeIcon className="h-4 w-4" />
+</button>
+```
+
+**❌ 错误**：使用自定义 CSS 变量
+
+```tsx
+// ❌ 错误：对于简单的图标按钮，使用 Tailwind 标准颜色类更简洁
+<button
+  type="button"
+  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+>
+  <EyeIcon className="h-4 w-4" />
+</button>
+```
+
 ## 最佳实践
 
 ### 1. 组件导入
@@ -624,6 +805,9 @@ export function CustomCard({ children, className }: CustomCardProps) {
 7. **持久化用户选择**：主题选择会自动保存到 localStorage，下次访问时恢复
 8. **CSS 变量优先**：在组件中使用主题时，优先使用 CSS 变量而非 Tailwind 的 `dark:` 前缀
 9. **Toaster 位置**：Toaster 组件必须在根组件（`apps/web/app/root.tsx`）中添加，确保全局可用
+10. **使用组件默认样式**：优先使用 shadcn/ui 组件的默认样式，避免重复添加组件已有的样式类
+11. **使用组件子组件**：使用 shadcn/ui 提供的子组件（如 `CardHeader`、`CardTitle`、`CardDescription`）而不是手动创建
+12. **Tailwind 标准颜色类**：对于错误消息、辅助文本等简单场景，使用 Tailwind 标准颜色类（如 `text-red-500`、`text-gray-600`）而不是自定义 CSS 变量
 
 ## 与其他文档的关联
 
