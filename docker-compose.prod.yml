@@ -168,8 +168,14 @@ services:
   # ==================== 前端应用（使用远程镜像）====================
 
   # Web 应用（不暴露端口，仅内部访问）
+  # 支持本地构建或远程镜像：如果镜像不存在，会自动构建
   web:
     image: ${REGISTRY:-gzhidao1010}/web:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        APP_NAME: web
     container_name: web
     # 不暴露端口，仅通过反向代理访问
     expose:
@@ -185,8 +191,14 @@ services:
       start_period: 10s
 
   # Docs 应用（不暴露端口，仅内部访问）
+  # 支持本地构建或远程镜像：如果镜像不存在，会自动构建
   docs:
     image: ${REGISTRY:-gzhidao1010}/docs:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/docs/Dockerfile
+      args:
+        APP_NAME: docs
     container_name: docs
     # 不暴露端口，仅通过反向代理访问
     expose:
@@ -206,8 +218,8 @@ services:
     image: nginx:alpine
     container_name: nginx-proxy
     ports:
-      - "80:80"
-      - "443:443"  # HTTPS 支持
+      - "8888:80"  # 使用 8888 端口避免 Windows 端口冲突
+      - "8443:443"  # HTTPS 支持（使用 8443 端口）
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
@@ -228,6 +240,9 @@ services:
 networks:
   microservices-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
   mysql-data:
