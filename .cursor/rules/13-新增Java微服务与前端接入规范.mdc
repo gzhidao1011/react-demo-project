@@ -1,0 +1,175 @@
+# 新增 Java 微服务与前端接入规范（按现有部署方式扩展）
+
+本文档用于指导后续新增 **Java 微服务**与**前端应用**时，如何在不破坏现有部署链路的前提下，按统一规范接入：
+
+- `docker-compose.yml`（本地构建版）
+- `docker-compose.prod.yml`（生产镜像版）
+- `docker/nginx/conf.d/default.conf`（统一入口转发）
+- `.github/workflows/docker-publish.yml`（CI 构建推送）
+
+> 原则：**对外入口只通过 `nginx-proxy`**，API 必须经 `api-gateway` 进入后端服务治理体系。
+
+## 新增 Java 微服务（Spring Boot）接入清单
+
+### 1) 目录与命名
+
+- 目录：`services/<service-name>/`
+- 服务名必须与以下位置保持一致：
+  - Compose service name（容器名/服务名）
+  - 镜像名（Docker Hub 仓库名）
+  - Maven 模块名（如使用多模块）
+  - 网关路由（`lb://<service-name>`）
+
+### 2) Dockerfile（强制保持仓库同款模式）
+
+要求与现有 `services/user-service/Dockerfile` 一致：
+
+- JDK：`eclipse-temurin:17-jdk-alpine`
+- 安装 `curl`（健康检查用）
+- `COPY target/<service-name>.jar app.jar`（jar 由宿主机/CI 先构建）
+- `HEALTHCHECK`：访问 `/actuator/health`
+- `SPRING_PROFILES_ACTIVE` 默认 `docker`
+
+模板（按需替换端口与 jar 名）：
+
+```dockerfile
+FROM eclipse-temurin:17-jdk-alpine
+
+WORKDIR /app
+RUN apk add --no-cache curl
+
+COPY target/<service-name>.jar app.jar
+
+EXPOSE <http-port>
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:<http-port>/actuator/health || exit 1
+
+ENTRYPOINT ["java","-jar","-Djava.security.egd=file:/dev/./urandom","-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-docker}","app.jar"]
+```
+
+### 3) 配置（docker profile）
+
+- 必须提供 `application-docker.yml`（或等价的 docker profile 配置）
+- 必须通过环境变量读取基础设施地址：
+  - Nacos：`NACOS_SERVER_ADDR`（默认 `nacos:8848`）
+  - MySQL：`MYSQL_HOST`/`MYSQL_PORT`/`MYSQL_DATABASE`/`MYSQL_USERNAME`/`MYSQL_PASSWORD`
+  - Sentinel（如需要）：`SENTINEL_DASHBOARD`（默认 `sentinel:8858`）
+- 必须保证 actuator health 可用：`/actuator/health`
+
+### 4) Compose 接入（本地构建版）
+
+在 `docker-compose.yml` 增加服务段（强制包含以下要素）：
+
+- `build.context`：`./services/<service-name>`
+- `environment`：至少包含 `SPRING_PROFILES_ACTIVE=docker`、`NACOS_SERVER_ADDR=nacos:8848`、`MYSQL_*`
+- `depends_on`：MySQL 与 Nacos 必须是 `service_healthy`
+- `networks`：必须加入 `microservices-network`
+- `restart: unless-stopped`
+
+### 5) Compose 接入（生产镜像版）
+
+在 `docker-compose.prod.yml` 增加服务段：
+
+- `image: ${REGISTRY:-gzhidao1010}/<service-name>:${TAG:-latest}`
+- 其余 `environment/depends_on/networks/restart` 与本地版保持一致
+
+### 6) 网关路由接入（强制）
+
+- 新增业务 API 必须挂到 `/api/...` 下，由 `api-gateway` 路由到新服务（避免 Nginx 直接分流 API）。
+- 变更位置：`services/api-gateway/.../application-docker.yml`（按现有方式添加 `lb://<service-name>` 路由）
+
+### 7) 数据库（可选但要一致）
+
+若新服务需要独立库：
+
+- 在 `docker/mysql/init/` 增加初始化 SQL（创建数据库/授权等）
+- 同步修改 compose 中 `MYSQL_DATABASE` 默认值
+
+### 8) CI 构建推送（必做）
+
+在 `.github/workflows/docker-publish.yml` 的 `build-java-services.matrix.service` 中新增：
+
+- `name: <service-name>`
+- `context: ./services/<service-name>`
+
+否则生产部署（`docker-compose.prod.yml`）会缺镜像。
+
+## 新增前端应用（静态站点）接入清单
+
+### 1) 目录与包名
+
+- 目录：`apps/<app-name>/`
+- Turborepo 包名必须是 `@repo/<app-name>`（因为 Dockerfile 中使用 `pnpm turbo prune @repo/${APP_NAME}` 与 `--filter=@repo/${APP_NAME}`）
+
+### 2) Dockerfile（强制复用现有模式）
+
+要求与 `apps/web/Dockerfile`、`apps/docs/Dockerfile` 一致：
+
+- `node:22-alpine` 多阶段构建（pruner/installer/builder）
+- pnpm 版本固定：`pnpm@10.28.0`
+- 产物路径：`apps/${APP_NAME}/build/client`
+- 运行时：`nginx:alpine`
+
+建议直接复制现有 Dockerfile，只改默认 `ARG APP_NAME=<app-name>`。
+
+### 3) 站点 Nginx 配置
+
+在 `apps/<app-name>/nginx.conf` 按现有模板保持一致：
+
+- SPA 回退：`try_files $uri $uri/ /index.html;`
+- 静态资源强缓存：`expires 1y` + `Cache-Control: public, immutable`
+- gzip 与基础安全头
+
+### 4) Compose 接入（本地构建版）
+
+在 `docker-compose.yml` 增加服务段：
+
+- `build.context: .`
+- `dockerfile: apps/<app-name>/Dockerfile`
+- `args.APP_NAME: <app-name>`
+- `expose: ["80"]`（禁止直接 `ports` 对外暴露）
+- `healthcheck`：使用 `wget --spider http://localhost`
+- `networks: microservices-network`
+
+### 5) Compose 接入（生产镜像版）
+
+在 `docker-compose.prod.yml` 增加服务段：
+
+- `image: ${REGISTRY:-gzhidao1010}/<app-name>:${TAG:-latest}`
+- 同时保留 `build:` 作为兜底（与现有 web/docs 一致）
+
+### 6) 统一入口（nginx-proxy）接入
+
+在 `docker/nginx/conf.d/default.conf` 新增 server：
+
+- `server_name <app-name>.example.com;`
+- `/` → `proxy_pass http://<app-name>:80;`
+- `/api` → `proxy_pass http://api-gateway:8080;`
+- 保持 header 与 timeout 配置风格与现有一致
+
+同时补充本机 hosts：
+
+```text
+127.0.0.1 <app-name>.example.com
+```
+
+### 7) CI 构建推送（必做）
+
+在 `.github/workflows/docker-publish.yml` 的 `build-frontend-apps.matrix.app` 中新增：
+
+- `name: <app-name>`
+- `dockerfile: ./apps/<app-name>/Dockerfile`
+
+## 最小验收标准（新增任何服务/应用都必须满足）
+
+- `docker-compose up -d` 能正常启动（至少通过 healthcheck）
+- 入口可访问（示例）：
+  - `http://web.example.com:8888`（或新域名）
+  - `/api` 请求能从入口进入网关并路由成功
+- Java 服务：
+  - `/actuator/health` 返回 200
+  - 能在 Nacos 注册成功（如启用注册）
+- 生产镜像链路：
+  - CI 工作流矩阵已更新（能推送新镜像）
+  - `docker-compose -f docker-compose.prod.yml up -d` 不缺镜像、不缺配置

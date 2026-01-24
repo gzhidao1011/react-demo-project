@@ -1,0 +1,132 @@
+# 部署与发布规范（Docker Compose + Nginx + CI）
+
+本文档将仓库中已经落地的部署方式（以 `docker-compose*.yml`、`docker/nginx/*`、`apps/*/Dockerfile`、`.github/workflows/docker-publish.yml` 为准）沉淀为规范，确保后续新增 **Java 微服务**与**前端应用**时能按统一方式接入与发布。
+
+## 一句话架构
+
+- **容器编排**：使用 `docker-compose.yml`（本地构建版）/ `docker-compose.prod.yml`（生产镜像版）拉起全套服务。
+- **统一入口**：`nginx-proxy`（`nginx:alpine`）作为统一对外入口，按域名与路径转发：
+  - `web.example.com` → `web:80`
+  - `docs.example.com` → `docs:80`
+  - `/api` → `api-gateway:8080`
+- **镜像构建**：
+  - Java：镜像构建阶段只 `COPY target/*.jar`，因此 **jar 必须先在宿主机/CI 里构建好**。
+  - 前端：Docker 多阶段构建（`turbo prune` + `pnpm install` + `turbo build`），运行态仅 Nginx 托管静态文件。
+- **CI/CD**：`.github/workflows/docker-publish.yml` 自动构建并推送镜像（Java 与前端各自矩阵）。
+
+## 入口与路由规范（Nginx）
+
+### 1) 对外访问必须走 `nginx-proxy`
+
+- `docker-compose.yml`/`docker-compose.prod.yml` 中 `nginx-proxy` 映射端口：
+  - HTTP：`8888 -> 80`
+  - HTTPS：`8443 -> 443`（可选，证书目录：`docker/nginx/ssl`）
+- 其他端口映射（如 MySQL/Nacos/Sentinel/各微服务端口）**仅用于开发调试**；对外联调与前端访问统一走 `nginx-proxy`。
+
+### 2) 域名/Host 头是必须条件
+
+`docker/nginx/conf.d/default.conf` 的默认 server 会 `return 404`，因此本机访问必须带正确的 Host：
+
+- Windows hosts（管理员权限编辑 `C:\Windows\System32\drivers\etc\hosts`）：
+
+```text
+127.0.0.1 web.example.com
+127.0.0.1 docs.example.com
+```
+
+访问入口：
+
+- `http://web.example.com:8888`
+- `http://docs.example.com:8888`
+
+### 3) 反代配置修改约束
+
+- **新增站点域名**：必须在 `docker/nginx/conf.d/default.conf` 添加新的 `server { server_name xxx.example.com; ... }`。
+- **新增 API 路由**：只允许通过 `/api` 入口进入网关，由网关再转发到具体服务；禁止在 `nginx-proxy` 里直接把业务 API 分流到某个微服务（避免绕过网关治理）。
+
+## Compose 规范（docker-compose*.yml）
+
+### 1) 文件职责
+
+- `docker-compose.yml`：本地构建版
+  - Java 服务使用 `build: services/<service>/Dockerfile`
+  - 前端应用使用 `build: apps/<app>/Dockerfile`（由 Docker 在构建阶段完成前端打包）
+- `docker-compose.prod.yml`：生产镜像版
+  - Java 服务默认使用远程镜像：`${REGISTRY:-gzhidao1010}/<service>:${TAG:-latest}`
+  - 前端应用同样指向远程镜像，但保留 `build:` 作为兜底（镜像不存在可本地构建）
+
+### 2) 网络与服务发现
+
+- 所有容器必须挂载到 `microservices-network`（`bridge`）中，依赖容器名进行互联：
+  - Nacos：`nacos:8848`
+  - MySQL：`mysql:3306`
+  - Sentinel：`sentinel:8858`
+  - 网关：`api-gateway:8080`
+
+### 3) 健康检查与启动顺序
+
+- 基础设施（MySQL/Nacos）必须配置 `healthcheck`，并在业务服务中通过 `depends_on: condition: service_healthy` 做启动顺序约束。
+- Java 服务 Dockerfile 必须提供 `/actuator/health` 健康检查（仓库现状即如此）。
+- 前端与 `nginx-proxy` 统一使用 `wget --spider http://localhost` 的健康检查方式。
+
+### 4) 数据持久化
+
+- MySQL、Nacos 必须使用 volume 持久化：
+  - `mysql-data` → `/var/lib/mysql`
+  - `nacos-data`、`nacos-logs` → `/home/nacos/data`、`/home/nacos/logs`
+- 数据库初始化统一通过 `docker/mysql/init/` 目录的 SQL 脚本完成。
+
+## 镜像构建规范
+
+### 1) Java 微服务（JDK17 + 预构建 jar）
+
+- 统一基础镜像：`eclipse-temurin:17-jdk-alpine`
+- Dockerfile 约束（仓库现状模式）：
+  - 必须 `apk add --no-cache curl`（用于 HEALTHCHECK）
+  - 必须 `COPY target/<service>.jar app.jar`
+  - 必须提供 `HEALTHCHECK`：`curl -f http://localhost:<port>/actuator/health`
+  - 必须使用 `SPRING_PROFILES_ACTIVE` 控制环境：`docker` 为默认
+- **强制要求**：构建镜像前先产出 jar
+
+```bash
+cd services
+mvn clean package -DskipTests
+cd ..
+docker-compose build
+```
+
+### 2) 前端应用（Turborepo + prune + Nginx）
+
+- 统一 Node 基础镜像：`node:22-alpine`
+- 统一 pnpm 版本（仓库现状）：`pnpm@10.28.0`
+- 统一产物路径：`/app/apps/${APP_NAME}/build/client` → `/usr/share/nginx/html`
+- 运行时镜像统一：`nginx:alpine`
+- 站点 Nginx 配置统一：`apps/${APP_NAME}/nginx.conf`（包含 SPA 回退、静态资源强缓存、gzip、安全头）
+
+## 环境变量与敏感信息规范
+
+- 生产环境必须通过环境变量覆盖关键配置（仓库现状支持）：
+  - `REGISTRY`、`TAG`
+  - `MYSQL_ROOT_PASSWORD`
+  - `NACOS_SERVER_ADDR`、`SENTINEL_DASHBOARD`
+  - `MYSQL_HOST`、`MYSQL_PORT`、`MYSQL_DATABASE`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`
+- **禁止提交任何真实密钥**（包括 `.env`、证书文件等）；如需要示例，提交 `.env.example`。
+
+## CI/CD 规范（GitHub Actions）
+
+工作流：`.github/workflows/docker-publish.yml`
+
+- Java 服务：先 Maven 构建，再 Buildx 构建推送镜像（矩阵定义在 `build-java-services`）。
+- 前端应用：直接基于 `apps/*/Dockerfile` 构建推送（矩阵定义在 `build-frontend-apps`）。
+- **新增服务/应用后必须同步更新矩阵**，否则生产镜像链路不完整。
+
+## Windows 运维脚本约束
+
+仓库提供 `docker/scripts/*.ps1`（start/build/publish/backup 等），后续对部署方式的扩展优先保持脚本可用性与一致性，避免“只能手动敲命令才能跑”。
+
+## 常见问题（必须优先排查）
+
+- **访问直接 404**：检查 Host 是否为 `web.example.com` / `docs.example.com`（默认 server 返回 404）。
+- **Java 镜像构建失败**：通常是 `target/*.jar` 不存在；先执行 `mvn clean package -DskipTests`。
+- **健康检查失败**：确认 Spring Boot 已开启 actuator 且暴露 `/actuator/health`。
+- **端口冲突**：Windows 常见冲突，优先改宿主机映射端口，不改容器内端口与服务名。

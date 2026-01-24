@@ -1,9 +1,9 @@
-import { useMemo } from "react"
+import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "@repo/ui"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
+import { cn } from "./lib"
+import { Label } from "./label"
+import { Separator } from "./separator"
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -168,7 +168,7 @@ function FieldError({
 }: React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>
 }) {
-  const content = useMemo(() => {
+  const content = React.useMemo(() => {
     if (children) {
       return children
     }
@@ -177,9 +177,10 @@ function FieldError({
       return null
     }
 
-    const uniqueErrors = [
-      ...new Map(errors.map((error) => [error?.message, error])).values(),
-    ]
+    // 说明：避免对迭代器使用展开语法，兼容较低 target 配置时的 TS 编译限制
+    const uniqueErrors = Array.from(
+      new Map(errors.map((error) => [error?.message, error])).values()
+    )
 
     if (uniqueErrors?.length == 1) {
       return uniqueErrors[0]?.message

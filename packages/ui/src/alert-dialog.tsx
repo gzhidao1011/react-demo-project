@@ -1,8 +1,8 @@
 import * as React from "react"
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui"
 
-import { cn } from "@repo/ui"
-import { Button } from "@/components/ui/button"
+import { cn } from "./lib"
+import { Button } from "./button"
 
 function AlertDialog({
   ...props

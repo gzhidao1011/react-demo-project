@@ -14,16 +14,24 @@
   "scripts": {
     "lint": "biome check --write",
     "generate:component": "turbo gen react-component",
+    "storybook": "storybook dev -p 6006 -c .storybook",
+    "build-storybook": "storybook build -c .storybook",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@repo/biome-config": "workspace:^",
+    "@repo/tailwind-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@repo/utils": "workspace:*",
+    "@storybook/addon-a11y": "^10.2.0",
+    "@storybook/react": "^10.2.0",
+    "@storybook/react-vite": "^10.2.0",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "react-hook-form": "catalog:",
+    "scheduler": "^0.27.0",
+    "storybook": "^10.2.0",
     "typescript": "catalog:"
   },
   "dependencies": {
