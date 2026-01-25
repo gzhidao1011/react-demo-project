@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "exclude": ["node_modules", "storybook-static"],
+  "extends": "@repo/typescript-config/vite.json",
+  "include": ["**/*", ".storybook/**/*"]
+}

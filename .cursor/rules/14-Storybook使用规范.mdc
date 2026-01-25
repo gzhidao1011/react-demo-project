@@ -1,0 +1,149 @@
+---
+description: Storybook 统一展示入口（apps/storybook）新增 Story、构建、CI 镜像与访问规范
+alwaysApply: true
+---
+
+# Storybook 使用规范（统一展示入口）
+
+本文档沉淀仓库内 Storybook 的约定，采用 **Turborepo 官方推荐的主流做法**：将 Storybook 作为独立 app 放在 `apps/storybook/`，统一展示所有包的组件 stories。
+
+## 适用范围
+
+- **Storybook 项目**：`apps/storybook`（独立应用）
+- **展示的组件包**：
+  - `packages/propel`：增强/包装层组件
+  - `packages/ui`：基础组件库（未来可扩展）
+- **CI 与部署**：
+  - `.github/workflows/docker-publish.yml`
+  - `apps/storybook/Dockerfile`、`apps/storybook/nginx.conf`
+  - `docker-compose.yml`、`docker-compose.prod.yml`
+  - `docker/nginx/conf.d/default.conf`
+
+## 1) Storybook 的入口与目录约定
+
+- **配置目录**：`apps/storybook/.storybook/`
+  - `main.ts`：Story 匹配规则（跨包 glob）、Vite 兼容（monorepo/pnpm）配置
+  - `preview.ts`：全局样式注入、全局参数（actions/controls）、全局 decorator
+- **Story 文件**：统一放在组件附近，使用 `*.stories.tsx`（或 `*.stories.ts`）
+  - 例：`packages/propel/src/toast/toast.stories.tsx`
+  - 例：`packages/ui/src/button/button.stories.tsx`（未来可添加）
+
+## 2) 新增 Story（CSF）写法约定
+
+### 2.1 标题（title）命名
+
+- 按包名作为一级分组：
+  - ✅ `propel/toast`：propel 包的组件
+  - ✅ `ui/button`：ui 包的组件（未来可添加）
+- 避免出现不稳定或随实现变化的路径信息（例如 `src/...`）。
+
+### 2.2 推荐的 Story 结构（Meta + StoryObj）
+
+```tsx
+import type { Meta, StoryObj } from "@storybook/react"
+import { Button } from "@repo/ui"
+
+const Playground = () => {
+  return <Button type="button">Hello</Button>
+}
+
+const meta: Meta<typeof Playground> = {
+  title: "propel/toast",  // 或 "ui/button"（根据组件所在包）
+  component: Playground,
+}
+
+export default meta
+
+type Story = StoryObj<typeof Playground>
+
+export const Basic: Story = {}
+```
+
+### 2.3 Autodocs 约定（Storybook v10）
+
+- 仓库现状：通过 `apps/storybook/.storybook/preview.ts` 全局开启 `tags: ["autodocs"]`。
+- 如某个组件不适合生成 Docs（例如纯演示页、临时实验）：
+  - 在该 `meta` 或单个 story 上添加 `tags: ["!autodocs"]` 关闭。
+
+## 3) 样式与主题（Tailwind v4 + CSS 变量）
+
+- Storybook 环境必须全局引入主题样式：
+  - `apps/storybook/.storybook/preview.ts` 中引入 `@repo/tailwind-config/shared-styles`
+- 若组件依赖主题 CSS 变量（如 `--color-bg-card`），应在 `preview.ts` 通过全局 decorator 提供最小兜底变量，避免每个 story 重复粘贴。
+
+## 4) 本地运行与构建命令
+
+### 4.1 启动开发模式（本地）
+
+```bash
+pnpm -C apps/storybook storybook
+```
+
+### 4.2 构建静态站点（输出到 storybook-static）
+
+```bash
+pnpm -C apps/storybook build-storybook
+```
+
+### 4.3 从仓库根目录构建（推荐统一入口）
+
+```bash
+pnpm build:storybook
+```
+
+说明：该命令会通过 Turborepo 仅构建 `@repo/storybook` 的 `build-storybook` 任务。
+
+## 5) CI 构建与镜像发布（和 web/docs 同方式）
+
+### 5.1 CI 工作流
+
+- 统一在 `.github/workflows/docker-publish.yml` 的 `build-frontend-apps` 矩阵内构建并推送：
+  - `storybook` → `apps/storybook/Dockerfile`
+
+### 5.2 镜像内容
+
+- `apps/storybook/Dockerfile`：
+  - `turbo prune @repo/storybook --docker` 精简依赖
+  - `pnpm turbo run build-storybook --filter=@repo/storybook` 产出 `storybook-static`
+  - 使用 `nginx:alpine` 托管静态文件
+
+### 5.3 镜像访问（本地示例）
+
+```bash
+docker run --rm -p 7007:80 <DOCKERHUB_USERNAME>/storybook:latest
+```
+
+浏览器访问：`http://localhost:7007`
+
+## 6) docker-compose + nginx-proxy 访问（仓库标准方式）
+
+### 6.1 compose 服务
+
+- `docker-compose.yml` / `docker-compose.prod.yml` 中增加 `storybook`：
+  - 仅 `expose: 80`（不对外映射端口）
+  - 由 `nginx-proxy` 统一对外提供入口
+
+### 6.2 nginx-proxy 域名路由
+
+- `docker/nginx/conf.d/default.conf` 增加 server：
+  - `storybook.example.com` → `proxy_pass http://storybook:80;`
+
+### 6.3 本机访问（Windows hosts）
+
+管理员权限编辑 `C:\Windows\System32\drivers\etc\hosts`：
+
+```text
+127.0.0.1 storybook.example.com
+```
+
+访问入口（仓库默认入口端口为 8888）：
+
+- `http://storybook.example.com:8888/`
+
+## 7) 常见问题（优先排查）
+
+- **误装 addon-essentials**：Storybook v10 不需要 `@storybook/addon-essentials`，不要为了 actions/controls/docs 再额外装它。
+- **monorepo 下 React 重复/dispatcher 为 null**：不要删 `apps/storybook/.storybook/main.ts` 中针对 pnpm/workspace 的 `dedupe`、`preserveSymlinks`、`optimizeDeps.exclude` 等处理。
+- **Vite 构建告警 “use client”**：常见于依赖（如 sonner/radix）产物，通常不影响构建成功；以构建是否成功与页面是否可用为准。
+- **跨包 stories 未加载**：检查 `apps/storybook/.storybook/main.ts` 中的 `stories` glob 路径是否正确包含所有包的 stories 目录。
+

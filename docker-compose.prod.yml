@@ -213,6 +213,26 @@ services:
       retries: 3
       start_period: 10s
 
+  # 组件库 Storybook（不暴露端口，仅内部访问）
+  # 使用远程镜像为主，同时保留 build 作为兜底（镜像不存在时可本地构建）
+  storybook:
+    image: ${REGISTRY:-gzhidao1010}/storybook:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: apps/storybook/Dockerfile
+    container_name: storybook
+    expose:
+      - "80"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   # Nginx 反向代理（根据域名路由）
   nginx-proxy:
     image: nginx:alpine
@@ -227,6 +247,7 @@ services:
     depends_on:
       - web
       - docs
+      - storybook
       - api-gateway
     networks:
       - microservices-network

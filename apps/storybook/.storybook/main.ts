@@ -3,9 +3,17 @@ import { fileURLToPath } from "node:url"
 import type { StorybookConfig } from "@storybook/react-vite"
 
 const storybookDir = path.dirname(fileURLToPath(import.meta.url))
+// 说明：从 apps/storybook/.storybook/ 向上三级到达 monorepo 根目录
+const monorepoRoot = path.resolve(storybookDir, "../../..")
 
 const config: StorybookConfig = {
-  stories: ["../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
+  // 说明：统一 Storybook 展示所有包的组件 stories
+  // 路径相对于 Storybook 项目根目录（apps/storybook/）
+  // 从 apps/storybook/ 向上三级到达 monorepo 根目录：../ -> apps/ -> ../ -> monorepo root
+  stories: [
+    "../../../packages/propel/src/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+    "../../../packages/ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+  ],
   addons: ["@storybook/addon-a11y"],
   framework: {
     name: "@storybook/react-vite",
@@ -29,7 +37,7 @@ const config: StorybookConfig = {
       optimizeDeps: {
         ...(viteConfig.optimizeDeps ?? {}),
         // 说明：避免把 workspace 源码包当成普通依赖预构建，容易导致重复 React（hooks dispatcher 为 null）
-        exclude: Array.from(new Set([...excludeList, "@repo/ui"])),
+        exclude: Array.from(new Set([...excludeList, "@repo/ui", "@repo/propel"])),
         // 说明：强制每次启动重建预构建产物，避免被旧缓存误伤（可稳定复现/验证修复）
         force: true,
         esbuildOptions: {
