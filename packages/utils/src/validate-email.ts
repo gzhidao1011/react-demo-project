@@ -13,7 +13,6 @@
  * ```
  */
 export function validateEmail(email: string): boolean {
-  // 检查输入是否为字符串
   if (typeof email !== "string") {
     return false;
   }
@@ -21,7 +20,6 @@ export function validateEmail(email: string): boolean {
   // 去除首尾空格
   const trimmedEmail = email.trim();
 
-  // 检查是否为空
   if (!trimmedEmail) {
     return false;
   }
