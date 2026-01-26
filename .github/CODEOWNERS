@@ -1,0 +1,60 @@
+# CODEOWNERS 文件
+# 
+# 此文件用于自动分配代码审查者
+# 语法：路径规则 @用户名或团队名
+# 
+# 更多信息：https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ==================== 全局默认审查者 ====================
+# 如果文件没有匹配到特定规则，将使用默认审查者
+# 默认审查者：@gzhidao1011
+* @gzhidao1011
+
+# ==================== 前端应用 ====================
+apps/web/ @gzhidao1011
+apps/docs/ @gzhidao1011
+apps/storybook/ @gzhidao1011
+
+# ==================== 共享包 ====================
+packages/ui/ @gzhidao1011
+packages/propel/ @gzhidao1011
+packages/utils/ @gzhidao1011
+packages/schemas/ @gzhidao1011
+packages/services/ @gzhidao1011
+packages/hooks/ @gzhidao1011
+packages/types/ @gzhidao1011
+packages/constants/ @gzhidao1011
+packages/decorators/ @gzhidao1011
+packages/shared-state/ @gzhidao1011
+packages/tailwind-config/ @gzhidao1011
+packages/typescript-config/ @gzhidao1011
+packages/biome-config/ @gzhidao1011
+
+# ==================== 后端服务 ====================
+services/user-service/ @gzhidao1011
+services/order-service/ @gzhidao1011
+services/api-gateway/ @gzhidao1011
+services/api-common/ @gzhidao1011
+
+# ==================== 基础设施 ====================
+# CI/CD 工作流
+.github/workflows/ @gzhidao1011
+
+# Docker 配置
+docker/ @gzhidao1011
+docker-compose.yml @gzhidao1011
+docker-compose.prod.yml @gzhidao1011
+
+# ==================== 配置文件 ====================
+package.json @gzhidao1011
+pnpm-lock.yaml @gzhidao1011
+pnpm-workspace.yaml @gzhidao1011
+turbo.json @gzhidao1011
+tsconfig.base.json @gzhidao1011
+biome.json @gzhidao1011
+
+# ==================== 文档 ====================
+# 项目文档和规范
+.cursor/rules/ @gzhidao1011
+services/docs/ @gzhidao1011
+*.md @gzhidao1011

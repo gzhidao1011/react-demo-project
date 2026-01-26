@@ -80,7 +80,7 @@ jobs:
         run: pnpm test:coverage
         continue-on-error: true
 
-      # 9. 上传覆盖率报告
+      # 9. 上传覆盖率报告到 Artifacts
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -90,7 +90,21 @@ jobs:
             **/coverage/**
           retention-days: 30
 
-      # 10. 测试摘要
+      # 10. 上传覆盖率报告到 Codecov
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: |
+            **/coverage/lcov.info
+            **/coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          verbose: true
+
+      # 11. 测试摘要
       - name: Test Summary
         if: always()
         run: |
@@ -101,4 +115,6 @@ jobs:
           echo "- ✅ 代码检查通过" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ 测试通过" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "覆盖率报告已上传到 artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "### 覆盖率报告" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 覆盖率报告已上传到 [Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 覆盖率详情请查看 [Codecov](https://codecov.io/gh/${{ github.repository }})" >> $GITHUB_STEP_SUMMARY
