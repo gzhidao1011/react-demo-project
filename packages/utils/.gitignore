@@ -1,0 +1,6 @@
+# 测试覆盖率报告
+coverage/
+*.lcov
+
+# Vitest 缓存
+.vitest/

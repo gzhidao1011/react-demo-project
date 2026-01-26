@@ -10,13 +10,17 @@
     "dev": "turbo run dev --concurrency=18",
     "start": "turbo run start",
     "clean": "turbo run clean && rm -rf .turbo && rm -rf .next && rm -rf node_modules && rm -rf dist",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "test:watch": "turbo run test:watch",
     "fix": "turbo run fix",
     "fix:format": "biome format --write",
     "fix:lint": "biome lint --write",
     "check": "biome check",
     "check:lint": "biome lint",
     "check:format": "biome format",
-    "check:types": "biome check --types"
+    "check:types": "biome check --types",
+    "prebuild": "pnpm test"
   },
   "devDependencies": {
     "turbo": "2.7.4",

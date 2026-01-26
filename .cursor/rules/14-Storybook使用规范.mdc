@@ -1,5 +1,5 @@
 ---
-description: Storybook 统一展示入口（apps/storybook）新增 Story、构建、CI 镜像与访问规范
+description: Storybook 统一展示入口（apps/storybook）架构分析、新增 Story、构建、CI 镜像与访问规范
 alwaysApply: true
 ---
 
@@ -18,6 +18,65 @@ alwaysApply: true
   - `apps/storybook/Dockerfile`、`apps/storybook/nginx.conf`
   - `docker-compose.yml`、`docker-compose.prod.yml`
   - `docker/nginx/conf.d/default.conf`
+
+## 架构背景
+
+### 当前架构（模式 B2：独立 Storybook App）
+
+项目采用 **Turborepo 官方推荐的主流做法**：将 Storybook 作为独立 app 放在 `apps/storybook/`，统一展示所有包的组件 stories。
+
+```
+apps/
+  └── storybook/  # 独立的 Storybook 应用
+      └── .storybook/
+packages/
+  ├── ui/src/**/*.stories.tsx
+  └── propel/src/**/*.stories.tsx
+```
+
+**优势**：
+- ✅ 符合 Turborepo 官方推荐的主流做法
+- ✅ 职责清晰（独立 app）
+- ✅ 扩展性强（可轻松添加新包的 stories）
+- ✅ 符合 monorepo 的 `apps/` 和 `packages/` 分离原则
+- ✅ 配置完善，正确处理了 monorepo 跨包依赖
+
+### 包职责与依赖关系
+
+```
+@repo/ui (基础组件库)
+  ├── Button, Input, Card, Sonner 等基础组件
+  └── 可添加 stories（在 apps/storybook 中展示）
+
+@repo/propel (增强/包装层)
+  ├── 依赖 @repo/ui
+  ├── 包装/增强 ui 组件（如 toast 包装 Toaster）
+  ├── 提供业务层组件（如 ToggleMode）
+  └── 包含 stories（在 apps/storybook 中展示）
+
+@repo/storybook (统一展示入口)
+  ├── 独立的 Storybook 应用（apps/storybook/）
+  ├── 展示所有包的组件 stories
+  └── 符合 Turborepo 官方推荐的主流做法
+```
+
+### Monorepo 兼容配置要点
+
+`apps/storybook/.storybook/main.ts` 中的关键配置：
+
+```typescript
+// ✅ 正确：排除 workspace 包避免预构建导致 React 重复
+exclude: ["@repo/ui", "@repo/propel"]
+
+// ✅ 正确：强制 React 去重，避免 hooks dispatcher 为 null
+dedupe: ["react", "react-dom", "scheduler"]
+
+// ✅ 正确：不保留 symlink，避免路径解析问题
+preserveSymlinks: false
+
+// ✅ 正确：允许访问父目录（workspace 包）
+server.fs.allow: [父目录路径]
+```
 
 ## 1) Storybook 的入口与目录约定
 
@@ -140,10 +199,30 @@ docker run --rm -p 7007:80 <DOCKERHUB_USERNAME>/storybook:latest
 
 - `http://storybook.example.com:8888/`
 
-## 7) 常见问题（优先排查）
+## 7) 未来扩展
+
+### 场景：`ui` 包也需要添加 stories
+
+**当前方案已支持**：✅ 无需额外配置
+
+1. 在 `packages/ui/src/` 下创建 `*.stories.tsx` 文件
+2. `apps/storybook/.storybook/main.ts` 已包含 `packages/ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)`
+3. Story 的 `title` 使用 `ui/xxx` 格式
+
+**示例**：
+```typescript
+// packages/ui/src/button/button.stories.tsx
+const meta: Meta<typeof Button> = {
+  title: "ui/button",  // ui 包的组件
+  component: Button,
+}
+```
+
+**优势**：当前架构已支持跨包展示，无需额外配置
+
+## 8) 常见问题（优先排查）
 
 - **误装 addon-essentials**：Storybook v10 不需要 `@storybook/addon-essentials`，不要为了 actions/controls/docs 再额外装它。
 - **monorepo 下 React 重复/dispatcher 为 null**：不要删 `apps/storybook/.storybook/main.ts` 中针对 pnpm/workspace 的 `dedupe`、`preserveSymlinks`、`optimizeDeps.exclude` 等处理。
-- **Vite 构建告警 “use client”**：常见于依赖（如 sonner/radix）产物，通常不影响构建成功；以构建是否成功与页面是否可用为准。
+- **Vite 构建告警 "use client"**：常见于依赖（如 sonner/radix）产物，通常不影响构建成功；以构建是否成功与页面是否可用为准。
 - **跨包 stories 未加载**：检查 `apps/storybook/.storybook/main.ts` 中的 `stories` glob 路径是否正确包含所有包的 stories 目录。
-

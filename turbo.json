@@ -7,7 +7,7 @@
   },
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "test"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", "build/**", ".react-router/**"]
     },
@@ -58,8 +58,19 @@
       "persistent": true
     },
     "test": {
-      "dependsOn": ["^build"],
-      "outputs": []
+      "dependsOn": [],
+      "inputs": ["$TURBO_DEFAULT$", "src/**/*.ts", "src/**/*.tsx", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+      "outputs": ["coverage/**"]
+    },
+    "test:coverage": {
+      "dependsOn": [],
+      "inputs": ["$TURBO_DEFAULT$", "src/**/*.ts", "src/**/*.tsx", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+      "outputs": ["coverage/**"]
+    },
+    "test:watch": {
+      "cache": false,
+      "dependsOn": [],
+      "persistent": true
     }
   }
 }

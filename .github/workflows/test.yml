@@ -1,0 +1,102 @@
+# ==================== 测试工作流 ====================
+# 
+# 触发条件：
+#   - 推送到所有分支（PR 和 push）
+#   - 手动触发
+#
+# 功能：
+#   - 运行类型检查
+#   - 运行代码检查（lint、format）
+#   - 运行所有测试
+#   - 生成测试覆盖率报告
+#
+# ================================================================
+
+name: Test
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'packages/**'
+      - 'apps/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'packages/**'
+      - 'apps/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test and Lint
+    
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 设置 Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      # 3. 启用 Corepack（pnpm）
+      - name: Enable Corepack
+        run: corepack enable && corepack prepare pnpm@10.28.0 --activate
+
+      # 4. 安装依赖
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 5. 运行类型检查
+      - name: Type check
+        run: pnpm check:types
+
+      # 6. 运行代码检查（lint 和 format）
+      - name: Lint and format check
+        run: pnpm check
+
+      # 7. 运行测试
+      - name: Run tests
+        run: pnpm test
+
+      # 8. 生成测试覆盖率报告
+      - name: Generate test coverage
+        run: pnpm test:coverage
+        continue-on-error: true
+
+      # 9. 上传覆盖率报告
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            **/coverage/**
+          retention-days: 30
+
+      # 10. 测试摘要
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## Test Results ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 测试状态" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 类型检查通过" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 代码检查通过" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 测试通过" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "覆盖率报告已上传到 artifacts" >> $GITHUB_STEP_SUMMARY

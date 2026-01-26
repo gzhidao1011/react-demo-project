@@ -1,0 +1,210 @@
+# 测试与发布流程配置总结
+
+本文档总结了为项目完善的测试和发布流程配置，确保只有测试通过后才能构建和发布。
+
+## 📋 配置概览
+
+### ✅ 已完成的配置
+
+1. **根目录 `package.json`**
+   - ✅ 添加 `test` 脚本：运行所有包的测试
+   - ✅ 添加 `test:coverage` 脚本：生成覆盖率报告
+   - ✅ 添加 `test:watch` 脚本：监听模式运行测试
+   - ✅ 添加 `prebuild` 钩子：构建前自动运行测试
+
+2. **`turbo.json`**
+   - ✅ `build` 任务依赖于 `test`：确保构建前测试通过
+   - ✅ 完善 `test` 任务配置：添加输入文件和输出目录
+   - ✅ 添加 `test:coverage` 和 `test:watch` 任务配置
+   - ✅ 修复循环依赖：`test` 任务不再依赖 `^build`
+
+3. **`packages/utils/package.json`**
+   - ✅ 添加 `prebuild` 钩子：包构建前运行测试
+   - ✅ 添加 `prepublishOnly` 钩子：发布前运行测试和类型检查
+
+4. **CI/CD 工作流**
+   - ✅ 创建独立的测试工作流 (`.github/workflows/test.yml`)
+   - ✅ 在 Docker 构建工作流中添加测试依赖
+   - ✅ 确保测试通过后才能构建和发布
+
+## 🔄 工作流程
+
+### 本地开发流程
+
+```bash
+# 1. 运行测试
+pnpm test
+
+# 2. 运行构建（会自动先运行测试）
+pnpm build
+
+# 3. 生成覆盖率报告
+pnpm test:coverage
+```
+
+### CI/CD 流程
+
+```
+推送代码
+  ↓
+触发 test.yml 工作流
+  ├─ 类型检查 (pnpm check:types)
+  ├─ 代码检查 (pnpm check)
+  ├─ 运行测试 (pnpm test)
+  └─ 生成覆盖率报告 (pnpm test:coverage)
+  ↓
+测试通过？
+  ├─ 是 → 触发 docker-publish.yml
+  │        ├─ 构建 Java 服务
+  │        └─ 构建前端应用
+  └─ 否 → 构建失败，不发布
+```
+
+## 📁 文件变更清单
+
+### 新增文件
+
+1. **`.github/workflows/test.yml`**
+   - 独立的测试工作流
+   - 在 PR 和 push 时自动运行
+   - 包含类型检查、代码检查、测试和覆盖率报告
+
+2. **`packages/utils/TESTING_AND_RELEASE.md`**
+   - 详细的测试和发布流程文档
+   - 包含最佳实践和故障排查指南
+
+3. **`TESTING_RELEASE_SETUP.md`**（根目录）
+   - 配置总结文档
+
+### 修改文件
+
+1. **`package.json`**（根目录）
+   - 添加测试相关脚本
+   - 添加 `prebuild` 钩子
+
+2. **`turbo.json`**
+   - 修改 `build` 任务依赖关系
+   - 完善 `test` 任务配置
+   - 添加 `test:coverage` 和 `test:watch` 任务
+
+3. **`packages/utils/package.json`**
+   - 添加 `prebuild` 和 `prepublishOnly` 钩子
+
+4. **`.github/workflows/docker-publish.yml`**
+   - 添加独立的 `test` job
+   - 构建任务依赖于测试任务
+
+## 🎯 保障机制
+
+### 1. npm 生命周期钩子
+
+- **`prebuild`**: 在构建前自动运行测试
+- **`prepublishOnly`**: 在发布前运行测试和类型检查
+
+### 2. Turborepo 任务依赖
+
+- **`build` 依赖于 `test`**: 确保构建前测试必须通过
+- **`test` 独立运行**: 不依赖构建，避免循环依赖
+
+### 3. CI/CD 工作流
+
+- **独立测试工作流**: 在 PR 和 push 时自动运行
+- **构建工作流依赖测试**: 只有测试通过才构建
+
+## 📊 测试结果
+
+当前测试状态：
+
+```
+✓ src/validate-email.test.ts (25 tests)
+✓ src/auth.test.ts (36 tests)
+✓ src/form-errors.test.ts (38 tests)
+
+Test Files: 3 passed (3)
+Tests: 99 passed (99)
+```
+
+## 🚀 使用指南
+
+### 本地开发
+
+```bash
+# 运行所有测试
+pnpm test
+
+# 监听模式（开发时使用）
+pnpm test:watch
+
+# 生成覆盖率报告
+pnpm test:coverage
+
+# 运行构建（会自动先运行测试）
+pnpm build
+```
+
+### CI/CD
+
+- 推送到 GitHub 后，会自动触发测试工作流
+- 测试通过后，才会触发构建和发布工作流
+- 测试失败时，构建不会执行
+
+## 📚 参考文档
+
+- [packages/utils/TESTING_AND_RELEASE.md](../packages/utils/TESTING_AND_RELEASE.md) - 详细的测试和发布流程文档
+- [Vitest 文档](https://vitest.dev/)
+- [Turborepo 文档](https://turbo.build/repo/docs)
+- [npm 生命周期脚本](https://docs.npmjs.com/cli/v10/using-npm/scripts#life-cycle-scripts)
+
+## ✨ 符合主流实践
+
+本配置符合以下主流和国外最佳实践：
+
+1. ✅ **测试驱动开发 (TDD)**: 测试必须通过才能构建
+2. ✅ **CI/CD 最佳实践**: 独立的测试工作流，构建依赖测试
+3. ✅ **npm 生命周期钩子**: 使用 `prebuild` 和 `prepublishOnly` 保障质量
+4. ✅ **Turborepo 任务依赖**: 利用 Turborepo 的任务依赖系统
+5. ✅ **测试覆盖率**: 生成和上传覆盖率报告
+6. ✅ **自动化流程**: 所有检查自动化，减少人为错误
+
+## 🔍 验证
+
+运行以下命令验证配置：
+
+```bash
+# 1. 运行测试
+pnpm test
+
+# 2. 尝试构建（应该会自动先运行测试）
+pnpm build
+
+# 3. 查看测试覆盖率
+pnpm test:coverage
+```
+
+所有命令都应该成功执行，测试应该全部通过。
+
+## 重要原则
+
+> **重要**：所有构建和发布操作必须确保测试通过。禁止跳过测试或忽略测试失败。
+
+### 强制执行的检查
+
+1. **本地构建**: `pnpm build` 会自动运行 `prebuild` 钩子执行测试
+2. **CI/CD 构建**: GitHub Actions 工作流中，构建任务依赖于测试任务
+3. **包发布**: `prepublishOnly` 钩子确保发布前测试和类型检查通过
+
+### 测试脚本要求
+
+所有包含测试的包（如 `@repo/utils`）必须：
+
+1. 在 `package.json` 中配置 `test` 脚本
+2. 添加 `prebuild` 钩子确保构建前测试通过
+3. 如果包可能被发布，添加 `prepublishOnly` 钩子
+
+### Turborepo 配置要求
+
+在 `turbo.json` 中：
+
+1. `build` 任务必须依赖于 `test` 任务
+2. `test` 任务不应依赖 `^build`，避免循环依赖
+3. 配置正确的输入文件和输出目录以优化缓存
