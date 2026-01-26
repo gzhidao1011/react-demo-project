@@ -3,7 +3,7 @@
  * 提供 token 的存储、获取、清除等功能
  */
 
-// Token 存储 Key
+// Token  存储 Key
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 const TOKEN_EXPIRES_KEY = "token_expires";
