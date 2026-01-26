@@ -1,8 +1,8 @@
-import path from "node:path"
-import { fileURLToPath } from "node:url"
-import type { StorybookConfig } from "@storybook/react-vite"
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import type { StorybookConfig } from "@storybook/react-vite";
 
-const storybookDir = path.dirname(fileURLToPath(import.meta.url))
+const storybookDir = path.dirname(fileURLToPath(import.meta.url));
 
 const config: StorybookConfig = {
   // 说明：统一 Storybook 展示所有包的组件 stories
@@ -20,10 +20,10 @@ const config: StorybookConfig = {
   viteFinal: async (viteConfig) => {
     // 说明：monorepo 下 `@repo/*` 往往是 workspace symlink 到 packages/* 的源码
     // 这里放开 Vite 访问范围，并保留 symlink，避免 Storybook/Vite 访问路径受限或解析错位
-    const existingAllow = viteConfig?.server?.fs?.allow
-    const allowList = Array.isArray(existingAllow) ? existingAllow : existingAllow ? [existingAllow] : []
-    const existingExclude = viteConfig?.optimizeDeps?.exclude
-    const excludeList = Array.isArray(existingExclude) ? existingExclude : existingExclude ? [existingExclude] : []
+    const existingAllow = viteConfig?.server?.fs?.allow;
+    const allowList = Array.isArray(existingAllow) ? existingAllow : existingAllow ? [existingAllow] : [];
+    const existingExclude = viteConfig?.optimizeDeps?.exclude;
+    const excludeList = Array.isArray(existingExclude) ? existingExclude : existingExclude ? [existingExclude] : [];
 
     return {
       ...viteConfig,
@@ -63,8 +63,8 @@ const config: StorybookConfig = {
           ],
         },
       },
-    }
+    };
   },
-}
+};
 
-export default config
+export default config;

@@ -1,5 +1,5 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast, toastError } from "@repo/propel";
 import { type RegisterFormData, registerSchema } from "@repo/schemas";
 import type { RegisterRequest } from "@repo/services";
@@ -67,14 +67,11 @@ export default function SignUpPage() {
             <CardDescription>输入您的信息以创建新账户</CardDescription>
           </CardHeader>
           <CardContent>
-
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               {/* 表单级错误提示（仅显示错误，成功消息使用 Toast） */}
               {errors.root && errors.root.type !== "success" && (
                 <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20" role="alert">
-                  <p className="text-sm text-red-800 dark:text-red-400">
-                    {errors.root.message}
-                  </p>
+                  <p className="text-sm text-red-800 dark:text-red-400">{errors.root.message}</p>
                 </div>
               )}
 
@@ -145,9 +142,7 @@ export default function SignUpPage() {
                     {...register("confirmPassword")}
                     aria-invalid={errors.confirmPassword ? "true" : "false"}
                     aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
-                    className={
-                      errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500 pr-10" : "pr-10"
-                    }
+                    className={errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500 pr-10" : "pr-10"}
                     placeholder="请再次输入密码"
                   />
                   <button

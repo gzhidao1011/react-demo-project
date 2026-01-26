@@ -1,5 +1,4 @@
-import { Toaster } from "@repo/propel";
-import { useTheme } from "@repo/propel";
+import { Toaster, useTheme } from "@repo/propel";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import type { Route } from "./+types/root";
 import "./app.css";

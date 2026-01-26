@@ -59,12 +59,28 @@
     },
     "test": {
       "dependsOn": [],
-      "inputs": ["$TURBO_DEFAULT$", "src/**/*.ts", "src/**/*.tsx", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx"
+      ],
       "outputs": ["coverage/**"]
     },
     "test:coverage": {
       "dependsOn": [],
-      "inputs": ["$TURBO_DEFAULT$", "src/**/*.ts", "src/**/*.tsx", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx"
+      ],
       "outputs": ["coverage/**"]
     },
     "test:watch": {

@@ -71,11 +71,7 @@ export function validateEmail(email: string): boolean {
   }
 
   // 域名不能以点开头或结尾，不能包含连续的点
-  if (
-    domainPart.startsWith(".") ||
-    domainPart.endsWith(".") ||
-    domainPart.includes("..")
-  ) {
+  if (domainPart.startsWith(".") || domainPart.endsWith(".") || domainPart.includes("..")) {
     return false;
   }
 

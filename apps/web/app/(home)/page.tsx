@@ -1,13 +1,7 @@
-import { useNavigate } from "react-router";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from "@repo/ui";
+import { ArrowRightIcon, Bars3Icon, CheckCircleIcon, DocumentTextIcon, HomeIcon } from "@heroicons/react/24/outline";
 import { ToggleMode } from "@repo/propel";
-import {
-  Bars3Icon,
-  HomeIcon,
-  DocumentTextIcon,
-  ArrowRightIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui";
+import { useNavigate } from "react-router";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -79,19 +73,10 @@ export default function HomePage() {
           {/* 右侧登录入口 */}
           <div className="flex items-center gap-3">
             <ToggleMode iconSize="h-5 w-5" />
-            <Button
-              variant="ghost"
-              size="default"
-              onClick={() => navigate("/sign-in")}
-              className="hidden sm:flex"
-            >
+            <Button variant="ghost" size="default" onClick={() => navigate("/sign-in")} className="hidden sm:flex">
               登录
             </Button>
-            <Button
-              variant="default"
-              size="default"
-              onClick={() => navigate("/sign-up")}
-            >
+            <Button variant="default" size="default" onClick={() => navigate("/sign-up")}>
               注册
               <ArrowRightIcon className="ml-1.5 h-4 w-4" />
             </Button>
@@ -116,11 +101,7 @@ export default function HomePage() {
                 强大的开发平台，让您专注于业务创新。提供完整的解决方案，从开发到部署，一站式服务。
               </p>
               <div className="mt-10 flex items-center justify-center gap-4">
-                <Button
-                  size="lg"
-                  onClick={() => navigate("/sign-up")}
-                  className="h-12 px-8 text-base"
-                >
+                <Button size="lg" onClick={() => navigate("/sign-up")} className="h-12 px-8 text-base">
                   立即开始
                   <ArrowRightIcon className="ml-2 h-5 w-5" />
                 </Button>
@@ -133,12 +114,8 @@ export default function HomePage() {
         <section className="py-20 sm:py-24 lg:py-32">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                为什么选择我们
-              </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                我们提供企业级解决方案，帮助您快速构建和部署应用
-              </p>
+              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">为什么选择我们</h2>
+              <p className="mt-4 text-lg text-muted-foreground">我们提供企业级解决方案，帮助您快速构建和部署应用</p>
             </div>
             <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {features.map((feature) => {
@@ -170,27 +147,16 @@ export default function HomePage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <span className="text-sm font-bold">S</span>
               </div>
-              <span className="text-sm text-muted-foreground">
-                © 2026 System. All rights reserved.
-              </span>
+              <span className="text-sm text-muted-foreground">© 2026 System. All rights reserved.</span>
             </div>
             <nav className="flex items-center gap-6">
-              <a
-                href="#"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
+              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 隐私政策
               </a>
-              <a
-                href="#"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
+              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 服务条款
               </a>
-              <a
-                href="#"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
+              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 联系我们
               </a>
             </nav>

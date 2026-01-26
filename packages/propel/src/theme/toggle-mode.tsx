@@ -50,16 +50,10 @@ export function ToggleMode({ showLabel = false, className, iconSize = "h-5 w-5" 
         aria-label={isDark ? "切换到亮色模式" : "切换到暗色模式"}
         className="flex items-center justify-center rounded-lg p-2 text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-secondary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]"
       >
-        {isDark ? (
-          <MoonIcon className={iconSize} />
-        ) : (
-          <SunIcon className={iconSize} />
-        )}
+        {isDark ? <MoonIcon className={iconSize} /> : <SunIcon className={iconSize} />}
       </button>
       {showLabel && (
-        <span className="text-sm text-[var(--color-text-primary)]">
-          {isDark ? "暗色模式" : "亮色模式"}
-        </span>
+        <span className="text-sm text-[var(--color-text-primary)]">{isDark ? "暗色模式" : "亮色模式"}</span>
       )}
     </div>
   );

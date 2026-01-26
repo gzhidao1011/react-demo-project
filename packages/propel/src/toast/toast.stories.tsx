@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react"
-import { Button } from "@repo/ui"
-import { Toaster, toast } from "./toast"
+import { Button } from "@repo/ui";
+import type { Meta, StoryObj } from "@storybook/react";
+import { Toaster, toast } from "./toast";
 
 const ToastPlayground = () => {
   return (
@@ -8,9 +8,7 @@ const ToastPlayground = () => {
       <Toaster richColors />
       <div style={{ display: "grid", gap: 12 }}>
         <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>Toast</h2>
-        <p style={{ margin: 0, color: "var(--color-text-secondary)" }}>
-          点击按钮触发不同类型的 toast（基于 sonner）。
-        </p>
+        <p style={{ margin: 0, color: "var(--color-text-secondary)" }}>点击按钮触发不同类型的 toast（基于 sonner）。</p>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <Button type="button" onClick={() => toast.success("保存成功")}>
@@ -38,16 +36,16 @@ const ToastPlayground = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const meta: Meta<typeof ToastPlayground> = {
   title: "propel/toast",
   component: ToastPlayground,
-}
+};
 
-export default meta
+export default meta;
 
-type Story = StoryObj<typeof ToastPlayground>
+type Story = StoryObj<typeof ToastPlayground>;
 
-export const Playground: Story = {}
+export const Playground: Story = {};

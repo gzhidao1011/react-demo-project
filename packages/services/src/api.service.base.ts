@@ -1,6 +1,6 @@
+import { getAccessToken } from "@repo/utils";
 import type { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 import axios from "axios";
-import { getAccessToken } from "@repo/utils";
 
 /**
  * API 响应结构

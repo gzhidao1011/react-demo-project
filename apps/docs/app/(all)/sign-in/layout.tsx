@@ -7,7 +7,5 @@ export const meta: Route.MetaFunction = () => [
 ];
 
 export default function SignInLayout() {
-  return (
-    <Outlet />
-  );
+  return <Outlet />;
 }

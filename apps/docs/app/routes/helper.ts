@@ -29,7 +29,7 @@ export function mergeRoutes(core: RouteConfigEntry[], extended: RouteConfigEntry
         // Deep merge: recursively merge children
         const mergedChildren = mergeRoutes(
           Array.isArray(coreRoute.children) ? coreRoute.children : [],
-          Array.isArray(extendedRoute.children) ? extendedRoute.children : []
+          Array.isArray(extendedRoute.children) ? extendedRoute.children : [],
         );
         routeMap.set(fileKey, {
           ...extendedRoute,
