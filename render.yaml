@@ -1,0 +1,251 @@
+# ==================== Render Blueprint 配置 ====================
+# 
+# 此文件用于在 Render 平台上自动创建和配置所有服务
+# 
+# 使用方法：
+#   1. 访问 render.com，使用 GitHub 登录
+#   2. 点击 "New" → "Blueprint"
+#   3. 连接 GitHub 仓库
+#   4. Render 会自动读取此文件并创建所有服务
+#
+# PR 预览：
+#   1. 在每个服务的 Settings → Previews 中启用 "Automatic"
+#   2. 每次创建 PR 时，Render 会自动创建预览环境
+#   3. 预览链接会自动显示在 PR 评论中
+#
+# 数据库：使用 MySQL（Docker 部署）
+# 注意：MySQL 需要配置 Render Disk（持久化存储）
+# 配置步骤：
+#   1. 在 Render Dashboard 中为每个 MySQL 服务添加 Render Disk
+#   2. Mount Path: /var/lib/mysql（必须）
+#   3. Size: 10 GB（根据需求调整）
+#
+# ================================================================
+
+services:
+  # ==================== 数据库服务（MySQL）====================
+  
+  # 用户数据库（MySQL）
+  - type: web
+    name: user-db
+    env: docker
+    dockerfilePath: ./docker/mysql/Dockerfile
+    dockerContext: ./docker/mysql
+    plan: starter
+    envVars:
+      - key: MYSQL_DATABASE
+        value: user_db
+      - key: MYSQL_USER
+        value: user_db_user
+      - key: MYSQL_PASSWORD
+        generateValue: true  # Render 会自动生成密码
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+    # 注意：需要在 Dashboard 中手动添加 Render Disk
+    # Mount Path: /var/lib/mysql
+    # Size: 10 GB
+  
+  # 订单数据库（MySQL）
+  - type: web
+    name: order-db
+    env: docker
+    dockerfilePath: ./docker/mysql/Dockerfile
+    dockerContext: ./docker/mysql
+    plan: starter
+    envVars:
+      - key: MYSQL_DATABASE
+        value: order_db
+      - key: MYSQL_USER
+        value: order_db_user
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+    # 注意：需要在 Dashboard 中手动添加 Render Disk
+    # Mount Path: /var/lib/mysql
+    # Size: 10 GB
+  
+  # Nacos 数据库（MySQL）
+  - type: web
+    name: nacos-db
+    env: docker
+    dockerfilePath: ./docker/mysql/Dockerfile
+    dockerContext: ./docker/mysql
+    plan: starter
+    envVars:
+      - key: MYSQL_DATABASE
+        value: nacos
+      - key: MYSQL_USER
+        value: nacos_user
+      - key: MYSQL_PASSWORD
+        generateValue: true
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+    # 注意：需要在 Dashboard 中手动添加 Render Disk
+    # Mount Path: /var/lib/mysql
+    # Size: 10 GB
+  
+  # ==================== 基础设施服务 ====================
+  
+  # Nacos 注册中心（使用 Docker）
+  - type: web
+    name: nacos
+    env: docker
+    dockerfilePath: ./docker/nacos/Dockerfile
+    dockerContext: ./docker/nacos
+    plan: starter  # 免费计划
+    envVars:
+      - key: MODE
+        value: standalone
+      - key: PREFER_HOST_MODE
+        value: hostname
+      - key: SPRING_DATASOURCE_PLATFORM
+        value: mysql
+      - key: MYSQL_SERVICE_HOST
+        # MySQL 服务使用内部 DNS: service-name.onrender.com
+        # 需要在 Dashboard 中手动配置为: ${nacos-db.onrender.com}
+        value: nacos-db.onrender.com
+      - key: MYSQL_SERVICE_PORT
+        value: "3306"
+      - key: MYSQL_SERVICE_DB_NAME
+        value: nacos
+      - key: MYSQL_SERVICE_USER
+        value: nacos_user
+      - key: MYSQL_SERVICE_PASSWORD
+        # 注意：密码需要在 Dashboard 中手动配置
+        # 1. 进入 nacos-db 服务的 Dashboard
+        # 2. 查看环境变量 MYSQL_PASSWORD 的值
+        # 3. 复制密码并在此处配置（或使用 Secret 环境变量）
+        # 临时占位符，需要在 Dashboard 中替换为实际密码
+        value: "CHANGE_ME_IN_DASHBOARD"
+      - key: MYSQL_SERVICE_DB_PARAM
+        value: characterEncoding=utf8&connectTimeout=10000&socketTimeout=30000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+      - key: NACOS_AUTH_ENABLE
+        value: "false"
+      - key: JVM_XMS
+        value: 256m
+      - key: JVM_XMX
+        value: 512m
+  
+  # ==================== Java 微服务 ====================
+  
+  # 用户服务
+  - type: web
+    name: user-service
+    env: docker
+    dockerfilePath: ./services/user-service/Dockerfile
+    dockerContext: ./services/user-service
+    plan: starter  # 免费计划
+    buildCommand: cd ../.. && mvn clean package -DskipTests -pl user-service -am
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: PORT
+        value: "8001"
+      - key: NACOS_SERVER_ADDR
+        # Render 服务间通信使用内部 DNS: service-name.onrender.com:port
+        # 需要在 Dashboard 中手动配置为: ${nacos.onrender.com}:8848
+        value: nacos.onrender.com:8848
+      - key: MYSQL_HOST
+        # MySQL 服务使用内部 DNS: service-name.onrender.com
+        # 需要在 Dashboard 中手动配置为: ${user-db.onrender.com}
+        value: user-db.onrender.com
+      - key: MYSQL_PORT
+        value: "3306"
+      - key: MYSQL_DATABASE
+        value: user_db
+      - key: MYSQL_USERNAME
+        value: user_db_user
+      - key: MYSQL_PASSWORD
+        # 注意：密码需要在 Dashboard 中手动配置
+        # 1. 进入 user-db 服务的 Dashboard
+        # 2. 查看环境变量 MYSQL_PASSWORD 的值
+        # 3. 复制密码并在此处配置（或使用 Secret 环境变量）
+        # 临时占位符，需要在 Dashboard 中替换为实际密码
+        value: "CHANGE_ME_IN_DASHBOARD"
+      - key: DOCKER_HOST_IP
+        value: user-service.onrender.com
+  
+  # 订单服务
+  - type: web
+    name: order-service
+    env: docker
+    dockerfilePath: ./services/order-service/Dockerfile
+    dockerContext: ./services/order-service
+    plan: starter  # 免费计划
+    buildCommand: cd ../.. && mvn clean package -DskipTests -pl order-service -am
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: PORT
+        value: "8002"
+      - key: NACOS_SERVER_ADDR
+        value: nacos.onrender.com:8848
+      - key: MYSQL_HOST
+        # MySQL 服务使用内部 DNS: service-name.onrender.com
+        # 需要在 Dashboard 中手动配置为: ${order-db.onrender.com}
+        value: order-db.onrender.com
+      - key: MYSQL_PORT
+        value: "3306"
+      - key: MYSQL_DATABASE
+        value: order_db
+      - key: MYSQL_USERNAME
+        value: order_db_user
+      - key: MYSQL_PASSWORD
+        # 注意：密码需要在 Dashboard 中手动配置
+        # 1. 进入 user-db 服务的 Dashboard
+        # 2. 查看环境变量 MYSQL_PASSWORD 的值
+        # 3. 复制密码并在此处配置（或使用 Secret 环境变量）
+        # 临时占位符，需要在 Dashboard 中替换为实际密码
+        value: "CHANGE_ME_IN_DASHBOARD"
+      - key: DOCKER_HOST_IP
+        value: order-service.onrender.com
+  
+  # API 网关
+  - type: web
+    name: api-gateway
+    env: docker
+    dockerfilePath: ./services/api-gateway/Dockerfile
+    dockerContext: ./services/api-gateway
+    plan: starter  # 免费计划
+    buildCommand: cd ../.. && mvn clean package -DskipTests -pl api-gateway -am
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: PORT
+        value: "8080"
+      - key: NACOS_SERVER_ADDR
+        value: nacos.onrender.com:8848
+      - key: SENTINEL_DASHBOARD
+        value: ""  # Render 上暂不支持 Sentinel，留空
+  
+  # ==================== 前端应用 ====================
+  
+  # Web 应用（Static Site）
+  - type: web
+    name: web
+    env: static
+    buildCommand: pnpm install && pnpm --filter @repo/web build
+    staticPublishPath: ./apps/web/build/client
+    plan: starter  # 免费计划
+    envVars:
+      # API 基础 URL（使用 Render 服务 URL）
+      # 需要在 Dashboard 中手动配置为实际的 api-gateway URL
+      - key: VITE_API_BASE_URL
+        value: https://api-gateway.onrender.com
+  
+  # Docs 应用（Static Site）
+  - type: web
+    name: docs
+    env: static
+    buildCommand: pnpm install && pnpm --filter @repo/docs build
+    staticPublishPath: ./apps/docs/build/client
+    plan: starter  # 免费计划
+  
+  # Storybook（Static Site）
+  - type: web
+    name: storybook
+    env: static
+    buildCommand: pnpm install && pnpm --filter @repo/storybook build-storybook
+    staticPublishPath: ./apps/storybook/storybook-static
+    plan: starter  # 免费计划

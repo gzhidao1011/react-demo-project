@@ -59,6 +59,13 @@
             <scope>runtime</scope>
         </dependency>
         
+        <!-- PostgreSQL 驱动（用于 Render 平台） -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
         <!-- Lombok（简化代码，自动生成 Getter/Setter） -->
         <dependency>
             <groupId>org.projectlombok</groupId>

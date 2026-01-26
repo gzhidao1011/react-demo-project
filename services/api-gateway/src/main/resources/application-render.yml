@@ -1,0 +1,56 @@
+# Render 环境配置
+# 适配 Render 平台的部署环境
+server:
+  port: ${PORT:8080}  # Render 使用 PORT 环境变量
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      # 全局超时配置
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 30s
+      routes:
+        # 用户服务路由
+        - id: user-service
+          uri: lb://user-service  # lb 表示负载均衡，user-service 是服务名
+          predicates:
+            - Path=/api/users/**
+        
+        # 订单服务路由
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**
+    
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:nacos.onrender.com:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+    
+    # Sentinel 配置（Render 上暂不支持 Sentinel，禁用）
+    sentinel:
+      enabled: false
+      transport:
+        port: 8719
+        dashboard: ${SENTINEL_DASHBOARD:}
+      eager: false
+
+# 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: INFO
