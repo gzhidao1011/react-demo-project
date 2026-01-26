@@ -13,7 +13,6 @@
  * ```
  */
 export function validateEmail(email: string): boolean {
-  // 检查输入是否为字符串
   if (typeof email !== "string") {
     return false;
   }
