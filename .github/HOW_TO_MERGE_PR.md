@@ -224,11 +224,13 @@ git push
 
 ## 📊 合并方式对比
 
-| 合并方式 | 提交历史 | 适用场景 | 推荐度 |
-|---------|---------|---------|--------|
-| **Squash and merge** | 单个提交 | 大多数情况 | ⭐⭐⭐⭐⭐ |
-| **Create a merge commit** | 保留所有提交 + 合并提交 | 需要完整历史 | ⭐⭐⭐ |
-| **Rebase and merge** | 线性历史，无合并提交 | 需要线性历史 | ⭐⭐⭐⭐ |
+| 合并方式 | GitHub 提示信息 | 提交历史 | 适用场景 | 推荐度 |
+|---------|---------------|---------|---------|--------|
+| **Create a merge commit** | "All commits from this branch will be added to the base branch via a merge commit." | 保留所有提交 + 合并提交 | 需要完整历史 | ⭐⭐⭐ |
+| **Squash and merge** | "The X commits from this branch will be squashed and merged into 1 commit." | 压缩为单个提交 | 大多数情况 | ⭐⭐⭐⭐⭐ |
+| **Rebase and merge** | "The X commits from this branch will be rebased and added to the base branch." | 线性历史，无合并提交 | 需要线性历史 | ⭐⭐⭐⭐ |
+
+**详细对比说明**：请参考 [合并方式对比详解](./MERGE_METHODS_COMPARISON.md)
 
 ## 💡 最佳实践
 
