@@ -19,7 +19,7 @@
     "check": "biome check",
     "check:lint": "biome lint",
     "check:format": "biome format",
-    "check:types": "biome check --types",
+    "check:types": "turbo run check:types",
     "prebuild": "pnpm test"
   },
   "devDependencies": {

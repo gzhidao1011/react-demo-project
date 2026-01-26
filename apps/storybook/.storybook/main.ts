@@ -3,8 +3,6 @@ import { fileURLToPath } from "node:url"
 import type { StorybookConfig } from "@storybook/react-vite"
 
 const storybookDir = path.dirname(fileURLToPath(import.meta.url))
-// 说明：从 apps/storybook/.storybook/ 向上三级到达 monorepo 根目录
-const monorepoRoot = path.resolve(storybookDir, "../../..")
 
 const config: StorybookConfig = {
   // 说明：统一 Storybook 展示所有包的组件 stories

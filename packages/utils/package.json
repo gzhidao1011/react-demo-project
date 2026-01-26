@@ -14,13 +14,13 @@
   "scripts": {
     "lint": "biome check --write",
     "generate:component": "turbo gen react-component",
-    "check-types": "tsc --noEmit",
+    "check:types": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "prebuild": "pnpm test",
-    "prepublishOnly": "pnpm test && pnpm check-types"
+    "prepublishOnly": "pnpm test && pnpm check:types"
   },
   "devDependencies": {
     "@repo/biome-config": "workspace:*",
