@@ -1,7 +1,7 @@
 import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 
 /**
- * 服务器错误接口
+ * 服务器错误 接口
  * 包含字段级错误数组
  */
 export interface ServerError extends Error {
