@@ -1,0 +1,351 @@
+# 测试与覆盖率规范
+
+本文档定义了项目中使用测试和代码覆盖率工具的规范，确保代码质量和测试覆盖。
+
+> **重要**：所有代码变更必须通过测试，并保持或提高代码覆盖率。
+
+> **文档定位**：本文档专注于**测试编写规范和覆盖率要求**，包括测试工具、测试最佳实践、覆盖率标准等。如需了解测试流程的配置说明，请参考 [测试与发布流程配置总结](./15-测试与发布流程.mdc)。
+
+## 核心原则
+
+1. **测试必需**：所有新功能必须包含测试用例
+2. **覆盖率要求**：保持或提高代码覆盖率
+3. **CI 集成**：测试必须在 CI 中自动运行
+4. **覆盖率报告**：在 PR 中显示覆盖率信息
+
+## 测试工具
+
+### 前端测试
+
+- **Vitest**：测试框架
+- **@testing-library/react**：React 组件测试
+- **@testing-library/jest-dom**：DOM 断言
+
+### 后端测试
+
+- **JUnit 5**：Java 单元测试框架
+- **Mockito**：Mock 框架
+- **Spring Boot Test**：集成测试
+
+## 测试工作流
+
+### CI/CD 集成
+
+项目已配置 `.github/workflows/test.yml`，会在以下情况自动运行：
+
+- ✅ 所有分支的 PR
+- ✅ 推送到所有分支（特定路径）
+- ✅ 手动触发
+
+### 测试步骤
+
+CI 工作流包含以下步骤：
+
+1. **Checkout repository**：检出代码
+2. **Install pnpm**：安装 pnpm
+3. **Set up Node.js**：设置 Node.js 环境
+4. **Install dependencies**：安装依赖
+5. **Type check**：类型检查
+6. **Lint and format check**：代码检查和格式化检查
+7. **Run tests**：运行测试
+8. **Generate test coverage**：生成覆盖率报告
+9. **Upload coverage reports**：上传覆盖率报告
+10. **Upload coverage to Codecov**：上传到 Codecov（如果已配置）
+
+## Codecov 集成
+
+### 配置步骤
+
+#### 1. 注册 Codecov 账户
+
+1. 访问 [Codecov](https://codecov.io/)
+2. 使用 GitHub 账户登录
+3. 授权 Codecov 访问你的 GitHub 仓库
+
+#### 2. 添加仓库到 Codecov
+
+1. 登录 Codecov 后，点击 **Add new repository**
+2. 选择你的 GitHub 仓库
+3. Codecov 会自动生成一个 **Repository Upload Token**
+
+#### 3. 配置 GitHub Secrets
+
+1. 打开 GitHub 仓库页面
+2. 进入 **Settings** → **Secrets and variables** → **Actions**
+3. 点击 **New repository secret**
+4. 添加以下 Secret：
+
+   **Name**: `CODECOV_TOKEN`
+   
+   **Value**: 从 Codecov 获取的 Repository Upload Token
+
+#### 4. 验证配置
+
+配置完成后，当 PR 或 push 触发测试工作流时：
+
+1. ✅ 测试工作流会自动生成覆盖率报告
+2. ✅ 覆盖率报告会自动上传到 Codecov
+3. ✅ Codecov 会在 PR 中显示覆盖率变化和评论
+
+### Codecov 功能
+
+#### PR 中的覆盖率显示
+
+- **覆盖率徽章**：显示当前覆盖率百分比
+- **覆盖率变化**：显示 PR 相对于主分支的覆盖率变化
+- **文件级覆盖率**：显示每个文件的覆盖率详情
+- **覆盖率评论**：Codecov bot 会在 PR 中自动评论覆盖率信息
+
+#### 覆盖率阈值
+
+可以在 Codecov 中配置覆盖率阈值：
+
+- **最小覆盖率要求**：例如要求覆盖率不低于 80%
+- **覆盖率下降警告**：如果 PR 导致覆盖率下降，会显示警告
+- **覆盖率目标**：设置覆盖率目标，跟踪进度
+
+### 配置文件（可选）
+
+如果需要自定义 Codecov 行为，可以在项目根目录创建 `codecov.yml`：
+
+```yaml
+codecov:
+  token: # 通常不需要，使用 GitHub Secret
+  notify:
+    wait_for_ci: true
+  comment:
+    layout: "reach,diff,flags,tree"
+    behavior: default
+  coverage:
+    precision: 2
+    round: down
+    range: "70...100"
+  flags:
+    unittests:
+      paths:
+        - packages/utils/
+        - packages/services/
+```
+
+## 本地测试
+
+### 运行测试
+
+```bash
+# 运行所有测试
+pnpm test
+
+# 运行测试并生成覆盖率报告
+pnpm test:coverage
+
+# 监听模式运行测试
+pnpm test:watch
+
+# 运行特定包的测试
+pnpm --filter @repo/utils test
+```
+
+### 查看覆盖率报告
+
+```bash
+# 生成覆盖率报告
+pnpm test:coverage
+
+# 查看 HTML 报告
+# 打开 coverage/lcov-report/index.html
+```
+
+## 测试最佳实践
+
+### 1. 测试覆盖
+
+- ✅ **新功能必须包含测试**：所有新功能都应该有对应的测试用例
+- ✅ **修复 bug 时添加测试**：修复 bug 时添加回归测试
+- ✅ **关键路径优先**：优先测试关键业务逻辑
+- ✅ **边界情况测试**：测试边界情况和异常情况
+
+### 2. 测试质量
+
+- ✅ **测试独立**：每个测试应该独立运行，不依赖其他测试
+- ✅ **测试可读**：测试代码应该清晰易读
+- ✅ **测试快速**：测试应该快速运行
+- ✅ **测试稳定**：测试应该稳定，不应该随机失败
+
+### 3. 测试结构
+
+- ✅ **AAA 模式**：Arrange（准备）、Act（执行）、Assert（断言）
+- ✅ **描述性命名**：测试名称应该清晰描述测试内容
+- ✅ **单一职责**：每个测试应该只测试一个功能点
+
+### 4. Mock 使用
+
+- ✅ **外部依赖 Mock**：Mock 外部 API、数据库等
+- ✅ **避免过度 Mock**：不要过度 Mock，保持测试的真实性
+- ✅ **Mock 数据真实**：Mock 数据应该接近真实数据
+
+## 覆盖率要求
+
+### 覆盖率目标
+
+- **整体覆盖率**：建议不低于 80%
+- **关键模块**：建议不低于 90%
+- **工具函数**：建议不低于 90%
+- **业务逻辑**：建议不低于 70%
+
+### 覆盖率检查
+
+在 PR 中，Codecov 会自动检查：
+
+- ✅ **覆盖率变化**：显示 PR 相对于主分支的覆盖率变化
+- ✅ **覆盖率下降警告**：如果覆盖率下降，会显示警告
+- ✅ **文件级覆盖率**：显示每个文件的覆盖率详情
+
+### 覆盖率提升
+
+如果覆盖率不足：
+
+1. **添加测试用例**：为未覆盖的代码添加测试
+2. **移除死代码**：删除未使用的代码
+3. **重构代码**：简化复杂代码，提高可测试性
+
+## 测试 PR 创建指南
+
+### 创建测试 PR 的目的
+
+通过创建测试 PR，验证以下功能：
+
+- ✅ PR 模板是否自动填充
+- ✅ CI/CD 工作流是否正常运行
+- ✅ CODEOWNERS 是否自动分配审查者
+- ✅ Codecov 是否显示覆盖率（如果已配置）
+- ✅ 所有检查是否通过
+
+### 创建测试 PR 的步骤
+
+#### 步骤 1：创建测试分支
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b test/pr-integration-test
+```
+
+#### 步骤 2：进行小的代码变更
+
+```bash
+# 创建一个测试文件
+echo "# Test PR Integration" > .github/TEST.md
+echo "" >> .github/TEST.md
+echo "This is a test PR to verify PR integration features." >> .github/TEST.md
+```
+
+#### 步骤 3：提交变更
+
+```bash
+git add .
+git commit -m "test: 验证 PR 集成功能"
+git push origin test/pr-integration-test
+```
+
+#### 步骤 4：在 GitHub 上创建 PR
+
+1. 打开 GitHub 仓库页面
+2. 点击 **Pull requests** 标签
+3. 点击 **New pull request**
+4. 选择分支：`test/pr-integration-test` → `main`
+5. 填写 PR 信息
+6. 创建 PR
+
+#### 步骤 5：验证功能
+
+创建 PR 后，等待几分钟让 CI/CD 运行，然后检查：
+
+- ✅ PR 模板已自动填充
+- ✅ CODEOWNERS 自动分配审查者
+- ✅ CI/CD 工作流正常运行
+- ✅ Codecov 显示覆盖率（如果已配置）
+- ✅ 所有检查通过
+
+## 故障排除
+
+### 问题 1：Codecov 未在 PR 中显示
+
+**可能原因**：
+1. `CODECOV_TOKEN` Secret 未配置或配置错误
+2. 覆盖率文件路径不正确
+3. Codecov 服务暂时不可用
+
+**解决方案**：
+1. 检查 GitHub Secrets 中是否配置了 `CODECOV_TOKEN`
+2. 检查工作流日志中的 "Upload coverage to Codecov" 步骤是否有错误
+3. 确认覆盖率文件路径是否正确（`**/coverage/lcov.info`）
+
+### 问题 2：覆盖率报告格式不正确
+
+**可能原因**：测试工具未生成 Codecov 支持的格式
+
+**解决方案**：
+1. 确保测试工具生成 `lcov.info` 或 `coverage-final.json` 格式
+2. 检查测试配置文件（如 `vitest.config.ts`）中的覆盖率配置
+
+### 问题 3：Codecov 评论未显示
+
+**可能原因**：Codecov bot 权限不足
+
+**解决方案**：
+1. 在 Codecov 设置中检查 bot 权限
+2. 确保 Codecov GitHub App 已安装并授权
+
+### 问题 4：CI 检查失败
+
+**可能原因**：
+- 测试失败
+- 类型检查失败
+- 代码检查失败
+
+**解决方案**：
+1. 查看工作流日志了解失败原因
+2. 在本地运行 `pnpm check` 和 `pnpm test` 验证
+3. 修复问题后推送新提交
+
+## 相关文档
+
+### 相关规范文档
+
+- [测试与发布流程配置总结](./15-测试与发布流程.mdc) - 测试流程的配置说明和保障机制
+- [PR 工作流程规范](./17-PR工作流程规范.mdc) - PR 工作流程，包含测试检查要求
+
+### 外部文档
+
+- [Codecov 配置指南](../.github/CODECOV_SETUP.md) - Codecov 配置步骤（如果存在）
+- [测试 PR 创建指南](../.github/TEST_PR_GUIDE.md) - 测试 PR 创建指南（如果存在）
+
+## 常见问题
+
+### Q: 必须达到多少覆盖率才能合并 PR？
+
+**A**: 
+- 建议整体覆盖率不低于 80%
+- 关键模块建议不低于 90%
+- 如果覆盖率下降，Codecov 会显示警告，但不强制阻止合并
+
+### Q: 如何提高覆盖率？
+
+**A**: 
+- 为未覆盖的代码添加测试用例
+- 删除未使用的代码
+- 重构复杂代码，提高可测试性
+
+### Q: Codecov 是必需的吗？
+
+**A**: 
+- Codecov 是可选的，但强烈推荐使用
+- 它可以帮助跟踪覆盖率变化
+- 在 PR 中显示覆盖率信息，方便审查
+
+### Q: 测试失败可以合并 PR 吗？
+
+**A**: 
+- ❌ 不可以，测试失败会阻止合并
+- 必须先修复测试，确保所有测试通过
+- CI 检查必须显示 ✅ 才能合并

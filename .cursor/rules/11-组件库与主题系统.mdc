@@ -809,11 +809,13 @@ export function CustomCard({ children, className }: CustomCardProps) {
 11. **使用组件子组件**：使用 shadcn/ui 提供的子组件（如 `CardHeader`、`CardTitle`、`CardDescription`）而不是手动创建
 12. **Tailwind 标准颜色类**：对于错误消息、辅助文本等简单场景，使用 Tailwind 标准颜色类（如 `text-red-500`、`text-gray-600`）而不是自定义 CSS 变量
 
-## 与其他文档的关联
+## 相关文档
 
-- **设计系统**：参考 `.cursor/rules/07-设计系统.mdc` 了解颜色系统和样式方案
-- **代码组织**：参考 `.cursor/rules/05-代码组织.mdc` 了解组件文件组织规范
-- **代码风格**：参考 `.cursor/rules/01-代码风格.mdc` 了解 CSS 和样式编写规范
+### 相关规范文档
+
+- [设计系统](./07-设计系统.mdc) - 设计层面的规范（颜色系统、样式方案、图标系统）
+- [代码组织](./05-代码组织.mdc) - 组件文件组织规范
+- [代码风格](./01-代码风格.mdc) - CSS 和样式编写规范
 
 ## 参考资源
 

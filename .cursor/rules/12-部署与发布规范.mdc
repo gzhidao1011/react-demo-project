@@ -2,6 +2,8 @@
 
 本文档将仓库中已经落地的部署方式（以 `docker-compose*.yml`、`docker/nginx/*`、`apps/*/Dockerfile`、`.github/workflows/docker-publish.yml` 为准）沉淀为规范，确保后续新增 **Java 微服务**与**前端应用**时能按统一方式接入与发布。
 
+> **文档定位**：本文档专注于**生产环境的部署规范**，包括 Docker Compose、Nginx 配置、CI/CD 构建等。如需了解 PR 预览环境的部署方案，请参考 [部署预览规范](./19-部署预览规范.mdc)。
+
 ## 一句话架构
 
 - **容器编排**：使用 `docker-compose.yml`（本地构建版）/ `docker-compose.prod.yml`（生产镜像版）拉起全套服务。
@@ -123,6 +125,13 @@ docker-compose build
 ## Windows 运维脚本约束
 
 仓库提供 `docker/scripts/*.ps1`（start/build/publish/backup 等），后续对部署方式的扩展优先保持脚本可用性与一致性，避免“只能手动敲命令才能跑”。
+
+## 相关文档
+
+### 相关规范文档
+
+- [部署预览规范](./19-部署预览规范.mdc) - PR 预览和开发环境的部署方案
+- [新增Java微服务与前端接入规范](./13-新增Java微服务与前端接入规范.mdc) - 新增服务/应用的接入清单
 
 ## 常见问题（必须优先排查）
 

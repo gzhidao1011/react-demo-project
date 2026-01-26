@@ -614,7 +614,14 @@ setTimeout(() => {
   - 使用工具提示（Tooltip）显示详细信息
   - 在错误消息区域支持换行
 
-## 参考资源
+## 相关文档
+
+### 相关规范文档
+
+- [表单验证规范](./09-表单验证.mdc) - React Hook Form + Zod 验证
+- [代码风格](./01-代码风格.mdc) - TypeScript/JavaScript 代码风格
+
+### 外部资源
 
 - [React Hook Form 错误处理](https://react-hook-form.com/get-started#HandleErrors)
 - [react-hot-toast 文档](https://react-hot-toast.com/)

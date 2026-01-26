@@ -1,0 +1,495 @@
+# 部署预览规范
+
+本文档定义了项目中使用部署预览功能的规范，包括前端应用、Java 微服务以及全栈应用的部署预览方案。
+
+> **重要**：在合并 PR 之前，建议使用部署预览功能预览实际运行效果，确保更改符合预期。
+
+> **文档定位**：本文档专注于**PR 预览和开发环境的部署方案**，包括 Vercel、Netlify、Docker 本地预览等。如需了解生产环境的部署规范，请参考 [部署与发布规范](./12-部署与发布规范.mdc)。
+
+## 核心原则
+
+1. **预览优先**：重要更改必须预览后再合并
+2. **自动部署**：优先使用自动部署预览方案
+3. **完整环境**：全栈应用需要预览完整环境
+4. **及时清理**：预览完成后及时清理环境
+
+## 部署预览方案对比
+
+### 前端应用预览方案
+
+| 方案 | 配置难度 | 费用 | 推荐度 | 适用场景 |
+|------|---------|------|--------|---------|
+| **Vercel** | ⭐ 简单 | 免费 | ⭐⭐⭐⭐⭐ | React/Vue/Next.js |
+| **Netlify** | ⭐ 简单 | 免费 | ⭐⭐⭐⭐ | 静态网站/前端应用 |
+| **GitHub Pages** | ⭐⭐ 中等 | 免费 | ⭐⭐⭐ | 静态网站 |
+| **Docker 本地** | ⭐⭐⭐ 复杂 | 免费 | ⭐⭐⭐⭐ | 全栈应用 |
+
+### 后端服务预览方案
+
+| 方案 | 配置难度 | 资源需求 | 启动时间 | 推荐度 |
+|------|---------|---------|---------|--------|
+| **Docker 本地预览** | ⭐⭐ 中等 | 本地 Docker | 5-10 分钟 | ⭐⭐⭐⭐⭐ |
+| **GitHub Actions + 临时服务器** | ⭐⭐⭐⭐ 复杂 | 云服务器 | 10-15 分钟 | ⭐⭐⭐ |
+| **云服务临时环境** | ⭐⭐⭐ 中等 | 云服务资源 | 10-15 分钟 | ⭐⭐⭐⭐ |
+
+### 全栈应用预览方案
+
+| 方案 | 前端预览 | 后端预览 | 配置难度 | 推荐度 |
+|------|---------|---------|---------|--------|
+| **Vercel + Docker 本地** | ✅ Vercel 自动部署 | ✅ Docker 本地 | ⭐⭐ 中等 | ⭐⭐⭐⭐⭐ |
+| **Docker Compose 完整环境** | ✅ Docker 本地 | ✅ Docker 本地 | ⭐⭐ 中等 | ⭐⭐⭐⭐⭐ |
+| **Render** | ✅ 自动部署 | ✅ 自动部署 | ⭐⭐ 中等 | ⭐⭐⭐⭐⭐ |
+| **GitHub Actions + 云端** | ✅ 云端部署 | ✅ 云端部署 | ⭐⭐⭐⭐ 复杂 | ⭐⭐⭐ |
+
+## 前端应用部署预览
+
+### 方案 1：使用 Vercel（推荐，最简单）
+
+Vercel 是最简单且功能强大的部署预览方案，特别适合 React/Vue/Next.js 项目。
+
+#### 配置步骤
+
+1. **访问 Vercel**
+   - 访问 [vercel.com](https://vercel.com/)
+   - 使用 GitHub 账号登录
+
+2. **连接 GitHub 仓库**
+   - 点击 **Add New Project**
+   - 选择您的 GitHub 仓库
+   - 点击 **Import**
+
+3. **配置项目设置**
+   ```
+   Framework Preset: React（或您的框架）
+   Root Directory: apps/web（如果是 monorepo）
+   Build Command: pnpm install && pnpm --filter @repo/web build
+   Output Directory: apps/web/dist（根据实际构建输出调整）
+   Install Command: pnpm install
+   ```
+
+4. **环境变量**（如果需要）
+   - `NODE_VERSION`: `22`
+   - `PNPM_VERSION`: `10.28.0`
+   - 其他必要的环境变量
+
+5. **启用预览评论**
+   - 进入 **Settings** → **Git**
+   - 启用 **Preview Comments**
+
+#### 使用效果
+
+配置完成后：
+- ✅ 每次创建 PR，Vercel 会自动部署预览
+- ✅ 在 PR 评论中会显示预览链接
+- ✅ 预览链接格式：`https://your-app-xxx.vercel.app`
+- ✅ 每次推送新提交，预览会自动更新
+
+### 方案 2：使用 Netlify
+
+Netlify 是另一个流行的部署预览方案，适合静态网站和前端应用。
+
+#### 配置步骤
+
+1. **连接 GitHub 仓库**
+   - 访问 [Netlify](https://www.netlify.com/)
+   - 使用 GitHub 账号登录
+   - 点击 **Add new site** → **Import an existing project**
+
+2. **配置构建设置**
+   ```
+   Base directory: apps/web
+   Build command: pnpm install && pnpm --filter @repo/web build
+   Publish directory: apps/web/dist
+   ```
+
+3. **创建 netlify.toml**（推荐）
+
+   在项目根目录创建 `netlify.toml`：
+
+   ```toml
+   [build]
+     base = "apps/web"
+     command = "pnpm install && pnpm --filter @repo/web build"
+     publish = "apps/web/dist"
+
+   [build.environment]
+     NODE_VERSION = "22"
+     PNPM_VERSION = "10.28.0"
+   ```
+
+4. **安装 Netlify GitHub App**
+   - 在 Netlify 项目设置中
+   - 进入 **Build & deploy** → **Deploy contexts**
+   - 启用 **Deploy previews**
+
+## Java 微服务部署预览
+
+### 方案：Docker 本地预览（推荐）
+
+这是最实用的方案，可以在本地完整预览 Java 微服务的运行效果。
+
+#### 前置要求
+
+- ✅ Docker 和 Docker Compose 已安装
+- ✅ 本地有足够资源（建议 8GB+ 内存）
+- ✅ 端口未被占用（3306, 8848, 8001, 8002, 8080 等）
+
+#### 操作步骤
+
+```bash
+# 1. Checkout PR 分支
+git fetch origin
+git checkout feature/user-service-update
+
+# 2. 构建 Java 服务
+cd services
+mvn clean package -DskipTests
+cd ..
+
+# 3. 启动预览环境
+docker-compose up -d mysql nacos sentinel user-service order-service api-gateway
+
+# 4. 等待服务启动（约 3-5 分钟）
+docker-compose logs -f user-service
+
+# 5. 测试服务
+curl http://localhost:8080/api/users
+
+# 6. 清理预览环境
+docker-compose down
+```
+
+#### 启动时间参考
+
+- MySQL: 30-60 秒
+- Nacos: 60-90 秒
+- 微服务: 30-60 秒（每个服务）
+
+#### 快速预览脚本
+
+创建 `scripts/preview-java-service.sh`（Linux/Mac）或 `scripts/preview-java-service.ps1`（Windows）：
+
+**Linux/Mac**:
+```bash
+#!/bin/bash
+BRANCH=${1:-$(git branch --show-current)}
+echo "🚀 开始预览 Java 服务 (分支: $BRANCH)"
+git fetch origin
+git checkout $BRANCH
+cd services && mvn clean package -DskipTests && cd ..
+docker-compose up -d
+sleep 30
+docker-compose ps
+echo "🎉 预览环境已启动！"
+```
+
+**Windows PowerShell**:
+```powershell
+param([string]$Branch = (git branch --show-current))
+Write-Host "🚀 开始预览 Java 服务 (分支: $Branch)"
+git fetch origin
+git checkout $Branch
+Set-Location services
+mvn clean package -DskipTests
+Set-Location ..
+docker-compose up -d
+Start-Sleep -Seconds 30
+docker-compose ps
+Write-Host "🎉 预览环境已启动！"
+```
+
+## 全栈应用部署预览
+
+### 方案 1：Vercel（前端）+ Docker（后端）（推荐）
+
+这是最实用的方案：前端使用 Vercel 自动部署预览，后端使用 Docker 本地预览。
+
+#### 前端：Vercel 自动部署
+
+参考上面的"前端应用部署预览"部分配置 Vercel。
+
+#### 后端：Docker 本地预览
+
+```bash
+# 1. Checkout PR 分支
+git fetch origin
+git checkout feature/full-stack-update
+
+# 2. 构建 Java 服务
+cd services
+mvn clean package -DskipTests
+cd ..
+
+# 3. 启动后端服务
+docker-compose up -d mysql nacos sentinel user-service order-service api-gateway
+
+# 4. 等待服务启动（约 3-5 分钟）
+docker-compose logs -f user-service
+
+# 5. 测试后端 API
+curl http://localhost:8080/api/users
+
+# 6. 在 Vercel 预览中测试前后端集成
+# 访问 Vercel 预览链接，测试前端调用后端 API
+
+# 7. 清理
+docker-compose down
+```
+
+#### 配置前端连接后端
+
+在 Vercel 预览环境中，前端需要连接到本地后端：
+
+**方法 1：使用 ngrok（推荐）**
+
+```bash
+# 安装 ngrok
+# Windows: choco install ngrok
+# Mac: brew install ngrok
+# Linux: 下载并解压
+
+# 创建隧道到本地 API Gateway
+ngrok http 8080
+
+# 复制 ngrok 提供的 URL（如：https://abc123.ngrok.io）
+# 在 Vercel 环境变量中设置：
+# VITE_API_BASE_URL=https://abc123.ngrok.io
+```
+
+**方法 2：修改前端 API 配置**
+
+在 PR 分支中临时修改 API 基础 URL，指向本地后端：
+
+```typescript
+// apps/web/app/routes/core.ts 或类似文件
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+```
+
+然后在 Vercel 环境变量中设置：
+- `VITE_API_BASE_URL`: `http://your-ngrok-url.ngrok.io` 或 `http://your-public-ip:8080`
+
+### 方案 2：Docker Compose 完整环境（最简单）
+
+使用 Docker Compose 同时启动前端和后端，适合需要完整环境预览的场景。
+
+#### 操作步骤
+
+```bash
+# 1. Checkout PR 分支
+git fetch origin
+git checkout feature/full-stack-update
+
+# 2. 构建所有服务
+cd services
+mvn clean package -DskipTests
+cd ..
+
+# 3. 启动完整环境
+docker-compose up -d
+
+# 4. 等待服务启动（约 5-10 分钟）
+docker-compose ps
+docker-compose logs -f web
+
+# 5. 访问预览
+# Web: http://web.example.com:8888（需要配置 hosts）
+# API Gateway: http://localhost:8080
+
+# 6. 清理环境
+docker-compose down
+```
+
+#### 配置 hosts（Windows）
+
+管理员权限编辑 `C:\Windows\System32\drivers\etc\hosts`：
+
+```text
+127.0.0.1 web.example.com
+127.0.0.1 docs.example.com
+127.0.0.1 storybook.example.com
+```
+
+### 方案 3：Render（全栈应用预览，推荐）
+
+Render 是国外流行的全栈应用部署平台，支持自动创建预览环境。
+
+#### 特点
+
+- ✅ **自动预览**：PR 创建时自动部署
+- ✅ **完整环境**：支持前端 + 后端 + 数据库
+- ✅ **免费额度**：个人项目免费使用
+- ✅ **简单配置**：通过 Web UI 或 render.yaml 配置
+- ✅ **支持 Docker**：可以使用 Dockerfile 部署
+- ✅ **支持 Monorepo**：通过 Root Directory 配置
+
+#### 快速开始
+
+**方法 1：使用 render.yaml（推荐）**
+
+项目已包含 `render.yaml` 配置文件，可以一键创建所有服务：
+
+1. **访问 Render**
+   - 访问 [render.com](https://render.com)
+   - 使用 GitHub 账号登录
+
+2. **创建 Blueprint**
+   - 点击 **New** → **Blueprint**
+   - 连接 GitHub 仓库
+   - Render 会自动读取 `render.yaml` 并创建所有服务
+
+3. **等待部署完成**
+   - 首次部署需要 10-15 分钟
+   - 所有服务会自动创建和配置
+
+4. **配置服务间通信**
+   - 获取各服务的 URL（在 Dashboard 中查看）
+   - 配置环境变量
+
+**详细配置**：请参考项目中的 `RENDER_DEPLOY_PREVIEW_GUIDE.md`
+
+## 预览检查清单
+
+### 前端检查
+
+- [ ] 前端页面正常加载
+- [ ] 样式正确显示
+- [ ] 路由正常工作
+- [ ] 前端调用后端 API 正常
+- [ ] 错误处理正常
+
+### 后端检查
+
+- [ ] 服务容器正常运行
+- [ ] 服务日志无错误
+- [ ] 健康检查通过
+- [ ] 服务已注册到 Nacos
+- [ ] API 接口正常响应
+- [ ] 数据库连接正常
+
+### 集成检查
+
+- [ ] 前端可以调用后端 API
+- [ ] 数据正确传递
+- [ ] 错误处理正常
+- [ ] 完整业务流程正常
+
+## 最佳实践
+
+### 1. 选择合适的方案
+
+- **快速预览前端**：使用 Vercel
+- **完整环境预览**：使用 Docker Compose
+- **云端预览**：使用 Render 或 GitHub Actions
+
+### 2. 优化预览速度
+
+- **只构建修改的服务**：使用 `-pl service-name -am`
+- **只启动需要的服务**：不启动不需要的服务
+- **使用缓存**：Docker 镜像缓存、Maven 缓存等
+
+### 3. 及时清理
+
+- **预览完成后清理**：释放资源
+- **定期清理镜像**：删除不需要的 Docker 镜像
+- **清理数据卷**：如果不需要保留数据
+
+### 4. 记录预览结果
+
+在 PR 评论中记录：
+- ✅ 预览了哪些功能
+- ✅ 测试了哪些场景
+- ✅ 发现了哪些问题（如果有）
+
+## 故障排除
+
+### 问题 1：前端无法连接后端
+
+**检查**：
+- 后端服务是否正常运行
+- API Gateway 是否可访问
+- 网络连接是否正常
+
+**解决方案**：
+- 检查后端服务状态：`docker-compose ps`
+- 测试后端 API：`curl http://localhost:8080/api/users`
+- 检查前端 API 配置
+
+### 问题 2：服务启动失败
+
+**检查**：
+```bash
+# 查看服务日志
+docker-compose logs [service-name]
+
+# 检查容器状态
+docker-compose ps
+
+# 检查端口占用
+netstat -ano | findstr :8080  # Windows
+lsof -i :8080  # Mac/Linux
+```
+
+**解决方案**：
+- 检查端口是否被占用
+- 检查数据库连接配置
+- 检查 Nacos 连接配置
+- 查看服务日志找到具体错误
+
+### 问题 3：Vercel 预览无法连接本地后端
+
+**解决方案**：
+- 使用 ngrok 创建隧道
+- 在 Vercel 环境变量中设置 API URL
+- 或使用 Docker Compose 完整环境方案
+
+## 相关文档
+
+### 相关规范文档
+
+- [部署与发布规范](./12-部署与发布规范.mdc) - 生产环境的部署规范
+- [PR 工作流程规范](./17-PR工作流程规范.mdc) - PR 工作流程，包含预览检查要求
+- [新增Java微服务与前端接入规范](./13-新增Java微服务与前端接入规范.mdc) - 新增服务/应用的接入清单
+
+### 外部文档
+
+- [Render 完整部署预览指南](../.github/RENDER_DEPLOY_PREVIEW_GUIDE.md) - Render 部署预览指南（如果存在）
+- [前端部署预览指南](../.github/DEPLOY_PREVIEW_GUIDE.md) - 前端部署预览指南（如果存在）
+- [Java 微服务部署预览指南](../.github/JAVA_DEPLOY_PREVIEW_GUIDE.md) - Java 微服务部署预览指南（如果存在）
+- [统一部署预览指南](../.github/UNIFIED_DEPLOY_PREVIEW_GUIDE.md) - 统一部署预览指南（如果存在）
+
+## 常见问题
+
+### Q: 哪种方案最好？
+
+**A**: 
+- **Vercel + Docker 本地**：最实用，前端自动部署，后端本地预览
+- **Docker Compose 完整环境**：最简单，一键启动所有服务
+- **Render**：最方便，云端自动部署，但需要配置
+
+### Q: 预览需要多长时间？
+
+**A**: 
+- **Vercel 前端**：2-5 分钟（自动）
+- **Docker 后端**：3-5 分钟（手动）
+- **Docker Compose 完整环境**：5-10 分钟（手动）
+
+### Q: 可以同时预览多个 PR 吗？
+
+**A**: 
+- **Vercel**：可以，每个 PR 有独立预览
+- **Docker 本地**：可以，但需要使用不同端口或不同 Docker Compose 文件
+
+### Q: 预览环境会影响本地开发吗？
+
+**A**: 
+- 如果使用相同端口，会有冲突
+- 建议使用不同的端口或不同的 Docker Compose 文件
+- 预览完成后及时清理
+
+### Q: 如何加快预览速度？
+
+**A**: 
+- 只构建修改的服务
+- 只启动需要的服务
+- 使用 Docker 镜像缓存
+- 跳过测试（`-DskipTests`）

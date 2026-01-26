@@ -515,3 +515,16 @@ setError("root", {
 7. **超时处理**：使用 AbortController 实现请求超时，防止长时间等待
 8. **JSON 解析安全**：使用 try/catch 包装 `response.json()`，处理非 JSON 响应
 9. **错误类型细化**：区分 timeout、network、server 错误，提供更友好的错误提示
+
+## 相关文档
+
+### 相关规范文档
+
+- [表单错误处理规范](./10-表单错误处理.mdc) - 表单错误处理和 Toast 通知
+- [代码风格](./01-代码风格.mdc) - TypeScript/JavaScript 代码风格
+
+### 外部资源
+
+- [React Hook Form 文档](https://react-hook-form.com/)
+- [Zod 文档](https://zod.dev/)
+- [@hookform/resolvers 文档](https://github.com/react-hook-form/resolvers)

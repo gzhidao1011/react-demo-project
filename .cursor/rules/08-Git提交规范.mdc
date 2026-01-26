@@ -123,3 +123,14 @@ BREAKING CHANGE: 全景图组件 API 已更改。
 - **如果提交包含多个相关变更**：可以在 body 中使用列表详细说明
 - **仔细分析代码变更**：确定合适的类型和 scope
 - **使用 scope**：当变更影响特定模块或组件时（如 `panorama`、`map`、`ui`、`request`）
+
+## 相关文档
+
+### 相关规范文档
+
+- [PR 工作流程规范](./17-PR工作流程规范.mdc) - PR 创建、审查、合并流程
+- [GitHub 协作规范](./16-GitHub协作规范.mdc) - 协作者管理和权限
+
+### 外部资源
+
+- [Conventional Commits](https://www.conventionalcommits.org/) - Conventional Commits 规范标准

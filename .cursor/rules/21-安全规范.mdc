@@ -1,0 +1,587 @@
+# 安全规范
+
+本文档定义了项目中的安全规范和最佳实践，确保代码和系统的安全性。
+
+> **重要**：所有代码变更必须遵循安全规范，禁止提交敏感信息和存在安全漏洞的代码。
+
+## 核心原则
+
+1. **最小权限原则**：只授予必要的权限
+2. **敏感信息保护**：禁止提交敏感信息到代码仓库
+3. **依赖安全**：定期更新依赖，修复安全漏洞
+4. **代码安全审查**：所有代码变更必须经过安全审查
+5. **安全监控**：监控和报告安全事件
+
+## 敏感信息管理
+
+### 禁止提交的内容
+
+以下内容**严禁**提交到代码仓库：
+
+- ❌ **API 密钥和令牌**：GitHub Token、API Key、Access Token 等
+- ❌ **密码和凭证**：数据库密码、服务密码、SSH 密钥等
+- ❌ **私钥文件**：`.pem`、`.key`、`.p12` 等私钥文件
+- ❌ **证书文件**：`.crt`、`.cer`、`.pfx` 等证书文件（除非是公开的 CA 证书）
+- ❌ **环境变量文件**：包含真实密钥的 `.env` 文件
+- ❌ **配置文件中的敏感信息**：包含密码、密钥的配置文件
+
+### 敏感信息处理方式
+
+#### 1. 使用环境变量
+
+**✅ 正确**：使用环境变量存储敏感信息
+
+```typescript
+// ✅ 正确：从环境变量读取
+const apiKey = process.env.VITE_API_KEY
+const dbPassword = process.env.MYSQL_PASSWORD
+```
+
+**❌ 错误**：硬编码敏感信息
+
+```typescript
+// ❌ 错误：硬编码 API 密钥
+const apiKey = "sk_live_51abc123def456"
+```
+
+#### 2. 使用 GitHub Secrets
+
+在 CI/CD 中使用 GitHub Secrets 存储敏感信息：
+
+**配置步骤**：
+
+1. 进入 GitHub 仓库页面
+2. 进入 **Settings** → **Secrets and variables** → **Actions**
+3. 点击 **New repository secret**
+4. 添加 Secret：
+   - **Name**：`API_KEY`（或其他名称）
+   - **Value**：实际的密钥值
+
+**在 CI/CD 中使用**：
+
+```yaml
+# .github/workflows/deploy.yml
+env:
+  API_KEY: ${{ secrets.API_KEY }}
+  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+```
+
+#### 3. 使用 .env.example
+
+创建 `.env.example` 文件作为模板，不包含真实值：
+
+```bash
+# .env.example
+VITE_API_KEY=your_api_key_here
+MYSQL_PASSWORD=your_password_here
+DATABASE_URL=mysql://user:password@localhost:3306/dbname
+```
+
+**使用方式**：
+
+1. 将 `.env.example` 提交到仓库
+2. 团队成员复制 `.env.example` 为 `.env`
+3. 在 `.env` 中填写真实值（不提交到仓库）
+4. 在 `.gitignore` 中添加 `.env`
+
+#### 4. 使用 .gitignore
+
+确保 `.gitignore` 包含以下内容：
+
+```gitignore
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 密钥文件
+*.pem
+*.key
+*.p12
+*.pfx
+
+# 证书文件（除非是公开的 CA 证书）
+*.crt
+*.cer
+
+# 配置文件中的敏感信息
+config/production.json
+config/secrets.json
+```
+
+### 敏感信息检查清单
+
+在提交代码前，检查：
+
+- [ ] 是否包含硬编码的 API 密钥、密码、令牌？
+- [ ] 是否提交了 `.env` 文件？
+- [ ] 是否提交了私钥或证书文件？
+- [ ] 配置文件中是否包含敏感信息？
+- [ ] 代码注释中是否包含敏感信息？
+
+## 依赖安全
+
+### 依赖安全扫描
+
+#### 1. npm/pnpm 依赖扫描
+
+**使用 npm audit**：
+
+```bash
+# 扫描依赖漏洞
+pnpm audit
+
+# 自动修复可修复的漏洞
+pnpm audit fix
+
+# 查看详细报告
+pnpm audit --json
+```
+
+**使用 pnpm audit**：
+
+```bash
+# pnpm 也支持 audit
+pnpm audit
+pnpm audit --fix
+```
+
+#### 2. Dependabot 自动更新
+
+**配置 Dependabot**：
+
+在 `.github/dependabot.yml` 中配置：
+
+```yaml
+version: 2
+updates:
+  # npm/pnpm 依赖更新
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+
+  # Docker 镜像更新
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "docker"
+```
+
+**Dependabot 功能**：
+
+- ✅ 自动检测依赖漏洞
+- ✅ 自动创建 PR 更新依赖
+- ✅ 支持 npm、Docker、GitHub Actions 等
+- ✅ 可配置更新频率和范围
+
+#### 3. 依赖更新策略
+
+**定期更新**：
+
+- ✅ **每周检查**：使用 Dependabot 自动检查
+- ✅ **及时修复**：发现高危漏洞立即修复
+- ✅ **测试更新**：更新依赖后运行测试确保兼容性
+
+**更新优先级**：
+
+1. **高危漏洞**：立即修复
+2. **中危漏洞**：一周内修复
+3. **低危漏洞**：一个月内修复
+4. **功能更新**：按需更新
+
+### 依赖锁定文件
+
+**必须提交锁定文件**：
+
+- ✅ `package-lock.json`（npm）
+- ✅ `pnpm-lock.yaml`（pnpm）
+- ✅ `yarn.lock`（yarn）
+
+**原因**：
+
+- 确保团队成员使用相同版本的依赖
+- 防止依赖版本不一致导致的安全问题
+- 提高构建的可重复性
+
+## Docker 安全
+
+### 镜像安全
+
+#### 1. 使用官方基础镜像
+
+**✅ 正确**：使用官方维护的基础镜像
+
+```dockerfile
+# ✅ 正确：使用官方镜像
+FROM node:22-alpine
+FROM eclipse-temurin:17-jdk-alpine
+FROM nginx:alpine
+```
+
+**❌ 错误**：使用未维护的镜像
+
+```dockerfile
+# ❌ 错误：使用未维护的镜像
+FROM some-random-user/node:latest
+```
+
+#### 2. 定期更新基础镜像
+
+- ✅ 定期更新基础镜像到最新版本
+- ✅ 使用特定版本标签而非 `latest`
+- ✅ 关注安全公告，及时更新
+
+#### 3. 最小化镜像大小
+
+**使用多阶段构建**：
+
+```dockerfile
+# ✅ 正确：多阶段构建，减小镜像大小
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN pnpm install
+COPY . .
+RUN pnpm build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+```
+
+**优势**：
+
+- 减小最终镜像大小
+- 减少攻击面
+- 提高安全性
+
+#### 4. 不使用 root 用户
+
+**✅ 正确**：使用非 root 用户运行容器
+
+```dockerfile
+# ✅ 正确：创建非 root 用户
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+USER nextjs
+```
+
+**❌ 错误**：使用 root 用户
+
+```dockerfile
+# ❌ 错误：使用 root 用户（默认）
+# 不指定 USER，默认使用 root
+```
+
+### 容器安全配置
+
+#### 1. 健康检查
+
+**✅ 正确**：配置健康检查
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+```
+
+#### 2. 资源限制
+
+在 `docker-compose.yml` 中配置资源限制：
+
+```yaml
+services:
+  app:
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+```
+
+#### 3. 只读文件系统
+
+对于不需要写入的文件系统，使用只读模式：
+
+```yaml
+services:
+  app:
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache
+```
+
+## API 安全
+
+### 认证和授权
+
+#### 1. 使用 Token 认证
+
+**✅ 正确**：使用 JWT Token 或 OAuth Token
+
+```typescript
+// ✅ 正确：从环境变量或安全存储读取 Token
+const token = localStorage.getItem('auth_token')
+const headers = {
+  'Authorization': `Bearer ${token}`
+}
+```
+
+#### 2. Token 安全存储
+
+- ✅ **前端**：使用 `httpOnly` Cookie 或安全的 localStorage
+- ✅ **后端**：Token 存储在安全的位置，使用环境变量
+- ❌ **禁止**：在 URL 中传递 Token
+
+#### 3. 权限验证
+
+**✅ 正确**：后端验证权限
+
+```typescript
+// ✅ 正确：后端验证权限
+if (!user.hasPermission('admin')) {
+  throw new Error('Unauthorized')
+}
+```
+
+**❌ 错误**：仅前端验证权限
+
+```typescript
+// ❌ 错误：仅前端验证（不安全）
+if (user.role === 'admin') {
+  // 显示管理功能
+}
+```
+
+### 输入验证
+
+#### 1. 验证所有输入
+
+**✅ 正确**：使用 Zod 验证输入
+
+```typescript
+import { z } from 'zod'
+
+const schema = z.object({
+  email: z.string().email(),
+  age: z.number().min(0).max(120),
+})
+
+const data = schema.parse(input)
+```
+
+#### 2. 防止 SQL 注入
+
+**✅ 正确**：使用参数化查询
+
+```typescript
+// ✅ 正确：使用参数化查询
+const query = 'SELECT * FROM users WHERE id = ?'
+db.query(query, [userId])
+```
+
+**❌ 错误**：拼接 SQL 字符串
+
+```typescript
+// ❌ 错误：拼接 SQL（存在注入风险）
+const query = `SELECT * FROM users WHERE id = ${userId}`
+```
+
+#### 3. 防止 XSS 攻击
+
+**✅ 正确**：转义用户输入
+
+```typescript
+// ✅ 正确：使用 React 自动转义
+<div>{userInput}</div>
+
+// ✅ 正确：使用 DOMPurify 清理 HTML
+import DOMPurify from 'dompurify'
+<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }} />
+```
+
+**❌ 错误**：直接渲染用户输入
+
+```typescript
+// ❌ 错误：直接渲染 HTML（存在 XSS 风险）
+<div dangerouslySetInnerHTML={{ __html: userInput }} />
+```
+
+### HTTPS 和传输安全
+
+#### 1. 使用 HTTPS
+
+- ✅ **生产环境**：必须使用 HTTPS
+- ✅ **开发环境**：建议使用 HTTPS
+- ❌ **禁止**：在生产环境使用 HTTP
+
+#### 2. 安全头配置
+
+在 Nginx 配置中添加安全头：
+
+```nginx
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';" always;
+```
+
+## 代码安全审查
+
+### 审查清单
+
+在代码审查时，检查：
+
+- [ ] 是否包含敏感信息（API 密钥、密码等）？
+- [ ] 输入验证是否充分？
+- [ ] 权限验证是否正确？
+- [ ] 是否存在 SQL 注入风险？
+- [ ] 是否存在 XSS 风险？
+- [ ] 错误处理是否安全（不泄露敏感信息）？
+- [ ] 日志是否包含敏感信息？
+- [ ] 依赖是否有已知漏洞？
+
+### 自动化安全检查
+
+#### 1. Git Hooks
+
+使用 `husky` 配置 Git Hooks：
+
+```json
+{
+  "scripts": {
+    "prepare": "husky install"
+  }
+}
+```
+
+**pre-commit hook**：
+
+```bash
+#!/bin/sh
+# 检查敏感信息
+pnpm audit
+# 运行 lint
+pnpm lint
+```
+
+#### 2. CI/CD 安全检查
+
+在 CI/CD 中添加安全检查步骤：
+
+```yaml
+# .github/workflows/security.yml
+name: Security Check
+
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run npm audit
+        run: pnpm audit --audit-level=moderate
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+```
+
+## 安全事件响应
+
+### 发现安全漏洞时
+
+1. **立即报告**：向团队负责人或安全负责人报告
+2. **评估影响**：评估漏洞的影响范围和严重程度
+3. **制定修复计划**：制定修复计划和时间表
+4. **实施修复**：尽快修复漏洞
+5. **验证修复**：验证修复是否有效
+6. **更新文档**：更新安全文档和最佳实践
+
+### 敏感信息泄露时
+
+1. **立即撤销**：撤销泄露的密钥、令牌等
+2. **检查影响**：检查是否有未授权访问
+3. **通知相关方**：通知可能受影响的相关方
+4. **更新密钥**：更新所有相关密钥和凭证
+5. **加强监控**：加强安全监控和日志记录
+
+## 最佳实践
+
+### 1. 定期安全审查
+
+- ✅ **每周**：检查依赖漏洞
+- ✅ **每月**：全面安全审查
+- ✅ **每季度**：安全演练和培训
+
+### 2. 安全培训
+
+- ✅ 定期进行安全培训
+- ✅ 分享安全最佳实践
+- ✅ 学习最新的安全威胁和防护措施
+
+### 3. 安全文档
+
+- ✅ 维护安全文档和最佳实践
+- ✅ 记录安全事件和解决方案
+- ✅ 更新安全规范和检查清单
+
+## 相关文档
+
+### 相关规范文档
+
+- [Git 提交规范](./08-Git提交规范.mdc) - Git 提交规范，包含敏感信息检查
+- [PR 工作流程规范](./17-PR工作流程规范.mdc) - PR 工作流程，包含安全审查要求
+- [部署与发布规范](./12-部署与发布规范.mdc) - 部署规范，包含 Docker 安全配置
+
+### 外部资源
+
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [npm Security Best Practices](https://docs.npmjs.com/security-best-practices)
+- [Docker Security Best Practices](https://docs.docker.com/engine/security/)
+- [GitHub Security Best Practices](https://docs.github.com/en/code-security)
+
+## 常见问题
+
+### Q: 如何检查代码中是否包含敏感信息？
+
+**A**: 
+- 使用 `git-secrets` 或 `trufflehog` 扫描代码
+- 在 CI/CD 中添加敏感信息检查
+- 使用代码审查检查清单
+
+### Q: 依赖漏洞如何处理？
+
+**A**: 
+- 使用 `pnpm audit` 检查漏洞
+- 配置 Dependabot 自动更新
+- 高危漏洞立即修复，中低危漏洞按计划修复
+
+### Q: 如何安全地存储 API 密钥？
+
+**A**: 
+- 使用环境变量存储
+- 在 CI/CD 中使用 GitHub Secrets
+- 创建 `.env.example` 作为模板
+- 在 `.gitignore` 中添加 `.env`
+
+### Q: Docker 镜像如何保证安全？
+
+**A**: 
+- 使用官方基础镜像
+- 定期更新基础镜像
+- 使用多阶段构建减小镜像大小
+- 使用非 root 用户运行容器
+- 配置资源限制和健康检查

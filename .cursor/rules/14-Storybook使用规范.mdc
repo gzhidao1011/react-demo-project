@@ -226,3 +226,16 @@ const meta: Meta<typeof Button> = {
 - **monorepo 下 React 重复/dispatcher 为 null**：不要删 `apps/storybook/.storybook/main.ts` 中针对 pnpm/workspace 的 `dedupe`、`preserveSymlinks`、`optimizeDeps.exclude` 等处理。
 - **Vite 构建告警 "use client"**：常见于依赖（如 sonner/radix）产物，通常不影响构建成功；以构建是否成功与页面是否可用为准。
 - **跨包 stories 未加载**：检查 `apps/storybook/.storybook/main.ts` 中的 `stories` glob 路径是否正确包含所有包的 stories 目录。
+
+## 相关文档
+
+### 相关规范文档
+
+- [组件库与主题系统](./11-组件库与主题系统.mdc) - 组件库使用规范
+- [设计系统](./07-设计系统.mdc) - 设计系统规范（颜色、样式、图标）
+- [部署与发布规范](./12-部署与发布规范.mdc) - 生产环境部署规范
+
+### 外部资源
+
+- [Storybook 文档](https://storybook.js.org/)
+- [Turborepo 文档](https://turbo.build/repo/docs)

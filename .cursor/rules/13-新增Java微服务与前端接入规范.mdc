@@ -173,3 +173,10 @@ ENTRYPOINT ["java","-jar","-Djava.security.egd=file:/dev/./urandom","-Dspring.pr
 - 生产镜像链路：
   - CI 工作流矩阵已更新（能推送新镜像）
   - `docker-compose -f docker-compose.prod.yml up -d` 不缺镜像、不缺配置
+
+## 相关文档
+
+### 相关规范文档
+
+- [部署与发布规范](./12-部署与发布规范.mdc) - 生产环境的部署规范
+- [部署预览规范](./19-部署预览规范.mdc) - PR 预览和开发环境的部署方案

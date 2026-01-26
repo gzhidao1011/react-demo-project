@@ -1,6 +1,8 @@
-# 分支保护规则配置指南
+# 分支保护规范
 
 本文档说明如何在 GitHub 仓库中配置分支保护规则，确保代码质量和项目稳定性。
+
+> **重要提示**：个人账户的私有仓库不支持分支保护规则，需要使用替代方案。
 
 ## ⚠️ 重要提示：个人账户私有仓库限制
 
@@ -214,3 +216,35 @@ main
 - [GitHub 分支保护规则文档](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
 - [CODEOWNERS 文件文档](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners)
 - [GitHub Actions 状态检查文档](https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/about-workflow-runs)
+
+## 相关文档
+
+### 相关规范文档
+
+- [GitHub 协作规范](./16-GitHub协作规范.mdc) - 协作者管理和权限
+- [PR 工作流程规范](./17-PR工作流程规范.mdc) - PR 创建、审查、合并流程
+
+### 外部文档
+
+- [CODEOWNERS 配置](../.github/CODEOWNERS) - CODEOWNERS 文件配置
+
+## 常见问题
+
+### Q: 个人账户私有仓库可以配置分支保护规则吗？
+
+**A**: 
+- ❌ 不可以，这是 GitHub 的限制
+- ✅ 可以使用 CI/CD 检查、CODEOWNERS 等替代方案
+- ✅ 升级到 GitHub Team 或组织账户可以使用完整功能
+
+### Q: 分支保护规则会影响现有 PR 吗？
+
+**A**: 
+- ✅ 会影响所有新的合并操作
+- ✅ 已创建的 PR 也需要满足保护规则才能合并
+
+### Q: 管理员可以绕过分支保护规则吗？
+
+**A**: 
+- 如果启用了 "Do not allow bypassing the above settings"，管理员也无法绕过
+- 建议启用此选项，确保规则严格执行
