@@ -20,7 +20,6 @@ export function validateEmail(email: string): boolean {
   // 去除首尾空格
   const trimmedEmail = email.trim();
 
-  // 检查是否为空
   if (!trimmedEmail) {
     return false;
   }
