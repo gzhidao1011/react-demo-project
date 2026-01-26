@@ -46,16 +46,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. 设置 Node.js
+      # 2. 安装 pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      # 3. 设置 Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
-
-      # 3. 启用 Corepack（pnpm）
-      - name: Enable Corepack
-        run: corepack enable && corepack prepare pnpm@10.28.0 --activate
 
       # 4. 安装依赖
       - name: Install dependencies
