@@ -29,11 +29,33 @@ spring:
       max-lifetime: 1800000
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate  # 使用 Flyway 管理数据库结构，JPA 仅验证
     show-sql: false  # 生产环境关闭 SQL 日志
     properties:
       hibernate:
         format_sql: false
+  
+  # Flyway 数据库迁移配置
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true  # 如果数据库已有表，将其标记为已迁移
+    validate-on-migrate: true  # 迁移前验证迁移脚本
+  
+  # Redis 配置（Token 存储和轮换）
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 3000  # 连接超时时间（毫秒）
+      lettuce:
+        pool:
+          max-active: 8  # 最大连接数
+          max-idle: 8   # 最大空闲连接数
+          min-idle: 0   # 最小空闲连接数
+          max-wait: -1  # 最大等待时间（-1 表示无限等待）
 
 # Dubbo 配置
 dubbo:
@@ -59,6 +81,32 @@ management:
   endpoint:
     health:
       show-details: always
+
+# JWT 配置
+jwt:
+  # 签名算法：RS256（非对称加密，推荐用于微服务架构）
+  algorithm: RS256
+  
+  # RS256 密钥对路径
+  private-key-path: classpath:keys/private.pem
+  public-key-path: classpath:keys/public.pem
+  
+  # Token 有效期（秒）
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:1800}      # 30 分钟
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800}   # 7 天
+  remember-me-expiration: ${JWT_REMEMBER_ME_EXPIRATION:7776000}     # 90 天
+  
+  # 签发者和受众（可选）
+  issuer: ${JWT_ISSUER:https://auth.example.com}
+  audience: ${JWT_AUDIENCE:api.example.com}
+
+# 密码策略配置
+password:
+  min-length: ${PASSWORD_MIN_LENGTH:8}
+  require-uppercase: ${PASSWORD_REQUIRE_UPPERCASE:true}
+  require-lowercase: ${PASSWORD_REQUIRE_LOWERCASE:true}
+  require-digit: ${PASSWORD_REQUIRE_DIGIT:true}
+  require-special: ${PASSWORD_REQUIRE_SPECIAL:true}
 
 # 日志配置
 logging:

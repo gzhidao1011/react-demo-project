@@ -26,6 +26,46 @@ public enum ResultCode {
     EMAIL_ALREADY_EXISTS(50003, "邮箱已存在"),
     ORDER_NOT_FOUND(50010, "订单不存在"),
     ORDER_STATUS_ERROR(50011, "订单状态错误"),
+    
+    // ========== 认证错误（401xx）=========
+    /**
+     * 邮箱或密码错误
+     * 不明确提示是邮箱还是密码错误，防止用户枚举攻击
+     */
+    INVALID_CREDENTIALS(40100, "邮箱或密码错误"),
+    
+    /**
+     * Token 已过期
+     */
+    TOKEN_EXPIRED(40103, "Token 已过期"),
+    
+    /**
+     * 无效的 Token
+     */
+    TOKEN_INVALID(40104, "无效的 Token"),
+    
+    /**
+     * 无效的 Refresh Token
+     */
+    REFRESH_TOKEN_INVALID(40105, "无效的 Refresh Token"),
+    
+    /**
+     * 检测到 Token 重用，请重新登录
+     * Token 轮换安全检测，参考 Auth0 Refresh Token Rotation
+     */
+    REFRESH_TOKEN_REUSED(40106, "检测到 Token 重用，请重新登录"),
+    
+    // ========== 验证错误（400xx）=========
+    /**
+     * 密码强度不足
+     */
+    PASSWORD_TOO_WEAK(40002, "密码强度不足"),
+    
+    /**
+     * 密码不符合策略要求
+     * 符合 NIST 和 OWASP 密码策略建议
+     */
+    PASSWORD_POLICY_VIOLATION(40003, "密码不符合策略要求"),
 
     // ========== 服务端错误 9xxxx ==========
     INTERNAL_ERROR(90000, "服务器内部错误"),

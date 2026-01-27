@@ -1,0 +1,394 @@
+# 认证服务架构规范
+
+本文档定义了项目中认证服务的架构设计原则、当前实现方案和未来演进路径，确保认证功能的可扩展性和安全性。
+
+> **重要**：认证功能当前集成在 `user-service` 中，但代码结构必须模块化，为未来拆分为独立服务做准备。
+
+## 核心原则
+
+1. **职责分离**：认证（Authentication）和用户管理（User Management）在代码层面必须分离
+2. **模块化设计**：认证相关代码独立成模块，便于后续拆分
+3. **接口抽象**：定义清晰的认证接口，避免业务逻辑直接耦合
+4. **演进友好**：当前架构支持未来平滑拆分为独立认证服务
+
+## 当前架构（集成方案）
+
+### 架构说明
+
+当前认证功能集成在 `user-service` 中，适合 MVP 和中小型项目：
+
+```
+┌─────────────────────────────────────────┐
+│         API Gateway (8080)              │
+│     Spring Cloud Gateway + Nacos        │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│         User Service (8001)             │
+│  ┌───────────────────────────────────┐  │
+│  │  认证模块（auth 包）               │  │
+│  │  - AuthController                 │  │
+│  │  - AuthService                   │  │
+│  │  - JwtService                    │  │
+│  └───────────────────────────────────┘  │
+│  ┌───────────────────────────────────┐  │
+│  │  用户管理模块（user 包）            │  │
+│  │  - UserController                 │  │
+│  │  - UserService                   │  │
+│  └───────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+```
+
+### 代码组织规范
+
+**必须遵循的目录结构**：
+
+```
+user-service/
+└── src/main/java/com/example/user/
+    ├── auth/                    # 认证模块（独立包）
+    │   ├── controller/
+    │   │   └── AuthController.java
+    │   ├── service/
+    │   │   ├── AuthService.java
+    │   │   └── JwtService.java
+    │   ├── dto/
+    │   │   ├── RegisterRequest.java
+    │   │   ├── LoginRequest.java
+    │   │   ├── LoginResponse.java
+    │   │   └── RefreshTokenRequest.java
+    │   ├── config/
+    │   │   └── SecurityConfig.java
+    │   └── repository/
+    │       └── RefreshTokenRepository.java
+    │
+    ├── user/                    # 用户管理模块（独立包）
+    │   ├── controller/
+    │   │   └── UserController.java
+    │   ├── service/
+    │   │   └── UserService.java
+    │   ├── entity/
+    │   │   └── UserEntity.java
+    │   └── repository/
+    │       └── UserRepository.java
+    │
+    └── common/                   # 共享模块
+        ├── exception/
+        │   └── GlobalExceptionHandler.java
+        └── util/
+            └── PasswordValidator.java
+```
+
+### 模块职责划分
+
+#### auth 模块职责
+
+- ✅ 用户注册（邮箱+密码）
+- ✅ 用户登录（邮箱+密码）
+- ✅ JWT Token 生成和验证
+- ✅ Refresh Token 管理
+- ✅ 密码加密和验证
+- ✅ Token 刷新和登出
+
+#### user 模块职责
+
+- ✅ 用户信息 CRUD
+- ✅ 用户资料管理
+- ✅ 用户查询和搜索
+- ✅ 用户状态管理
+
+#### 禁止的做法
+
+- ❌ **禁止**：认证逻辑和用户管理逻辑直接耦合
+- ❌ **禁止**：在 `user` 包中直接调用认证相关方法（应通过接口）
+- ❌ **禁止**：认证相关配置和用户管理配置混合
+
+### 数据库设计规范
+
+**表结构分离**：
+
+```sql
+-- 认证相关表（auth_* 前缀）
+CREATE TABLE auth_refresh_tokens (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    device_id VARCHAR(255),
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_expires_at (expires_at)
+);
+
+-- 用户表（users）
+CREATE TABLE users (
+    id VARCHAR(36) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    username VARCHAR(100),
+    password VARCHAR(255) NOT NULL,  -- BCrypt 加密
+    email_verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email (email)
+);
+```
+
+**原则**：
+- ✅ 认证相关表使用 `auth_*` 前缀
+- ✅ 用户表使用 `users` 表名
+- ✅ 同一数据库，不同表（便于后续拆分）
+
+### 配置管理规范
+
+**认证配置独立管理**：
+
+```yaml
+# application.yml
+auth:
+  # JWT 配置
+  jwt:
+    algorithm: RS256
+    private-key-path: classpath:keys/private.pem
+    public-key-path: classpath:keys/public.pem
+    access-token-expiration: 1800      # 30 分钟
+    refresh-token-expiration: 604800   # 7 天
+    remember-me-expiration: 7776000   # 90 天
+    issuer: ${JWT_ISSUER:https://auth.example.com}
+    audience: ${JWT_AUDIENCE:api.example.com}
+  
+  # 密码策略
+  password:
+    min-length: 8
+    require-uppercase: true
+    require-lowercase: true
+    require-digit: true
+    require-special-char: false
+  
+  # 限流配置
+  rate-limit:
+    login-max-attempts: 5
+    login-window-seconds: 900  # 15 分钟
+```
+
+**原则**：
+- ✅ 认证相关配置使用 `auth.*` 前缀
+- ✅ 用户管理配置使用 `user.*` 前缀
+- ✅ 配置项清晰分离，便于后续拆分
+
+## 接口抽象规范
+
+### AuthService 接口定义
+
+**必须定义清晰的认证接口**：
+
+```java
+package com.example.user.auth.service;
+
+/**
+ * 认证服务接口
+ * 定义认证相关的核心方法，便于后续拆分为独立服务
+ */
+public interface AuthService {
+    
+    /**
+     * 用户注册
+     * @param request 注册请求
+     * @return 登录响应（包含 Token）
+     */
+    LoginResponse register(RegisterRequest request);
+    
+    /**
+     * 用户登录
+     * @param request 登录请求
+     * @return 登录响应（包含 Token）
+     */
+    LoginResponse login(LoginRequest request);
+    
+    /**
+     * 刷新 Token
+     * @param refreshToken Refresh Token
+     * @return 新的登录响应
+     */
+    LoginResponse refreshToken(String refreshToken);
+    
+    /**
+     * 登出
+     * @param refreshToken Refresh Token
+     */
+    void logout(String refreshToken);
+    
+    /**
+     * 验证 Token
+     * @param token Access Token
+     * @return Token Claims
+     */
+    Claims validateToken(String token);
+}
+```
+
+**原则**：
+- ✅ 接口定义清晰，不依赖具体实现
+- ✅ 方法签名稳定，便于后续拆分
+- ✅ 避免在接口中暴露内部实现细节
+
+### 服务间调用规范
+
+**禁止直接依赖**：
+
+```java
+// ❌ 错误：user 模块直接调用 auth 模块的内部实现
+@Service
+public class UserService {
+    @Autowired
+    private AuthService authService;  // 可以
+    
+    @Autowired
+    private JwtService jwtService;    // ❌ 禁止：直接依赖 auth 模块的内部服务
+}
+```
+
+**正确做法**：
+
+```java
+// ✅ 正确：通过接口调用
+@Service
+public class UserService {
+    @Autowired
+    private AuthService authService;  // 通过接口调用
+    
+    public UserDTO getUserInfo(String token) {
+        // 通过 AuthService 接口验证 Token
+        Claims claims = authService.validateToken(token);
+        String userId = claims.getSubject();
+        // ... 查询用户信息
+    }
+}
+```
+
+## 未来演进路径
+
+### 拆分时机判断
+
+**考虑拆分为独立认证服务的条件**：
+
+1. **用户规模**：日活用户 > 10万
+2. **服务数量**：微服务数量 > 5个
+3. **认证复杂度**：需要社交登录、2FA、多租户等
+4. **性能瓶颈**：认证接口成为性能瓶颈
+5. **团队规模**：后端团队 > 5人
+6. **合规要求**：需要 SOC 2、GDPR 等认证
+
+### 拆分后的目标架构
+
+```
+┌─────────────────────────────────────────┐
+│         API Gateway (8080)              │
+│  ┌───────────────────────────────────┐  │
+│  │  认证拦截器（Gateway 层）           │  │
+│  │  - Token 验证（使用公钥）            │  │
+│  │  - 路由转发                         │  │
+│  └───────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+        ▼                       ▼
+┌───────────────┐      ┌───────────────┐
+│ Auth Service  │      │ User Service  │
+│ (端口 8003)    │      │ (端口 8001)    │
+│               │      │               │
+│ - 注册/登录   │      │ - 用户 CRUD   │
+│ - JWT 签发    │      │ - 用户信息    │
+│ - Token 刷新  │      │               │
+│               │      │               │
+│ DB: auth_*    │      │ DB: users     │
+└───────────────┘      └───────────────┘
+```
+
+### 拆分步骤
+
+**如果决定拆分，按以下步骤执行**：
+
+1. **阶段 1**：创建 `auth-service` 空服务
+   - 创建新的 Spring Boot 项目
+   - 配置端口、数据库连接等基础配置
+
+2. **阶段 2**：迁移认证相关代码
+   - 迁移 `auth` 包下的所有代码
+   - 迁移认证相关配置
+   - 迁移认证相关数据库表
+
+3. **阶段 3**：配置 API Gateway 路由
+   - 添加 `/api/auth/**` 路由到 `auth-service`
+   - 配置 Token 验证拦截器（使用公钥）
+
+4. **阶段 4**：更新其他服务调用
+   - 更新其他服务调用认证接口的方式
+   - 更新前端 API 调用地址
+
+5. **阶段 5**：数据迁移（如需要）
+   - 迁移认证相关数据到新数据库
+   - 验证数据一致性
+
+6. **阶段 6**：监控和优化
+   - 添加监控指标
+   - 性能优化
+   - 文档更新
+
+## 安全最佳实践
+
+### Token 管理
+
+- ✅ **使用 RS256 算法**：非对称加密，公钥可分发
+- ✅ **Token 有效期**：Access Token 30分钟，Refresh Token 7天
+- ✅ **Token 轮换**：刷新时生成新的 Refresh Token
+- ✅ **Token 存储**：Refresh Token 存储在 Redis，支持撤销
+
+### 密码安全
+
+- ✅ **BCrypt 加密**：成本因子 12（推荐值）
+- ✅ **密码策略**：最少 8 个字符，包含大小写字母和数字
+- ✅ **密码验证**：不在 DTO 中返回密码字段
+
+### API 安全
+
+- ✅ **限流保护**：登录接口限流（5次/15分钟）
+- ✅ **安全响应头**：CSP、HSTS、X-Frame-Options 等
+- ✅ **错误处理**：不泄露敏感信息（如用户是否存在）
+
+## 参考标准
+
+本规范参考了以下国外主流认证服务的最佳实践：
+
+- **Auth0**：Token 轮换、Token 存储策略、密码策略
+- **Okta**：OAuth 2.0 对齐、错误码规范
+- **Firebase Auth**：RS256 算法、Token 有效期策略
+- **GitHub**：限流保护、安全头设置、设备管理
+
+**国际标准**：
+- [OAuth 2.0 (RFC 6749)](https://tools.ietf.org/html/rfc6749)
+- [JWT (RFC 7519)](https://tools.ietf.org/html/rfc7519)
+- [OAuth 2.0 Security Best Practices](https://oauth.net/2/oauth-best-practices/)
+- [OWASP JWT Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html)
+
+## 注意事项
+
+1. **保持模块化**：即使集成在同一服务，也要保持代码模块化
+2. **接口稳定**：认证接口定义要稳定，避免频繁变更
+3. **配置分离**：认证配置和用户管理配置要分离
+4. **数据库分离**：认证表和用户表要分离（同一数据库，不同表）
+5. **文档更新**：架构变更时及时更新文档
+
+## 相关文档
+
+### 相关规范文档
+
+- [新增 Java 微服务与前端接入规范](./13-新增Java微服务与前端接入规范.mdc) - 微服务接入规范
+- [安全规范](./21-安全规范.mdc) - 安全最佳实践
+- [API 结构](./06-API结构.mdc) - API 设计规范
+
+### 计划文档
+
+- [注册登录功能实现计划](../plans/注册登录功能实现计划/README.md) - 完整实施计划
+- [架构分析-认证服务分离](../plans/注册登录功能实现计划/架构分析-认证服务分离.md) - 架构分析文档

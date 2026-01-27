@@ -7,6 +7,7 @@ import com.example.user.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,6 +24,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private UserRepository userRepository;
     
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
     /**
      * 初始化测试数据
      * 仅在数据库为空时添加
@@ -34,11 +38,15 @@ public class UserServiceImpl implements UserService {
             user1.setName("张三");
             user1.setEmail("zhangsan@example.com");
             user1.setPhone("13800138000");
+            // 设置测试密码（BCrypt 加密）
+            user1.setPassword(passwordEncoder.encode("password123"));
             
             UserEntity user2 = new UserEntity();
             user2.setName("李四");
             user2.setEmail("lisi@example.com");
             user2.setPhone("13900139000");
+            // 设置测试密码（BCrypt 加密）
+            user2.setPassword(passwordEncoder.encode("password123"));
             
             userRepository.save(user1);
             userRepository.save(user2);

@@ -19,11 +19,27 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update  # 自动创建/更新表结构
+      ddl-auto: validate  # 使用 Flyway 管理数据库结构，JPA 仅验证
     show-sql: true  # 显示 SQL 语句
     properties:
       hibernate:
         format_sql: true
+  
+  # Flyway 数据库迁移配置
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true  # 如果数据库已有表，将其标记为已迁移
+    validate-on-migrate: true  # 迁移前验证迁移脚本
+  
+  # Redis 配置（Token 存储和轮换）
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 3000  # 连接超时时间（毫秒）
 
 # Dubbo 配置
 dubbo:
@@ -45,3 +61,29 @@ management:
     web:
       exposure:
         include: health,info  # 暴露健康检查端点
+
+# JWT 配置
+jwt:
+  # 签名算法：RS256（非对称加密，推荐用于微服务架构）
+  algorithm: RS256
+  
+  # RS256 密钥对路径
+  private-key-path: classpath:keys/private.pem
+  public-key-path: classpath:keys/public.pem
+  
+  # Token 有效期（秒）
+  access-token-expiration: 1800      # 30 分钟
+  refresh-token-expiration: 604800   # 7 天
+  remember-me-expiration: 7776000   # 90 天
+  
+  # 签发者和受众（可选）
+  issuer: ${JWT_ISSUER:https://auth.example.com}
+  audience: ${JWT_AUDIENCE:api.example.com}
+
+# 密码策略配置
+password:
+  min-length: 8
+  require-uppercase: true
+  require-lowercase: true
+  require-digit: true
+  require-special: true

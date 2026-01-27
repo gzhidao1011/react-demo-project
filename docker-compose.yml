@@ -92,6 +92,25 @@ services:
       - microservices-network
     restart: unless-stopped
 
+  # Redis（Token 存储和缓存）
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
   # ==================== Java 微服务 ====================
 
   # 用户服务
@@ -109,6 +128,9 @@ services:
       - MYSQL_DATABASE=user_db
       - MYSQL_USERNAME=root
       - MYSQL_PASSWORD=root123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - DOCKER_HOST_IP=user-service
       - JAVA_OPTS=-Xms256m -Xmx512m
     ports:
@@ -118,6 +140,8 @@ services:
       mysql:
         condition: service_healthy
       nacos:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - microservices-network
@@ -285,4 +309,6 @@ volumes:
   nacos-data:
     driver: local
   nacos-logs:
+    driver: local
+  redis-data:
     driver: local
