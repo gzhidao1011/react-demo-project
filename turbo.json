@@ -68,7 +68,7 @@
         "**/*.spec.ts",
         "**/*.spec.tsx"
       ],
-      "outputs": ["coverage/**"]
+      "outputs": []
     },
     "test:coverage": {
       "dependsOn": [],
