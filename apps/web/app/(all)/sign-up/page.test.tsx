@@ -405,14 +405,12 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignUpPage />);
@@ -439,14 +437,12 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignUpPage />);
@@ -473,14 +469,12 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignUpPage />);
@@ -506,14 +500,12 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignUpPage />);
@@ -794,14 +786,12 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignUpPage />);
@@ -841,14 +831,12 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignUpPage />);

@@ -741,6 +741,9 @@ importers:
 
   packages/utils:
     dependencies:
+      axios:
+        specifier: 'catalog:'
+        version: 1.13.2
       react:
         specifier: 'catalog:'
         version: 19.2.3

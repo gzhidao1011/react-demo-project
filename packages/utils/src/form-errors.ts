@@ -206,7 +206,19 @@ export function handleServerError<TFieldValues extends FieldValues = FieldValues
     };
   }
   // 处理通用错误
-  const errorMessage = error instanceof Error ? (error as AxiosError).response?.data.message : defaultMessage;
+  let errorMessage = defaultMessage;
+  if (error instanceof Error) {
+    const axiosError = error as AxiosError;
+    // 安全地访问 response.data.message
+    if (axiosError.response?.data && typeof axiosError.response.data === "object" && "message" in axiosError.response.data) {
+      const data = axiosError.response.data as { message?: string };
+      if (typeof data.message === "string") {
+        errorMessage = data.message;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+  }
   setError("root" as Path<TFieldValues>, {
     type: "server",
     message: errorMessage,

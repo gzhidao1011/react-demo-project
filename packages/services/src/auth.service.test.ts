@@ -81,7 +81,7 @@ describe("auth.service", () => {
 
       // Assert
       expect(apiService.post).toHaveBeenCalledWith("/auth/login", loginData);
-      expect(result.data.data?.accessToken).toBe("access-token");
+      expect(result.data?.accessToken).toBe("access-token");
     });
 
     it("应该传递 email 和 password 参数", async () => {
@@ -138,9 +138,10 @@ describe("auth.service", () => {
       const result = await authLogin(loginData);
 
       // Assert
-      expect(result.data.data).toHaveProperty("accessToken");
-      expect(result.data.data).toHaveProperty("expiresIn");
-      expect(result.data.data).toHaveProperty("refreshToken");
+      expect(result.data).not.toBeNull();
+      expect(result.data).toHaveProperty("accessToken");
+      expect(result.data).toHaveProperty("expiresIn");
+      expect(result.data).toHaveProperty("refreshToken");
     });
 
     it("应该处理 API 错误", async () => {
@@ -183,7 +184,7 @@ describe("auth.service", () => {
       expect(apiService.post).toHaveBeenCalledWith("/auth/refresh", {
         refreshToken,
       });
-      expect(result.data.data?.accessToken).toBe("new-access-token");
+      expect(result.data?.accessToken).toBe("new-access-token");
     });
 
     it("应该返回新的 Token", async () => {
@@ -207,8 +208,9 @@ describe("auth.service", () => {
       const result = await authRefresh(refreshToken);
 
       // Assert
-      expect(result.data.data?.accessToken).toBe("new-access-token");
-      expect(result.data.data?.refreshToken).toBe("new-refresh-token");
+      expect(result.data).not.toBeNull();
+      expect(result.data?.accessToken).toBe("new-access-token");
+      expect(result.data?.refreshToken).toBe("new-refresh-token");
     });
   });
 
@@ -238,7 +240,7 @@ describe("auth.service", () => {
 
       // Assert
       expect(apiService.post).toHaveBeenCalledWith("/auth/register", registerData);
-      expect(result.data.data?.accessToken).toBe("access-token");
+      expect(result.data?.accessToken).toBe("access-token");
     });
   });
 });

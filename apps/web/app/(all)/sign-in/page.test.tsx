@@ -178,14 +178,12 @@ describe("SignInPage", () => {
       // Arrange
       const user = userEvent.setup();
       mockAuthLogin.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignInPage />);
@@ -208,14 +206,12 @@ describe("SignInPage", () => {
       // Arrange
       const user = userEvent.setup();
       mockAuthLogin.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignInPage />);
@@ -240,14 +236,12 @@ describe("SignInPage", () => {
       // Arrange
       const user = userEvent.setup();
       const mockResponse = {
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       };
       mockAuthLogin.mockResolvedValue(mockResponse);
@@ -268,14 +262,12 @@ describe("SignInPage", () => {
       // Arrange
       const user = userEvent.setup();
       mockAuthLogin.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignInPage />);
@@ -297,14 +289,12 @@ describe("SignInPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthLogin.mockResolvedValue({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
       render(<SignInPage />);
@@ -343,7 +333,7 @@ describe("SignInPage", () => {
       mockAuthLogin.mockRejectedValue(mockError);
 
       // Mock handleServerError 设置表单级错误（用户可见）
-      mockHandleServerError.mockImplementation((error, setError) => {
+      mockHandleServerError.mockImplementation((_error, setError) => {
         setError("root", {
           type: "server",
           message: "登录失败，请重试",
@@ -379,7 +369,7 @@ describe("SignInPage", () => {
       mockAuthLogin.mockRejectedValue(mockError);
 
       // Mock handleServerError 设置字段级错误（用户可见）
-      mockHandleServerError.mockImplementation((error, setError) => {
+      mockHandleServerError.mockImplementation((_error, setError) => {
         setError("email", {
           type: "server",
           message: "邮箱已被使用",
@@ -422,7 +412,7 @@ describe("SignInPage", () => {
       mockAuthLogin.mockRejectedValue(networkError);
 
       // Mock handleServerError 返回系统级错误（需要显示 Toast）
-      mockHandleServerError.mockImplementation((error, setError) => {
+      mockHandleServerError.mockImplementation((_error, setError) => {
         setError("root", {
           type: "server",
           message: "网络连接失败，请检查网络设置",

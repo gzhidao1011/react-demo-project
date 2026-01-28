@@ -2,7 +2,6 @@ import {
   clearTokens,
   getAccessToken,
   getRefreshToken,
-  isTokenExpired,
   type ServerError,
   saveTokens,
 } from "@repo/utils";
@@ -167,7 +166,7 @@ export abstract class APIServiceBase {
 
           // 如果正在刷新，等待刷新完成
           if (this.isRefreshing) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
               this.subscribeTokenRefresh((token) => {
                 // 使用新 token 重试原请求
                 originalRequest.headers.Authorization = `Bearer ${token}`;
@@ -232,7 +231,7 @@ export abstract class APIServiceBase {
   private async refreshToken(): Promise<string> {
     if (this.isRefreshing) {
       // 如果正在刷新，等待刷新完成
-      return new Promise<string>((resolve, reject) => {
+      return new Promise<string>((resolve) => {
         this.subscribeTokenRefresh((token) => {
           resolve(token);
         });

@@ -56,8 +56,8 @@ export default function SignInPage({
 
       // 保存 Token（从响应中提取）
       // saveTokens 函数已经支持 OAuth 2.0 格式（snake_case 和 camelCase）
-      if (response.data?.data) {
-        saveTokens(response.data.data as any);
+      if (response.data) {
+        saveTokens(response.data);
       }
 
       // 显示成功消息
