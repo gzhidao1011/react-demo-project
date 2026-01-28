@@ -219,7 +219,8 @@ export function handleServerError<TFieldValues extends FieldValues = FieldValues
       if (typeof data.message === "string") {
         errorMessage = data.message;
       }
-    } else if (error.message) {
+    } else if (error.message !== undefined) {
+      // 如果 message 存在（即使是空字符串），使用它
       errorMessage = error.message;
     }
   }
