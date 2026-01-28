@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginSchema } from "./login.schema";
+import { type LoginFormData, loginSchema } from "./login.schema";
 
 describe("loginSchema", () => {
   describe("正常情况", () => {
@@ -131,9 +131,9 @@ describe("loginSchema", () => {
   describe("异常情况 - 必填字段验证", () => {
     it("应该拒绝缺少 email 字段", () => {
       // Arrange: 准备缺少 email 的数据
-      const invalidData = {
+      const invalidData: Partial<LoginFormData> = {
         password: "password123",
-      } as any;
+      };
 
       // Act & Assert: 验证抛出错误
       expect(() => loginSchema.parse(invalidData)).toThrow();
@@ -141,9 +141,9 @@ describe("loginSchema", () => {
 
     it("应该拒绝缺少 password 字段", () => {
       // Arrange: 准备缺少 password 的数据
-      const invalidData = {
+      const invalidData: Partial<LoginFormData> = {
         email: "user@example.com",
-      } as any;
+      };
 
       // Act & Assert: 验证抛出错误
       expect(() => loginSchema.parse(invalidData)).toThrow();

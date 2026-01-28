@@ -210,7 +210,11 @@ export function handleServerError<TFieldValues extends FieldValues = FieldValues
   if (error instanceof Error) {
     const axiosError = error as AxiosError;
     // 安全地访问 response.data.message
-    if (axiosError.response?.data && typeof axiosError.response.data === "object" && "message" in axiosError.response.data) {
+    if (
+      axiosError.response?.data &&
+      typeof axiosError.response.data === "object" &&
+      "message" in axiosError.response.data
+    ) {
       const data = axiosError.response.data as { message?: string };
       if (typeof data.message === "string") {
         errorMessage = data.message;

@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AxiosResponse } from "axios";
-import { authLogin, authRefresh, authRegister, type LoginRequest, type LoginResponse } from "./auth.service";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiService } from "./api.service";
 import type { ApiResponseBase } from "./api.service.base";
+import { authLogin, authRefresh, authRegister, type LoginRequest, type LoginResponse } from "./auth.service";
 
 // Mock apiService
 vi.mock("./api.service", () => ({

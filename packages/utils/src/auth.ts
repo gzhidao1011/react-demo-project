@@ -84,8 +84,7 @@ export interface LoginResponse {
  */
 export function saveTokens(response: LoginResponse): void {
   // 兼容不同的 API 响应格式（优先使用 camelCase，其次使用 snake_case）
-  const accessToken =
-    response.accessToken || response.access_token || response.token;
+  const accessToken = response.accessToken || response.access_token || response.token;
   const refreshToken = response.refreshToken || response.refresh_token;
   const expiresIn = response.expiresIn || response.expires_in || 3600; // 默认 1 小时
 

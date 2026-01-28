@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
+import type { ApiResponseBase, LoginResponse } from "@repo/services";
+import type { AxiosResponse } from "axios";
 import SignUpPage from "./page";
 
 // Mock API 调用
@@ -549,11 +551,7 @@ describe("SignUpPage", () => {
       // Assert - 验证 toastError 被调用（toastError 是同步的，但需要等待 catch 块执行）
       await waitFor(
         () => {
-          expect(mockToastError).toHaveBeenCalledWith(
-            error,
-            expect.any(Function),
-            "注册失败，请检查网络连接",
-          );
+          expect(mockToastError).toHaveBeenCalledWith(error, expect.any(Function), "注册失败，请检查网络连接");
         },
         { timeout: 3000 },
       );
@@ -593,8 +591,8 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       // 使用可控制的 Promise 来模拟正在进行的异步操作
-      let resolvePromise: (value: any) => void;
-      const pendingPromise = new Promise<any>((resolve) => {
+      let resolvePromise: (value: AxiosResponse<ApiResponseBase<LoginResponse>>) => void;
+      const pendingPromise = new Promise<AxiosResponse<ApiResponseBase<LoginResponse>>>((resolve) => {
         resolvePromise = resolve;
       });
 
@@ -640,8 +638,8 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       // 使用可控制的 Promise 来模拟正在进行的异步操作
-      let resolvePromise: (value: any) => void;
-      const pendingPromise = new Promise<any>((resolve) => {
+      let resolvePromise: (value: AxiosResponse<ApiResponseBase<LoginResponse>>) => void;
+      const pendingPromise = new Promise<AxiosResponse<ApiResponseBase<LoginResponse>>>((resolve) => {
         resolvePromise = resolve;
       });
 

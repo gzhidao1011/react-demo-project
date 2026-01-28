@@ -20,6 +20,6 @@
     }
   },
   "files": {
-    "includes": ["**", "!!**/*.css"]
+    "includes": ["**", "!!**/*.css", "!!**/services/**/*.js", "!!**/playwright-report", "!!**/test-results"]
   }
 }

@@ -2,6 +2,7 @@ import {
   clearTokens,
   getAccessToken,
   getRefreshToken,
+  type LoginResponse,
   type ServerError,
   saveTokens,
 } from "@repo/utils";
@@ -145,7 +146,7 @@ export abstract class APIServiceBase {
         // 自动保存登录响应的 Token
         const url = response.config.url || "";
         if ((url.includes("/auth/login") || url.includes("/auth/register")) && response.data?.data) {
-          saveTokens(response.data.data as any);
+          saveTokens(response.data.data as LoginResponse);
         }
         return response;
       },
@@ -216,6 +217,7 @@ export abstract class APIServiceBase {
     // 使用 sessionStorage 直接访问，避免循环依赖
     // 在浏览器环境中使用 sessionStorage，在 Node.js 环境中使用全局变量
     const TOKEN_EXPIRES_KEY = "token_expires";
+    // biome-ignore lint/suspicious/noExplicitAny: Node.js 环境中需要访问全局 sessionStorage
     const storage = typeof window !== "undefined" ? window.sessionStorage : (global as any).sessionStorage;
     if (!storage) return true;
     const expiresAt = storage.getItem(TOKEN_EXPIRES_KEY);
@@ -251,7 +253,7 @@ export abstract class APIServiceBase {
 
       // 保存新 Token
       if (response.data?.data) {
-        saveTokens(response.data.data as any);
+        saveTokens(response.data.data as LoginResponse);
       }
 
       // 获取新的 access token

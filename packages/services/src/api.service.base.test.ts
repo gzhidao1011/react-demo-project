@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import axios from "axios";
-import { APIServiceBase } from "./api.service.base";
 import * as authUtils from "@repo/utils";
+import axios from "axios";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { APIServiceBase } from "./api.service.base";
 
 // Mock Token 存储工具
 vi.mock("@repo/utils", () => ({
@@ -47,6 +47,7 @@ vi.mock("axios", async () => {
 class TestAPIService extends APIServiceBase {
   // 暴露 axios 实例用于测试
   public getAxiosInstance() {
+    // biome-ignore lint/suspicious/noExplicitAny: 测试需要访问私有属性
     return (this as any).axiosInstance;
   }
 }
@@ -59,7 +60,7 @@ describe("APIServiceBase", () => {
   describe("构造函数", () => {
     it("应该创建 axios 实例并设置拦截器", () => {
       // Arrange & Act
-      const service = new TestAPIService("/api");
+      const _service = new TestAPIService("/api");
 
       // Assert
       expect(axios.create).toHaveBeenCalledWith({
@@ -74,7 +75,7 @@ describe("APIServiceBase", () => {
   describe("请求拦截器", () => {
     it("应该跳过白名单路径的 Token 添加", async () => {
       // Arrange
-      const service = new TestAPIService("/api");
+      const _service = new TestAPIService("/api");
       const mockConfig = {
         url: "/auth/login",
         headers: {},
@@ -97,10 +98,12 @@ describe("APIServiceBase", () => {
       vi.mocked(authUtils.getAccessToken).mockReturnValue("test-token");
       // Mock sessionStorage 返回一个未来的过期时间，避免触发刷新
       const futureTime = Date.now() + 10 * 60 * 1000; // 10 分钟后过期
+      // biome-ignore lint/suspicious/noExplicitAny: 测试环境需要访问全局 sessionStorage
       if (typeof global !== "undefined" && (global as any).sessionStorage) {
+        // biome-ignore lint/suspicious/noExplicitAny: 测试环境需要访问全局 sessionStorage
         vi.mocked((global as any).sessionStorage.getItem).mockReturnValue(futureTime.toString());
       }
-      const service = new TestAPIService("/api");
+      const _service = new TestAPIService("/api");
       const mockConfig = {
         url: "/api/users",
         headers: {},
@@ -121,7 +124,7 @@ describe("APIServiceBase", () => {
     it("应该在 Token 不存在时跳过添加 Header", async () => {
       // Arrange
       vi.mocked(authUtils.getAccessToken).mockReturnValue(null);
-      const service = new TestAPIService("/api");
+      const _service = new TestAPIService("/api");
       const mockConfig = {
         url: "/api/users",
         headers: {},
@@ -143,7 +146,7 @@ describe("APIServiceBase", () => {
   describe("响应拦截器", () => {
     it("应该自动保存登录响应的 Token", () => {
       // Arrange
-      const service = new TestAPIService("/api");
+      const _service = new TestAPIService("/api");
       const mockResponse = {
         config: {
           url: "/auth/login",
@@ -182,7 +185,7 @@ describe("APIServiceBase", () => {
         },
       });
 
-      const service = new TestAPIService("/api");
+      const _service = new TestAPIService("/api");
       const mockError = {
         response: {
           status: 401,
@@ -212,7 +215,7 @@ describe("APIServiceBase", () => {
       vi.mocked(authUtils.getRefreshToken).mockReturnValue("refresh-token");
       vi.mocked(axios.post).mockRejectedValue(new Error("Refresh failed"));
 
-      const service = new TestAPIService("/api");
+      const _service = new TestAPIService("/api");
       const mockError = {
         response: {
           status: 401,
@@ -231,7 +234,7 @@ describe("APIServiceBase", () => {
       // Act
       try {
         await onRejected(mockError);
-      } catch (error) {
+      } catch (_error) {
         // Expected to reject
       }
 

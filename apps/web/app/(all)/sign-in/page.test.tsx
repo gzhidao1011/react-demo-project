@@ -2,6 +2,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
+import type { ApiResponseBase, LoginResponse } from "@repo/services";
+import type { ServerError } from "@repo/utils";
+import type { AxiosResponse } from "axios";
 import SignInPage from "./page";
 
 // Mock API 调用
@@ -364,8 +367,8 @@ describe("SignInPage", () => {
     it("应该处理字段级错误（API 返回 errors 数组时）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      const mockError = new Error("验证失败");
-      (mockError as any).errors = [{ field: "email", message: "邮箱已被使用" }];
+      const mockError: ServerError = new Error("验证失败");
+      mockError.errors = [{ field: "email", message: "邮箱已被使用" }];
       mockAuthLogin.mockRejectedValue(mockError);
 
       // Mock handleServerError 设置字段级错误（用户可见）
@@ -446,8 +449,8 @@ describe("SignInPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       // 使用未解析的 Promise 来模拟正在进行的异步操作
-      let resolvePromise: (value: any) => void;
-      const pendingPromise = new Promise<any>((resolve) => {
+      let resolvePromise: (value: AxiosResponse<ApiResponseBase<LoginResponse>>) => void;
+      const pendingPromise = new Promise<AxiosResponse<ApiResponseBase<LoginResponse>>>((resolve) => {
         resolvePromise = resolve;
       });
 

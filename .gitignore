@@ -142,3 +142,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .turbo/
 **/target/*
+
+# Playwright
+**/playwright-report/
+**/test-results/

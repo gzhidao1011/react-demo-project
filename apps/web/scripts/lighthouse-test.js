@@ -13,9 +13,13 @@
  * lhci autorun
  */
 
-const { execSync } = require("child_process");
-const fs = require("fs");
-const path = require("path");
+import { execSync } from "child_process";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const BASE_URL = process.env.LIGHTHOUSE_BASE_URL || "http://localhost:5173";
 const OUTPUT_DIR = path.join(__dirname, "../lighthouse-reports");

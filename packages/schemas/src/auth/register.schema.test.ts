@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { registerSchema } from "./register.schema";
+import { z } from "zod";
+import { type RegisterFormData, registerSchema } from "./register.schema";
 
 describe("registerSchema", () => {
   describe("正常情况", () => {
@@ -179,10 +180,10 @@ describe("registerSchema", () => {
   describe("异常情况 - 必填字段验证", () => {
     it("应该拒绝缺少 email 字段", () => {
       // Arrange: 准备缺少 email 的数据
-      const invalidData = {
+      const invalidData: Partial<RegisterFormData> = {
         password: "password123",
         confirmPassword: "password123",
-      } as any;
+      };
 
       // Act & Assert: 验证抛出错误
       expect(() => registerSchema.parse(invalidData)).toThrow();
@@ -190,10 +191,10 @@ describe("registerSchema", () => {
 
     it("应该拒绝缺少 password 字段", () => {
       // Arrange: 准备缺少 password 的数据
-      const invalidData = {
+      const invalidData: Partial<RegisterFormData> = {
         email: "user@example.com",
         confirmPassword: "password123",
-      } as any;
+      };
 
       // Act & Assert: 验证抛出错误
       expect(() => registerSchema.parse(invalidData)).toThrow();
@@ -201,10 +202,10 @@ describe("registerSchema", () => {
 
     it("应该拒绝缺少 confirmPassword 字段", () => {
       // Arrange: 准备缺少 confirmPassword 的数据
-      const invalidData = {
+      const invalidData: Partial<RegisterFormData> = {
         email: "user@example.com",
         password: "password123",
-      } as any;
+      };
 
       // Act & Assert: 验证抛出错误
       expect(() => registerSchema.parse(invalidData)).toThrow();
@@ -272,13 +273,13 @@ describe("registerSchema", () => {
       try {
         registerSchema.parse(invalidData);
         expect.fail("应该抛出错误");
-      } catch (error: any) {
-        expect(error.errors).toBeDefined();
-        const confirmPasswordError = error.errors.find(
-          (e: any) => e.path.includes("confirmPassword"),
-        );
+      } catch (error) {
+        expect(error).toBeInstanceOf(z.ZodError);
+        const zodError = error as z.ZodError;
+        expect(zodError.errors).toBeDefined();
+        const confirmPasswordError = zodError.errors.find((e) => e.path.includes("confirmPassword"));
         expect(confirmPasswordError).toBeDefined();
-        expect(confirmPasswordError.message).toContain("不一致");
+        expect(confirmPasswordError?.message).toContain("不一致");
       }
     });
   });
