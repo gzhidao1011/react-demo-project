@@ -1,6 +1,6 @@
-import { apiService } from "./api.service";
-import type { ApiResponseBase } from "./api.service.base";
 import type { AxiosResponse } from "axios";
+import { apiService } from "./api.service";
+import { type ApiResponseBase, handleApiResponse } from "./api.service.base";
 
 /**
  * 注册请求参数
@@ -63,24 +63,39 @@ export interface UserInfo {
   createdAt?: string;
 }
 
-export function authRegister(data: RegisterRequest) {
-  return apiService.post<ApiResponseBase<LoginResponse>>("/auth/register", data);
+export async function authRegister(data: RegisterRequest) {
+  const response: AxiosResponse<ApiResponseBase<LoginResponse>> = await apiService.post<ApiResponseBase<LoginResponse>>(
+    "/auth/register",
+    data,
+  );
+  return handleApiResponse(response, "注册失败");
 }
 
-export function authLogin(data: LoginRequest) {
-  return apiService.post<ApiResponseBase<LoginResponse>>("/auth/login", data);
+export async function authLogin(data: LoginRequest) {
+  const response: AxiosResponse<ApiResponseBase<LoginResponse>> = await apiService.post<ApiResponseBase<LoginResponse>>(
+    "/auth/login",
+    data,
+  );
+  return handleApiResponse(response, "登录失败");
 }
 
-export function authRefresh(refreshToken: string) {
-  return apiService.post<ApiResponseBase<LoginResponse>>("/auth/refresh", {
-    refreshToken,
-  } as RefreshTokenRequest);
+export async function authRefresh(refreshToken: string) {
+  const response: AxiosResponse<ApiResponseBase<LoginResponse>> = await apiService.post<ApiResponseBase<LoginResponse>>(
+    "/auth/refresh",
+    {
+      refreshToken,
+    } as RefreshTokenRequest,
+  );
+  return handleApiResponse(response, "刷新 Token 失败");
 }
 
-export function authLogout() {
-  return apiService.post<ApiResponseBase<void>>("/auth/logout");
+export async function authLogout() {
+  const response: AxiosResponse<ApiResponseBase<void>> = await apiService.post<ApiResponseBase<void>>("/auth/logout");
+  return handleApiResponse(response, "登出失败");
 }
 
-export function authGetCurrentUser() {
-  return apiService.post<ApiResponseBase<UserInfo>>("/auth/me");
+export async function authGetCurrentUser() {
+  const response: AxiosResponse<ApiResponseBase<UserInfo>> =
+    await apiService.post<ApiResponseBase<UserInfo>>("/auth/me");
+  return handleApiResponse(response, "获取用户信息失败");
 }

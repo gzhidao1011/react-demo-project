@@ -8,6 +8,8 @@
     "build:storybook": "turbo run build-storybook --filter=@repo/storybook",
     "build:storybook-image": "docker build -f apps/storybook/Dockerfile -t storybook:local .",
     "dev": "turbo run dev --concurrency=18",
+    "dev:infra": "docker-compose up -d mysql redis nacos sentinel",
+    "dev:infra:logs": "docker-compose logs -f mysql redis nacos sentinel",
     "start": "turbo run start",
     "clean": "turbo run clean && rm -rf .turbo && rm -rf .next && rm -rf node_modules && rm -rf dist",
     "test": "turbo run test",

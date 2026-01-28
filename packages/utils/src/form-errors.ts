@@ -1,3 +1,4 @@
+import type { AxiosError } from "axios";
 import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 
 /**
@@ -34,7 +35,7 @@ export interface SuccessMessageOptions {
 /**
  * 判断是否为系统级错误（网络错误、服务器错误 5xx）
  *
- * @param error - 错误对象
+ * @param error - 错误对象（可能是 AxiosError、ServerError 或普通 Error）
  * @returns 如果是系统级错误返回 true，否则返回 false
  */
 export function isSystemError(error: unknown): boolean {
@@ -42,6 +43,39 @@ export function isSystemError(error: unknown): boolean {
     return false;
   }
 
+  // 将错误转换为 AxiosError 类型进行检查（如果不是 AxiosError，属性会是 undefined）
+  const axiosError = error as AxiosError;
+
+  // 1. 检查 HTTP 状态码：5xx 服务器错误
+  if (axiosError.response?.status) {
+    const status = axiosError.response.status;
+    if (status >= 500 && status < 600) {
+      return true;
+    }
+  }
+
+  // 2. 检查网络错误：AxiosError 且没有 response 表示网络错误
+  // 通过检查是否有 request 属性来判断是否为 AxiosError
+  if (("request" in error || "isAxiosError" in error) && !axiosError.response) {
+    return true;
+  }
+
+  // 3. 检查错误代码：超时、连接错误等
+  if (axiosError.code) {
+    const errorCodes = [
+      "ECONNABORTED", // 超时
+      "ETIMEDOUT", // 超时
+      "ENOTFOUND", // DNS 错误
+      "ECONNREFUSED", // 连接被拒绝
+      "ERR_NETWORK", // 网络错误
+      "ERR_INTERNET_DISCONNECTED", // 网络断开
+    ];
+    if (errorCodes.includes(axiosError.code)) {
+      return true;
+    }
+  }
+
+  // 4. 检查错误消息中的关键词
   const errorMessage = error.message.toLowerCase();
   const systemErrorKeywords = [
     "网络",
@@ -57,6 +91,10 @@ export function isSystemError(error: unknown): boolean {
     "connection",
     "服务器",
     "server",
+    "econnaborted",
+    "etimedout",
+    "enotfound",
+    "econnrefused",
   ];
 
   return systemErrorKeywords.some((keyword) => errorMessage.includes(keyword));
@@ -65,7 +103,7 @@ export function isSystemError(error: unknown): boolean {
 /**
  * 获取系统级错误的 Toast 消息
  *
- * @param error - 错误对象
+ * @param error - 错误对象（可能是 AxiosError、ServerError 或普通 Error）
  * @returns Toast 消息，如果不是系统级错误返回 undefined
  */
 export function getSystemErrorToastMessage(error: unknown): string | undefined {
@@ -73,19 +111,52 @@ export function getSystemErrorToastMessage(error: unknown): string | undefined {
     return undefined;
   }
 
-  if (error instanceof Error) {
-    const errorMessage = error.message.toLowerCase();
-    if (errorMessage.includes("timeout") || errorMessage.includes("超时")) {
-      return "请求超时，请检查网络连接后重试";
-    }
-    if (errorMessage.includes("500") || errorMessage.includes("503") || errorMessage.includes("502")) {
+  if (!(error instanceof Error)) {
+    return "服务器暂时无法响应，请稍后重试";
+  }
+
+  const axiosError = error as AxiosError;
+
+  // 1. 检查 HTTP 状态码
+  if (axiosError.response?.status) {
+    const status = axiosError.response.status;
+    if (status >= 500 && status < 600) {
+      if (status === 503) {
+        return "服务暂时不可用，请稍后重试";
+      }
+      if (status === 504) {
+        return "请求超时，请检查网络连接后重试";
+      }
       return "服务器暂时无法响应，请稍后重试";
     }
-    if (errorMessage.includes("网络") || errorMessage.includes("network") || errorMessage.includes("fetch")) {
+  }
+
+  // 2. 检查错误代码
+  if (axiosError.code) {
+    if (axiosError.code === "ECONNABORTED" || axiosError.code === "ETIMEDOUT") {
+      return "请求超时，请检查网络连接后重试";
+    }
+    if (axiosError.code === "ENOTFOUND" || axiosError.code === "ECONNREFUSED") {
+      return "无法连接到服务器，请检查网络设置";
+    }
+    if (axiosError.code === "ERR_NETWORK" || axiosError.code === "ERR_INTERNET_DISCONNECTED") {
       return "网络连接失败，请检查网络设置";
     }
   }
 
+  // 3. 检查错误消息中的关键词
+  const errorMessage = error.message.toLowerCase();
+  if (errorMessage.includes("timeout") || errorMessage.includes("超时")) {
+    return "请求超时，请检查网络连接后重试";
+  }
+  if (errorMessage.includes("500") || errorMessage.includes("503") || errorMessage.includes("502")) {
+    return "服务器暂时无法响应，请稍后重试";
+  }
+  if (errorMessage.includes("网络") || errorMessage.includes("network") || errorMessage.includes("fetch")) {
+    return "网络连接失败，请检查网络设置";
+  }
+
+  // 4. 默认消息
   return "服务器暂时无法响应，请稍后重试";
 }
 
@@ -134,9 +205,8 @@ export function handleServerError<TFieldValues extends FieldValues = FieldValues
       shouldShowToast: false, // 字段级错误不显示 Toast
     };
   }
-
   // 处理通用错误
-  const errorMessage = error instanceof Error ? error.message : defaultMessage;
+  const errorMessage = error instanceof Error ? (error as AxiosError).response?.data.message : defaultMessage;
   setError("root" as Path<TFieldValues>, {
     type: "server",
     message: errorMessage,

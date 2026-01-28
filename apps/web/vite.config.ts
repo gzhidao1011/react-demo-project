@@ -39,4 +39,16 @@ export default defineConfig({
   optimizeDeps: {
     include: ["@headlessui/react", "@heroicons/react"],
   },
+  server: {
+    port: 5573,
+    proxy: {
+      // 代理 /api 请求到后端 API 网关
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        // 如果后端 API 路径不包含 /api，可以取消注释下面这行
+        // rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+  },
 });

@@ -1,0 +1,118 @@
+# Artillery API 性能测试配置
+# 
+# 使用方法：
+# 1. 安装 Artillery：npm install -g artillery
+# 2. 运行测试：artillery run artillery-config.yml
+# 3. 查看报告：artillery report <report-file.json>
+
+config:
+  target: "http://localhost:8080"
+  phases:
+    # 预热阶段：10 个虚拟用户，持续 30 秒
+    - duration: 30
+      arrivalRate: 10
+      name: "预热阶段"
+    # 负载阶段：50 个虚拟用户，持续 60 秒
+    - duration: 60
+      arrivalRate: 50
+      name: "负载测试"
+    # 压力测试阶段：100 个虚拟用户，持续 30 秒
+    - duration: 30
+      arrivalRate: 100
+      name: "压力测试"
+    # 峰值测试阶段：200 个虚拟用户，持续 20 秒
+    - duration: 20
+      arrivalRate: 200
+      name: "峰值测试"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  processor: "./artillery-processor.js"
+
+scenarios:
+  # 场景 1：用户注册
+  - name: "用户注册"
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "{{ $randomString() }}@example.com"
+            password: "TestPassword123!"
+            username: "{{ $randomString() }}"
+          capture:
+            - json: "$.data.accessToken"
+              as: "accessToken"
+            - json: "$.data.refreshToken"
+              as: "refreshToken"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: data
+            - hasProperty: data.accessToken
+
+  # 场景 2：用户登录
+  - name: "用户登录"
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.data.accessToken"
+              as: "accessToken"
+            - json: "$.data.refreshToken"
+              as: "refreshToken"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: data
+            - hasProperty: data.accessToken
+          # 性能要求：P95 响应时间 < 200ms
+          # 注意：实际性能要求需要在报告中验证
+
+  # 场景 3：刷新 Token
+  - name: "刷新 Token"
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.data.refreshToken"
+              as: "refreshToken"
+      - post:
+          url: "/api/auth/refresh"
+          json:
+            refreshToken: "{{ refreshToken }}"
+          capture:
+            - json: "$.data.accessToken"
+              as: "newAccessToken"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: data
+            - hasProperty: data.accessToken
+          # 性能要求：P95 响应时间 < 100ms
+          # 注意：实际性能要求需要在报告中验证
+
+  # 场景 4：获取当前用户信息（需要认证）
+  - name: "获取当前用户信息"
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.data.accessToken"
+              as: "accessToken"
+      - post:
+          url: "/api/auth/me"
+          headers:
+            Authorization: "Bearer {{ accessToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: data

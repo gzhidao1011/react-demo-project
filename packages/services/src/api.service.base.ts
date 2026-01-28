@@ -3,14 +3,10 @@ import {
   getAccessToken,
   getRefreshToken,
   isTokenExpired,
+  type ServerError,
   saveTokens,
 } from "@repo/utils";
-import type {
-  AxiosError,
-  AxiosInstance,
-  AxiosRequestConfig,
-  InternalAxiosRequestConfig,
-} from "axios";
+import type { AxiosError, AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 import axios from "axios";
 
 /**
@@ -24,6 +20,46 @@ export interface ApiResponseBase<T> {
   traceId?: string;
   errors?: Array<{ field: string; message: string; code?: string }>;
 }
+
+/**
+ * 处理 API 响应，统一检查业务 code 并抛出错误
+ *
+ * @param response - Axios 响应对象
+ * @param defaultErrorMessage - 默认错误消息（当无法从响应中提取消息时使用）
+ * @returns 响应数据（当 code 为 0 或 200 时）
+ * @throws ServerError - 当 code 不为 0 或 200 时抛出 ServerError
+ *
+ * @example
+ * ```typescript
+ * const response = await apiService.post<ApiResponseBase<LoginResponse>>("/auth/register", data);
+ * const body = handleApiResponse(response, "注册失败");
+ * // body 现在包含成功的数据
+ * ```
+ */
+export function handleApiResponse<T>(
+  response: { data: ApiResponseBase<T> },
+  defaultErrorMessage = "操作失败",
+): ApiResponseBase<T> {
+  const body = response.data;
+
+  // 统一按业务 code 判断是否成功，非成功场景抛出 ServerError
+  if (body.code !== 0 && body.code !== 200) {
+    const error: ServerError = new Error(body.message || defaultErrorMessage);
+
+    // 处理字段级错误
+    if (body.errors && Array.isArray(body.errors) && body.errors.length > 0) {
+      error.errors = body.errors.map((item) => ({
+        field: item.field,
+        message: item.message,
+      }));
+    }
+
+    throw error;
+  }
+
+  return body;
+}
+
 /**
  * Abstract base class for making HTTP requests using axios
  * @abstract
@@ -109,10 +145,7 @@ export abstract class APIServiceBase {
       (response) => {
         // 自动保存登录响应的 Token
         const url = response.config.url || "";
-        if (
-          (url.includes("/auth/login") || url.includes("/auth/register")) &&
-          response.data?.data
-        ) {
+        if ((url.includes("/auth/login") || url.includes("/auth/register")) && response.data?.data) {
           saveTokens(response.data.data as any);
         }
         return response;
@@ -215,11 +248,7 @@ export abstract class APIServiceBase {
       }
 
       // 调用刷新 API（不走拦截器，避免循环）
-      const response = await axios.post(
-        `${this.baseURL}/auth/refresh`,
-        { refreshToken },
-        { withCredentials: true },
-      );
+      const response = await axios.post(`${this.baseURL}/auth/refresh`, { refreshToken }, { withCredentials: true });
 
       // 保存新 Token
       if (response.data?.data) {

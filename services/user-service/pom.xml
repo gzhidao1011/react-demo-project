@@ -165,6 +165,87 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- JaCoCo 代码覆盖率插件 -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <!-- 整体覆盖率要求：75%（允许逐步提升） -->
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.75</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                                <!-- 关键服务类覆盖率要求：70%（允许逐步提升） -->
+                                <rule>
+                                    <element>CLASS</element>
+                                    <includes>
+                                        <include>com.example.user.service.JwtService</include>
+                                        <include>com.example.user.service.PasswordPolicyService</include>
+                                        <include>com.example.user.service.TokenRotationService</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- OWASP Dependency Check 安全扫描插件 -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>11.0.0</version>
+                <configuration>
+                    <!-- 生成 HTML 报告 -->
+                    <format>HTML</format>
+                    <!-- 报告输出目录 -->
+                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
+                    <!-- 跳过测试阶段 -->
+                    <skipTests>true</skipTests>
+                    <!-- 失败构建阈值（可选）：CRITICAL, HIGH, MEDIUM, LOW -->
+                    <!-- <failBuildOnCVSS>7</failBuildOnCVSS> -->
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
