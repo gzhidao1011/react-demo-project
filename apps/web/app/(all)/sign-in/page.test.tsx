@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import type { ApiResponseBase, LoginResponse } from "@repo/services";
 import type { ServerError } from "@repo/utils";
-import type { AxiosResponse } from "axios";
 import SignInPage from "./page";
 
 // Mock API 调用
@@ -449,8 +448,8 @@ describe("SignInPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       // 使用未解析的 Promise 来模拟正在进行的异步操作
-      let resolvePromise: (value: AxiosResponse<ApiResponseBase<LoginResponse>>) => void;
-      const pendingPromise = new Promise<AxiosResponse<ApiResponseBase<LoginResponse>>>((resolve) => {
+      let resolvePromise: (value: ApiResponseBase<LoginResponse>) => void;
+      const pendingPromise = new Promise<ApiResponseBase<LoginResponse>>((resolve) => {
         resolvePromise = resolve;
       });
 
@@ -476,14 +475,12 @@ describe("SignInPage", () => {
 
       // Cleanup - 解析 Promise 以完成测试
       resolvePromise!({
+        code: 0,
+        message: "success",
         data: {
-          code: 0,
-          message: "success",
-          data: {
-            accessToken: "access-token",
-            refreshToken: "refresh-token",
-            expiresIn: 3600,
-          },
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
         },
       });
 
