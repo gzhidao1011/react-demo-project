@@ -36,9 +36,6 @@ public class AuthService {
     @Value("${jwt.refresh-token-expiration:604800}")
     private long refreshTokenExpiration;
     
-    @Value("${jwt.remember-me-expiration:7776000}")
-    private long rememberMeExpiration;
-    
     /**
      * 用户注册
      * 
@@ -119,18 +116,7 @@ public class AuthService {
             throw new BusinessException(ResultCode.INVALID_CREDENTIALS);
         }
         
-        // 3. 根据 rememberMe 设置 Token 有效期
-        long accessTokenExp = request.getRememberMe() != null && request.getRememberMe() 
-            ? rememberMeExpiration 
-            : accessTokenExpiration;
-        long refreshTokenExp = request.getRememberMe() != null && request.getRememberMe() 
-            ? rememberMeExpiration 
-            : refreshTokenExpiration;
-        
-        // 注意：JwtService 使用配置的过期时间，这里需要动态设置
-        // 为了简化，先使用默认配置，后续可以扩展 JwtService 支持自定义过期时间
-        
-        // 4. 生成 JWT Token
+        // 3. 生成 JWT Token
         String accessToken = jwtService.generateAccessToken(
             user.getId().toString(),
             user.getName() != null ? user.getName() : user.getEmail(),
@@ -152,7 +138,7 @@ public class AuthService {
         return LoginResponse.builder()
             .accessToken(accessToken)
             .tokenType("Bearer")
-            .expiresIn(accessTokenExp)
+            .expiresIn(accessTokenExpiration)
             .refreshToken(refreshToken)
             .scope("read write")
             .user(LoginResponse.UserInfo.builder()

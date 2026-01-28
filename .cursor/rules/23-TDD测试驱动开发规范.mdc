@@ -1,0 +1,1252 @@
+# TDD（测试驱动开发）规范
+
+本文档定义了项目中使用测试驱动开发（TDD）的规范和最佳实践，确保新增功能按照 TDD 模式进行开发。
+
+> **重要**：所有新增功能必须采用测试驱动开发（TDD）方式，先编写测试，再实现功能代码。
+
+## 核心原则
+
+1. **先写测试，再写代码**：严格遵循 Red-Green-Refactor 循环
+2. **测试应该独立**：每个测试不依赖其他测试的状态
+3. **测试应该快速**：使用 Mock 避免慢速操作（网络、文件 I/O）
+4. **测试应该可读**：使用描述性命名和 AAA 模式
+5. **测试应该全面**：覆盖正常情况、边界情况、异常情况
+6. **保持测试通过**：重构时确保所有测试通过
+
+## 什么是 TDD？
+
+TDD（Test-Driven Development）是一种软件开发方法论，核心思想是**先写测试，再写代码**。它遵循 **Red-Green-Refactor** 循环：
+
+```
+┌─────────┐
+│   Red   │ ← 1. 先写测试，测试失败（功能不存在）
+└────┬────┘
+     │
+     ↓
+┌─────────┐
+│  Green  │ ← 2. 写最小实现，让测试通过
+└────┬────┘
+     │
+     ↓
+┌──────────┐
+│ Refactor │ ← 3. 重构代码，保持测试通过
+└────┬─────┘
+     │
+     └─────→ 重复循环
+```
+
+## Red-Green-Refactor 循环
+
+### 第一步：Red（红色） - 编写失败的测试
+
+先写测试（此时功能还不存在，测试会失败）：
+
+```typescript
+// 1. 先写测试（此时功能还不存在，测试会失败）
+describe("validateEmail", () => {
+  it("应该接受有效的邮箱格式", () => {
+    // Arrange: 准备测试数据
+    const email = "user@example.com"
+    
+    // Act: 调用函数（函数还不存在）
+    const result = validateEmail(email)
+    
+    // Assert: 验证结果（测试会失败）
+    expect(result).toBe(true)
+  })
+})
+```
+
+### 第二步：Green（绿色） - 写最小实现让测试通过
+
+写最小实现，让测试通过：
+
+```typescript
+// 2. 写最小实现，让测试通过
+export function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+```
+
+### 第三步：Refactor（重构） - 优化代码，保持测试通过
+
+重构代码，提高代码质量：
+
+```typescript
+// 3. 重构代码，提高代码质量
+export function validateEmail(email: string): boolean {
+  if (!email || typeof email !== "string") {
+    return false
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email.trim())
+}
+```
+
+## AAA 模式（Arrange-Act-Assert）
+
+这是**国外最主流的测试结构模式**，每个测试用例都遵循三个步骤：
+
+```typescript
+it("应该接受有效的邮箱格式", () => {
+  // ✅ Arrange（准备）：设置测试数据和环境
+  const email = "user@example.com"
+  
+  // ✅ Act（执行）：调用被测试的函数
+  const result = validateEmail(email)
+  
+  // ✅ Assert（断言）：验证结果
+  expect(result).toBe(true)
+})
+```
+
+**优势**：
+- ✅ 结构清晰，易于理解
+- ✅ 测试意图明确
+- ✅ 符合国外主流实践（Jest、Vitest、JUnit 等）
+
+## 测试文件组织方式（Co-located Tests）
+
+**国外主流做法**：测试文件与源文件放在同一目录（co-located）
+
+```
+packages/utils/
+├── src/
+│   ├── validate-email.ts          # 源代码文件
+│   ├── validate-email.test.ts     # 测试文件（紧邻源文件）
+│   ├── auth.ts
+│   └── auth.test.ts
+```
+
+**采用此方式的知名项目**：
+- ✅ React（Facebook）
+- ✅ Vue.js
+- ✅ Next.js（Vercel）
+- ✅ Remix
+- ✅ Svelte
+
+**优势**：
+- ✅ 易于发现：测试文件紧邻源文件
+- ✅ 维护性好：修改代码时，测试文件就在旁边
+- ✅ 导入简单：相对路径导入更直观
+
+## 测试金字塔（Test Pyramid）
+
+国外主流实践遵循测试金字塔原则：
+
+```
+        /\
+       /E2E\        ← 10% E2E 测试（少量）
+      /------\
+     /Integration\  ← 20% 集成测试（中等）
+    /------------\
+   /   Unit Tests  \ ← 70% 单元测试（大量）
+  /----------------\
+```
+
+**测试分布**：
+- **单元测试（70%）**：快速、隔离、测试单个函数/组件
+- **集成测试（20%）**：测试组件/模块之间的交互
+- **E2E 测试（10%）**：测试完整用户流程
+
+## 测试命名规范
+
+**国外主流做法**：使用描述性命名，清晰说明测试目的
+
+```typescript
+// ✅ 推荐：描述性命名
+it("应该接受有效的邮箱格式", () => { ... })
+it("应该拒绝无效的邮箱格式", () => { ... })
+it("应该处理空字符串", () => { ... })
+
+// ❌ 不推荐：模糊命名
+it("test email", () => { ... })
+it("email validation", () => { ... })
+```
+
+## Mock 和 Stub 的使用
+
+**国外主流做法**：使用 Mock 隔离外部依赖
+
+```typescript
+import { vi } from "vitest"
+
+// Mock API 调用
+vi.mock("./api", () => ({
+  fetchUser: vi.fn(() => Promise.resolve({ id: "123", name: "John" })),
+}))
+
+// Mock 浏览器 API
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+}
+global.localStorage = localStorageMock as any
+```
+
+**原则**：
+- ✅ Mock 外部依赖（API、数据库、浏览器 API）
+- ✅ 保持测试独立和快速
+- ✅ 避免过度 Mock，保持测试真实性
+
+## 测试覆盖率要求
+
+**国外主流标准**：
+- **整体覆盖率**：≥ 80%
+- **关键模块**：≥ 90%
+- **工具函数**：≥ 90%
+- **业务逻辑**：≥ 70%
+
+## TDD 工作流程示例
+
+以登录功能为例，展示完整的 TDD 流程：
+
+### 步骤 1：编写 Schema 测试（Red）
+
+```typescript
+// packages/schemas/src/auth/login.schema.test.ts
+describe("loginSchema", () => {
+  it("应该接受有效的邮箱和密码", () => {
+    // Arrange
+    const validData = {
+      email: "user@example.com",
+      password: "password123",
+    }
+    
+    // Act & Assert
+    expect(() => loginSchema.parse(validData)).not.toThrow()
+  })
+  
+  it("应该拒绝无效的邮箱格式", () => {
+    // Arrange
+    const invalidData = {
+      email: "invalid-email",
+      password: "password123",
+    }
+    
+    // Act & Assert
+    expect(() => loginSchema.parse(invalidData)).toThrow()
+  })
+})
+```
+
+### 步骤 2：运行测试（Red）
+
+```bash
+pnpm test
+# 测试应该失败（因为 Schema 还未实现）
+```
+
+### 步骤 3：实现 Schema（Green）
+
+```typescript
+// packages/schemas/src/auth/login.schema.ts
+import { z } from "zod"
+
+export const loginSchema = z.object({
+  email: z.string().email("请输入有效的邮箱地址"),
+  password: z.string().min(1, "密码不能为空"),
+})
+```
+
+### 步骤 4：运行测试（Green）
+
+```bash
+pnpm test
+# 测试应该通过
+```
+
+### 步骤 5：重构（Refactor）
+
+```typescript
+// 优化 Schema，添加更多验证规则
+export const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "邮箱不能为空")
+    .email("请输入有效的邮箱地址"),
+  password: z
+    .string()
+    .min(1, "密码不能为空")
+    .min(6, "密码至少需要 6 个字符"),
+})
+```
+
+### 步骤 6：添加更多测试用例
+
+```typescript
+it("应该拒绝空密码", () => {
+  // Arrange
+  const invalidData = {
+    email: "user@example.com",
+    password: "",
+  }
+  
+  // Act & Assert
+  expect(() => loginSchema.parse(invalidData)).toThrow()
+})
+```
+
+## TDD 的优势
+
+1. **提高代码质量**：测试驱动开发确保代码可测试、可维护
+2. **减少 Bug**：先写测试，提前发现潜在问题
+3. **更好的设计**：测试驱动促使更好的代码结构
+4. **文档作用**：测试用例本身就是最好的文档
+5. **重构信心**：有测试保障，重构更安全
+
+## TDD 最佳实践
+
+### 1. 先写测试，再写代码
+
+严格遵循 Red-Green-Refactor 循环：
+
+```typescript
+// ✅ 正确：先写测试
+describe("新功能", () => {
+  it("应该满足某个需求", () => {
+    // 测试代码
+  })
+})
+
+// 然后实现功能
+export function newFeature() {
+  // 实现代码
+}
+```
+
+### 2. 测试应该独立
+
+每个测试不依赖其他测试的状态：
+
+```typescript
+// ✅ 正确：每个测试独立
+describe("validateEmail", () => {
+  beforeEach(() => {
+    // 每个测试前重置状态
+  })
+  
+  it("测试用例 1", () => { ... })
+  it("测试用例 2", () => { ... })
+})
+```
+
+### 3. 测试应该快速
+
+使用 Mock 避免慢速操作（网络、文件 I/O）：
+
+```typescript
+// ✅ 正确：Mock API 调用
+vi.mock("./api", () => ({
+  fetchData: vi.fn(() => Promise.resolve({ data: "test" })),
+}))
+```
+
+### 4. 测试应该可读
+
+使用描述性命名和 AAA 模式：
+
+```typescript
+// ✅ 正确：清晰的测试结构
+it("应该接受有效的邮箱格式", () => {
+  // Arrange
+  const email = "user@example.com"
+  
+  // Act
+  const result = validateEmail(email)
+  
+  // Assert
+  expect(result).toBe(true)
+})
+```
+
+### 5. 测试应该全面
+
+覆盖正常情况、边界情况、异常情况：
+
+```typescript
+describe("validateEmail", () => {
+  it("应该接受有效的邮箱格式", () => { ... })        // 正常情况
+  it("应该拒绝无效的邮箱格式", () => { ... })        // 异常情况
+  it("应该处理空字符串", () => { ... })              // 边界情况
+  it("应该处理 null 值", () => { ... })              // 边界情况
+  it("应该处理 undefined 值", () => { ... })          // 边界情况
+})
+```
+
+### 6. 保持测试通过
+
+重构时确保所有测试通过：
+
+```bash
+# 重构前：确保所有测试通过
+pnpm test
+
+# 进行重构
+# ...
+
+# 重构后：确保所有测试仍然通过
+pnpm test
+```
+
+## 前端 TDD 实践
+
+### Schema 验证测试
+
+```typescript
+// packages/schemas/src/auth/login.schema.test.ts
+describe("loginSchema", () => {
+  it("应该接受有效的邮箱和密码", () => {
+    const validData = {
+      email: "user@example.com",
+      password: "password123",
+    }
+    expect(() => loginSchema.parse(validData)).not.toThrow()
+  })
+  
+  it("应该拒绝无效的邮箱格式", () => {
+    const invalidData = {
+      email: "invalid-email",
+      password: "password123",
+    }
+    expect(() => loginSchema.parse(invalidData)).toThrow()
+  })
+})
+```
+
+### 工具函数测试
+
+```typescript
+// packages/utils/src/auth.test.ts
+describe("getAccessToken", () => {
+  it("应该从内存中获取 token（如果存在）", () => {
+    // Arrange
+    setAccessToken("test-token")
+    
+    // Act
+    const token = getAccessToken()
+    
+    // Assert
+    expect(token).toBe("test-token")
+  })
+  
+  it("应该从 sessionStorage 获取 token（内存中没有时）", () => {
+    // Arrange
+    sessionStorage.setItem("accessToken", "storage-token")
+    
+    // Act
+    const token = getAccessToken()
+    
+    // Assert
+    expect(token).toBe("storage-token")
+  })
+})
+```
+
+### React 组件测试（UI 测试）
+
+UI 组件测试是前端 TDD 的重要组成部分，应该覆盖组件的渲染、交互、状态变化和可访问性。
+
+#### 基础渲染测试
+
+```typescript
+// apps/web/app/(all)/sign-in/page.test.tsx
+import { render, screen, waitFor } from "@testing-library/react"
+import { userEvent } from "@testing-library/user-event"
+import SignInPage from "./page"
+
+describe("SignInPage", () => {
+  it("应该渲染邮箱输入框", () => {
+    // Arrange & Act
+    render(<SignInPage />)
+    
+    // Assert
+    expect(screen.getByLabelText(/邮箱/i)).toBeInTheDocument()
+  })
+  
+  it("应该渲染所有必需的 UI 元素", () => {
+    // Arrange & Act
+    render(<SignInPage />)
+    
+    // Assert
+    expect(screen.getByLabelText(/邮箱/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/密码/i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /登录/i })).toBeInTheDocument()
+    expect(screen.getByText(/立即注册/i)).toBeInTheDocument()
+  })
+})
+```
+
+#### 表单验证测试
+
+```typescript
+describe("表单验证", () => {
+  it("应该显示邮箱格式错误（当输入无效邮箱时）", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    
+    // Act
+    await user.type(emailInput, "invalid-email")
+    await user.tab() // 触发 onBlur 验证
+    
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText(/请输入有效的邮箱地址/i)).toBeInTheDocument()
+    })
+  })
+  
+  it("应该显示密码必填错误（当密码为空时）", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    const passwordInput = screen.getByLabelText(/密码/i)
+    
+    // Act
+    await user.click(passwordInput)
+    await user.tab() // 触发 onBlur 验证
+    
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText(/密码不能为空/i)).toBeInTheDocument()
+    })
+  })
+  
+  it("应该在输入有效数据后清除错误消息", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    
+    // Act - 先输入无效数据
+    await user.type(emailInput, "invalid-email")
+    await user.tab()
+    
+    // Assert - 验证错误显示
+    await waitFor(() => {
+      expect(screen.getByText(/请输入有效的邮箱地址/i)).toBeInTheDocument()
+    })
+    
+    // Act - 输入有效数据
+    await user.clear(emailInput)
+    await user.type(emailInput, "user@example.com")
+    await user.tab()
+    
+    // Assert - 验证错误消失
+    await waitFor(() => {
+      expect(screen.queryByText(/请输入有效的邮箱地址/i)).not.toBeInTheDocument()
+    })
+  })
+})
+```
+
+#### 用户交互测试
+
+```typescript
+describe("用户交互", () => {
+  it("应该允许用户输入邮箱", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    const emailInput = screen.getByLabelText(/邮箱/i) as HTMLInputElement
+    
+    // Act
+    await user.type(emailInput, "user@example.com")
+    
+    // Assert
+    expect(emailInput.value).toBe("user@example.com")
+  })
+  
+  it("应该允许用户输入密码", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    const passwordInput = screen.getByLabelText(/密码/i) as HTMLInputElement
+    
+    // Act
+    await user.type(passwordInput, "password123")
+    
+    // Assert
+    expect(passwordInput.value).toBe("password123")
+  })
+  
+  it("应该允许用户点击登录按钮", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    const loginButton = screen.getByRole("button", { name: /登录/i })
+    
+    // Act
+    await user.click(loginButton)
+    
+    // Assert - 验证按钮被点击（可以通过 Mock API 验证）
+    // 这里可以验证 API 调用或其他副作用
+  })
+  
+  it("应该允许用户点击立即注册链接跳转", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    const mockNavigate = vi.fn()
+    vi.mock("react-router", () => ({
+      useNavigate: () => mockNavigate,
+    }))
+    
+    render(<SignInPage />)
+    const registerLink = screen.getByText(/立即注册/i)
+    
+    // Act
+    await user.click(registerLink)
+    
+    // Assert
+    expect(mockNavigate).toHaveBeenCalledWith("/sign-up")
+  })
+})
+```
+
+#### 表单提交测试
+
+```typescript
+describe("表单提交", () => {
+  beforeEach(() => {
+    // Mock API 调用
+    vi.mock("@repo/services", () => ({
+      authLogin: vi.fn(),
+    }))
+  })
+  
+  it("应该调用登录 API（当表单有效时）", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    const mockAuthLogin = vi.fn(() => Promise.resolve({
+      data: {
+        code: 0,
+        data: {
+          accessToken: "token",
+          refreshToken: "refresh",
+          expiresIn: 3600,
+        },
+      },
+    }))
+    
+    vi.mocked(authLogin).mockImplementation(mockAuthLogin)
+    render(<SignInPage />)
+    
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    const passwordInput = screen.getByLabelText(/密码/i)
+    const loginButton = screen.getByRole("button", { name: /登录/i })
+    
+    // Act
+    await user.type(emailInput, "user@example.com")
+    await user.type(passwordInput, "password123")
+    await user.click(loginButton)
+    
+    // Assert
+    await waitFor(() => {
+      expect(mockAuthLogin).toHaveBeenCalledWith({
+        email: "user@example.com",
+        password: "password123",
+      })
+    })
+  })
+  
+  it("应该显示加载状态（提交中时）", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    const mockAuthLogin = vi.fn(() => new Promise(() => {})) // 永不 resolve
+    
+    vi.mocked(authLogin).mockImplementation(mockAuthLogin)
+    render(<SignInPage />)
+    
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    const passwordInput = screen.getByLabelText(/密码/i)
+    const loginButton = screen.getByRole("button", { name: /登录/i })
+    
+    // Act
+    await user.type(emailInput, "user@example.com")
+    await user.type(passwordInput, "password123")
+    await user.click(loginButton)
+    
+    // Assert
+    await waitFor(() => {
+      expect(loginButton).toBeDisabled()
+      expect(screen.getByText(/提交中/i)).toBeInTheDocument()
+    })
+  })
+  
+  it("应该显示成功消息并跳转（登录成功后）", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    const mockAuthLogin = vi.fn(() => Promise.resolve({
+      data: {
+        code: 0,
+        data: {
+          accessToken: "token",
+          refreshToken: "refresh",
+          expiresIn: 3600,
+        },
+      },
+    }))
+    
+    const mockNavigate = vi.fn()
+    vi.mock("react-router", () => ({
+      useNavigate: () => mockNavigate,
+    }))
+    
+    vi.mocked(authLogin).mockImplementation(mockAuthLogin)
+    render(<SignInPage />)
+    
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    const passwordInput = screen.getByLabelText(/密码/i)
+    const loginButton = screen.getByRole("button", { name: /登录/i })
+    
+    // Act
+    await user.type(emailInput, "user@example.com")
+    await user.type(passwordInput, "password123")
+    await user.click(loginButton)
+    
+    // Assert
+    await waitFor(() => {
+      expect(mockAuthLogin).toHaveBeenCalled()
+      // 验证 Toast 成功消息（需要 Mock toast）
+      expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true })
+    })
+  })
+  
+  it("应该显示错误消息（登录失败时）", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    const mockAuthLogin = vi.fn(() => Promise.reject({
+      response: {
+        data: {
+          code: 400,
+          message: "用户名或密码错误",
+        },
+      },
+    }))
+    
+    vi.mocked(authLogin).mockImplementation(mockAuthLogin)
+    render(<SignInPage />)
+    
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    const passwordInput = screen.getByLabelText(/密码/i)
+    const loginButton = screen.getByRole("button", { name: /登录/i })
+    
+    // Act
+    await user.type(emailInput, "user@example.com")
+    await user.type(passwordInput, "wrong-password")
+    await user.click(loginButton)
+    
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText(/用户名或密码错误/i)).toBeInTheDocument()
+    })
+  })
+  
+  it("应该处理字段级错误（API 返回 errors 数组时）", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    const mockAuthLogin = vi.fn(() => Promise.reject({
+      response: {
+        data: {
+          code: 400,
+          message: "验证失败",
+          errors: [
+            { field: "email", message: "邮箱已被注册" },
+          ],
+        },
+      },
+    }))
+    
+    vi.mocked(authLogin).mockImplementation(mockAuthLogin)
+    render(<SignInPage />)
+    
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    const passwordInput = screen.getByLabelText(/密码/i)
+    const loginButton = screen.getByRole("button", { name: /登录/i })
+    
+    // Act
+    await user.type(emailInput, "existing@example.com")
+    await user.type(passwordInput, "password123")
+    await user.click(loginButton)
+    
+    // Assert
+    await waitFor(() => {
+      expect(screen.getByText(/邮箱已被注册/i)).toBeInTheDocument()
+    })
+  })
+})
+```
+
+#### 可访问性测试
+
+```typescript
+describe("可访问性", () => {
+  it("应该为输入框提供正确的 label", () => {
+    // Arrange & Act
+    render(<SignInPage />)
+    
+    // Assert
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    const passwordInput = screen.getByLabelText(/密码/i)
+    
+    expect(emailInput).toHaveAttribute("id")
+    expect(passwordInput).toHaveAttribute("id")
+  })
+  
+  it("应该在错误时设置 aria-invalid 属性", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    
+    // Act
+    await user.type(emailInput, "invalid-email")
+    await user.tab()
+    
+    // Assert
+    await waitFor(() => {
+      expect(emailInput).toHaveAttribute("aria-invalid", "true")
+    })
+  })
+  
+  it("应该为错误消息提供 role='alert'", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    const emailInput = screen.getByLabelText(/邮箱/i)
+    
+    // Act
+    await user.type(emailInput, "invalid-email")
+    await user.tab()
+    
+    // Assert
+    await waitFor(() => {
+      const errorMessage = screen.getByText(/请输入有效的邮箱地址/i)
+      expect(errorMessage).toHaveAttribute("role", "alert")
+    })
+  })
+  
+  it("应该支持键盘导航", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    render(<SignInPage />)
+    
+    // Act & Assert - 使用 Tab 键导航
+    await user.tab()
+    expect(screen.getByLabelText(/邮箱/i)).toHaveFocus()
+    
+    await user.tab()
+    expect(screen.getByLabelText(/密码/i)).toHaveFocus()
+    
+    await user.tab()
+    expect(screen.getByRole("button", { name: /登录/i })).toHaveFocus()
+  })
+})
+```
+
+#### 组件状态测试
+
+```typescript
+describe("组件状态", () => {
+  it("应该初始化为空表单", () => {
+    // Arrange & Act
+    render(<SignInPage />)
+    
+    // Assert
+    const emailInput = screen.getByLabelText(/邮箱/i) as HTMLInputElement
+    const passwordInput = screen.getByLabelText(/密码/i) as HTMLInputElement
+    
+    expect(emailInput.value).toBe("")
+    expect(passwordInput.value).toBe("")
+  })
+  
+  it("应该在提交后重置表单（成功时）", async () => {
+    // Arrange
+    const user = userEvent.setup()
+    const mockAuthLogin = vi.fn(() => Promise.resolve({
+      data: { code: 0, data: { accessToken: "token", refreshToken: "refresh", expiresIn: 3600 } },
+    }))
+    
+    vi.mocked(authLogin).mockImplementation(mockAuthLogin)
+    render(<SignInPage />)
+    
+    const emailInput = screen.getByLabelText(/邮箱/i) as HTMLInputElement
+    const passwordInput = screen.getByLabelText(/密码/i) as HTMLInputElement
+    const loginButton = screen.getByRole("button", { name: /登录/i })
+    
+    // Act
+    await user.type(emailInput, "user@example.com")
+    await user.type(passwordInput, "password123")
+    await user.click(loginButton)
+    
+    // Assert - 等待跳转后验证（实际场景中可能需要 Mock navigate）
+    await waitFor(() => {
+      expect(mockAuthLogin).toHaveBeenCalled()
+    })
+  })
+})
+```
+
+#### UI 组件测试最佳实践
+
+**✅ 推荐做法**：
+
+1. **测试用户可见的行为**：测试用户看到和交互的内容，而不是实现细节
+2. **使用语义化查询**：优先使用 `getByRole`、`getByLabelText` 等语义化查询
+3. **模拟真实用户操作**：使用 `userEvent` 而不是直接触发事件
+4. **测试可访问性**：确保组件符合可访问性标准
+5. **测试错误状态**：覆盖错误处理和边界情况
+6. **使用 waitFor**：处理异步更新和状态变化
+
+**❌ 避免的做法**：
+
+1. ❌ 测试实现细节（如内部状态、方法调用）
+2. ❌ 使用 `container.querySelector` 等 DOM 查询
+3. ❌ 直接触发事件而不是使用 `userEvent`
+4. ❌ 忽略可访问性测试
+5. ❌ 只测试正常情况，忽略错误和边界情况
+
+#### UI 测试覆盖范围
+
+**必须测试的 UI 功能**：
+
+1. **组件渲染**：
+   - ✅ 所有必需的 UI 元素是否正确渲染
+   - ✅ 条件渲染（根据状态显示/隐藏元素）
+   - ✅ 列表渲染（动态列表项）
+
+2. **用户交互**：
+   - ✅ 表单输入（文本、选择、复选框等）
+   - ✅ 按钮点击
+   - ✅ 链接跳转
+   - ✅ 下拉菜单和选择器
+   - ✅ 模态框和对话框
+
+3. **表单验证**：
+   - ✅ 字段级验证（单个字段错误）
+   - ✅ 表单级验证（整体表单错误）
+   - ✅ 实时验证（onBlur、onChange）
+   - ✅ 错误消息显示和清除
+
+4. **状态管理**：
+   - ✅ 加载状态（提交中、加载中）
+   - ✅ 错误状态（错误消息显示）
+   - ✅ 成功状态（成功提示、跳转）
+   - ✅ 表单状态（禁用、启用）
+
+5. **可访问性**：
+   - ✅ ARIA 属性（`aria-label`、`aria-invalid` 等）
+   - ✅ 键盘导航（Tab 键、Enter 键等）
+   - ✅ 屏幕阅读器支持（`role`、`aria-describedby` 等）
+   - ✅ 焦点管理
+
+6. **API 集成**：
+   - ✅ API 调用（参数、端点）
+   - ✅ 成功处理（数据保存、跳转）
+   - ✅ 错误处理（错误消息、重试）
+   - ✅ 加载状态管理
+
+**可选测试的 UI 功能**：
+
+1. **视觉测试**：
+   - 视觉回归测试（截图对比）
+   - 主题切换（亮色/暗色模式）
+   - 响应式布局
+
+2. **性能测试**：
+   - 渲染性能
+   - 交互响应时间
+
+3. **动画测试**：
+   - 过渡效果
+   - 动画状态
+
+### UI 测试工具和库
+
+#### React Testing Library
+
+项目使用 **React Testing Library** 进行 UI 组件测试，这是 React 社区推荐的测试库。
+
+**核心原则**：
+- ✅ 测试用户可见的行为，而不是实现细节
+- ✅ 使用语义化查询（`getByRole`、`getByLabelText` 等）
+- ✅ 模拟真实用户操作（使用 `userEvent`）
+
+**常用查询方法**（按优先级）：
+
+```typescript
+// 1. 优先使用：语义化查询
+screen.getByRole("button", { name: /登录/i })
+screen.getByLabelText(/邮箱/i)
+screen.getByText(/错误消息/i)
+
+// 2. 备选：使用测试 ID（当语义化查询不可用时）
+screen.getByTestId("submit-button")
+
+// 3. 最后选择：DOM 查询（不推荐）
+container.querySelector("input[type='email']")
+```
+
+**常用断言**：
+
+```typescript
+import { expect } from "@testing-library/jest-dom"
+
+// 元素存在性
+expect(element).toBeInTheDocument()
+expect(element).not.toBeInTheDocument()
+
+// 元素可见性
+expect(element).toBeVisible()
+expect(element).not.toBeVisible()
+
+// 元素属性
+expect(element).toHaveAttribute("aria-invalid", "true")
+expect(element).toHaveClass("error")
+
+// 表单元素
+expect(input).toHaveValue("user@example.com")
+expect(input).toBeDisabled()
+expect(input).toBeRequired()
+
+// 可访问性
+expect(element).toHaveAccessibleName("登录按钮")
+expect(element).toHaveAccessibleDescription("点击此按钮提交表单")
+```
+
+#### userEvent 使用
+
+**推荐使用 `@testing-library/user-event`** 模拟真实用户操作：
+
+```typescript
+import { userEvent } from "@testing-library/user-event"
+
+// ✅ 推荐：使用 userEvent
+const user = userEvent.setup()
+await user.type(input, "text")
+await user.click(button)
+await user.tab()
+
+// ❌ 不推荐：直接触发事件
+fireEvent.change(input, { target: { value: "text" } })
+fireEvent.click(button)
+```
+
+**常用 userEvent 方法**：
+
+```typescript
+const user = userEvent.setup()
+
+// 输入操作
+await user.type(input, "text")           // 模拟打字
+await user.clear(input)                  // 清空输入
+await user.paste(input, "text")          // 粘贴
+
+// 点击操作
+await user.click(button)                 // 点击
+await user.dblClick(button)             // 双击
+await user.rightClick(button)           // 右键点击
+
+// 键盘操作
+await user.keyboard("Hello")             // 输入文本
+await user.tab()                         // Tab 键
+await user.keyboard("{Enter}")          // Enter 键
+await user.keyboard("{Escape}")          // Escape 键
+
+// 选择操作
+await user.selectOptions(select, "option1")  // 选择选项
+await user.deselectOptions(select, "option1") // 取消选择
+
+// 悬停操作
+await user.hover(element)               // 悬停
+await user.unhover(element)             // 取消悬停
+```
+
+#### 视觉回归测试（可选）
+
+对于重要的 UI 组件，可以考虑使用视觉回归测试工具：
+
+**推荐工具**：
+- **Chromatic**：Storybook 的视觉测试工具
+- **Percy**：跨框架的视觉测试平台
+- **Playwright**：E2E 测试工具，支持截图对比
+
+**使用场景**：
+- ✅ 关键 UI 组件的视觉一致性
+- ✅ 主题切换（亮色/暗色模式）
+- ✅ 响应式布局测试
+- ✅ 动画和过渡效果
+
+**示例**（使用 Playwright）：
+
+```typescript
+import { test, expect } from "@playwright/test"
+
+test("登录页面视觉回归测试", async ({ page }) => {
+  await page.goto("/sign-in")
+  
+  // 截图对比
+  await expect(page).toHaveScreenshot("sign-in-page.png")
+})
+```
+
+### API 服务测试
+
+```typescript
+// packages/services/src/auth.service.test.ts
+import { vi } from "vitest"
+import { authLogin } from "./auth.service"
+
+vi.mock("./api.service.base", () => ({
+  post: vi.fn(),
+}))
+
+describe("authLogin", () => {
+  it("应该调用正确的 API 端点", async () => {
+    // Arrange
+    const mockPost = vi.fn(() => Promise.resolve({ data: { code: 0 } }))
+    vi.mocked(post).mockImplementation(mockPost)
+    
+    // Act
+    await authLogin({ email: "user@example.com", password: "password123" })
+    
+    // Assert
+    expect(mockPost).toHaveBeenCalledWith("/api/v1/auth/login", {
+      email: "user@example.com",
+      password: "password123",
+    })
+  })
+})
+```
+
+## 后端 TDD 实践
+
+### Java 单元测试
+
+```java
+// services/user-service/src/test/java/com/example/user/service/AuthServiceTest.java
+@ExtendWith(MockitoExtension.class)
+class AuthServiceTest {
+    
+    @Mock
+    private UserRepository userRepository;
+    
+    @Mock
+    private JwtService jwtService;
+    
+    @InjectMocks
+    private AuthService authService;
+    
+    @Test
+    void shouldLoginWithValidCredentials() {
+        // Arrange
+        String email = "user@example.com";
+        String password = "password123";
+        User user = new User();
+        user.setEmail(email);
+        user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
+        
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(jwtService.generateAccessToken(user)).thenReturn("access-token");
+        when(jwtService.generateRefreshToken(user)).thenReturn("refresh-token");
+        
+        // Act
+        LoginResponse response = authService.login(email, password);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals("access-token", response.getAccessToken());
+        assertEquals("refresh-token", response.getRefreshToken());
+    }
+}
+```
+
+## 验收标准
+
+### TDD 流程验收
+
+- ✅ 每个功能模块都先编写测试用例
+- ✅ 测试用例编写完成后运行测试（应该失败）
+- ✅ 实现功能代码使测试通过
+- ✅ 所有测试通过后进入下一个模块
+
+### 测试覆盖率验收
+
+- ✅ **单元测试覆盖率**：≥ 80%
+- ✅ **关键功能覆盖率**：100%（Token 存储、刷新机制、错误处理）
+- ✅ **工具函数覆盖率**：≥ 90%
+- ✅ **业务逻辑覆盖率**：≥ 70%
+
+### 测试质量验收
+
+- ✅ 测试用例使用 AAA 模式（Arrange-Act-Assert）
+- ✅ 测试命名清晰描述测试目的
+- ✅ 测试文件与源文件 co-located（放在同一目录）
+- ✅ 测试独立，不依赖其他测试的状态
+- ✅ 使用 Mock 隔离外部依赖
+
+### UI 测试验收标准
+
+- ✅ **组件渲染测试**：所有必需的 UI 元素正确渲染
+- ✅ **用户交互测试**：表单输入、按钮点击、链接跳转等交互功能正常
+- ✅ **表单验证测试**：字段级和表单级验证正确工作
+- ✅ **状态管理测试**：加载、错误、成功等状态正确显示
+- ✅ **可访问性测试**：ARIA 属性、键盘导航、屏幕阅读器支持
+- ✅ **API 集成测试**：API 调用、成功处理、错误处理
+- ✅ **UI 测试覆盖率**：关键 UI 组件测试覆盖率 ≥ 80%
+
+## 运行测试命令
+
+```bash
+# 运行所有测试
+pnpm test
+
+# 运行测试并查看覆盖率
+pnpm test:coverage
+
+# 监听模式运行测试
+pnpm test:watch
+
+# 运行特定文件的测试
+pnpm test auth.test.ts
+
+# 运行特定包的测试
+pnpm test --filter @repo/utils
+```
+
+## 注意事项
+
+1. **严格遵循 TDD 流程**：先写测试，再写代码，不要跳过测试步骤
+2. **保持测试通过**：重构时确保所有测试通过
+3. **测试应该独立**：每个测试不依赖其他测试的状态
+4. **使用 Mock 隔离依赖**：避免测试依赖外部服务
+5. **测试应该快速**：使用 Mock 避免慢速操作
+6. **测试应该可读**：使用描述性命名和 AAA 模式
+7. **测试应该全面**：覆盖正常情况、边界情况、异常情况
+8. **UI 测试重点**：测试用户可见的行为，而不是实现细节
+9. **使用语义化查询**：优先使用 `getByRole`、`getByLabelText` 等语义化查询方法
+10. **模拟真实用户操作**：使用 `userEvent` 而不是直接触发事件
+11. **可访问性测试**：确保所有 UI 组件符合可访问性标准
+12. **异步处理**：使用 `waitFor` 正确处理异步更新和状态变化
+
+## 相关文档
+
+### 相关规范文档
+
+- [测试与覆盖率规范](./20-测试与覆盖率规范.mdc) - 测试工具和覆盖率要求
+- [测试与发布流程](./15-测试与发布流程.mdc) - 测试流程配置说明
+- [代码风格](./01-代码风格.mdc) - TypeScript/JavaScript 代码风格
+- [代码组织](./05-代码组织.mdc) - 代码组织规范
+
+### 外部资源
+
+- [TDD 最佳实践](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
+- [Vitest 文档](https://vitest.dev/)
+- [React Testing Library 文档](https://testing-library.com/react)
+- [React Testing Library 查询优先级](https://testing-library.com/docs/queries/about/#priority)
+- [userEvent 文档](https://testing-library.com/docs/user-event/intro/)
+- [可访问性测试指南](https://testing-library.com/docs/dom-testing-library/api-accessibility)
+- [JUnit 5 文档](https://junit.org/junit5/docs/current/user-guide/)
+- [Kent C. Dodds - 测试教程](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)

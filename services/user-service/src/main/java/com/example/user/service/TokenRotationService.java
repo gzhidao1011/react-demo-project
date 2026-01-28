@@ -1,7 +1,7 @@
 package com.example.user.service;
 
 import io.jsonwebtoken.Claims;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -16,14 +16,23 @@ import java.util.concurrent.TimeUnit;
  * https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation
  */
 @Service
-@RequiredArgsConstructor
 public class TokenRotationService {
-    
+
     private final RedisTemplate<String, String> redisTemplate;
     private final JwtService jwtService;
-    
+
     @Value("${jwt.refresh-token-expiration:604800}")
     private long refreshTokenExpiration;
+
+    /**
+     * 构造函数注入，使用 stringRedisTemplate 避免与 redisTemplate Bean 歧义
+     */
+    public TokenRotationService(
+            @Qualifier("stringRedisTemplate") RedisTemplate<String, String> redisTemplate,
+            JwtService jwtService) {
+        this.redisTemplate = redisTemplate;
+        this.jwtService = jwtService;
+    }
     
     /**
      * Refresh Token Key 前缀

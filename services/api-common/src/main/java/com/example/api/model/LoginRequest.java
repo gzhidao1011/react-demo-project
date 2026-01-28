@@ -25,11 +25,4 @@ public class LoginRequest {
      */
     @NotBlank(message = "密码不能为空")
     private String password;
-    
-    /**
-     * 记住我选项
-     * true: Token 有效期延长（Remember Me Token，90 天）
-     * false: 标准 Token 有效期（Access Token 30 分钟，Refresh Token 7 天）
-     */
-    private Boolean rememberMe = false;
 }

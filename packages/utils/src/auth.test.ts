@@ -3,7 +3,6 @@ import {
   clearTokens,
   getAccessToken,
   getRefreshToken,
-  getRememberMe,
   isAuthenticated,
   isTokenExpired,
   type LoginResponse,
@@ -67,15 +66,9 @@ describe("auth", () => {
       expect(getAccessToken()).toBe("memory-token");
     });
 
-    it("应该从 sessionStorage 获取 token（当未设置记住我时）", () => {
+    it("应该从 sessionStorage 获取 token", () => {
       sessionStorageMock.setItem("access_token", "session-token");
       expect(getAccessToken()).toBe("session-token");
-    });
-
-    it("应该从 localStorage 获取 token（当设置了记住我时）", () => {
-      localStorageMock.setItem("remember_me", "true");
-      localStorageMock.setItem("access_token", "local-token");
-      expect(getAccessToken()).toBe("local-token");
     });
 
     it("应该返回 null（当 token 不存在时）", () => {
@@ -90,35 +83,16 @@ describe("auth", () => {
   });
 
   describe("setAccessToken", () => {
-    it("应该将 token 保存到内存和 sessionStorage（默认）", () => {
+    it("应该将 token 保存到内存和 sessionStorage", () => {
       setAccessToken("test-token");
       expect(getAccessToken()).toBe("test-token");
       expect(sessionStorageMock.setItem).toHaveBeenCalledWith("access_token", "test-token");
     });
-
-    it("应该将 token 保存到内存和 localStorage（当 rememberMe 为 true）", () => {
-      setAccessToken("test-token", true);
-      expect(getAccessToken()).toBe("test-token");
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("access_token", "test-token");
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("remember_me", "true");
-    });
-
-    it("应该清除记住我选项（当 rememberMe 为 false）", () => {
-      localStorageMock.setItem("remember_me", "true");
-      setAccessToken("test-token", false);
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("remember_me");
-    });
   });
 
   describe("getRefreshToken", () => {
-    it("应该从 sessionStorage 获取 refresh token（默认）", () => {
+    it("应该从 sessionStorage 获取 refresh token", () => {
       sessionStorageMock.setItem("refresh_token", "refresh-token");
-      expect(getRefreshToken()).toBe("refresh-token");
-    });
-
-    it("应该从 localStorage 获取 refresh token（当设置了记住我时）", () => {
-      localStorageMock.setItem("remember_me", "true");
-      localStorageMock.setItem("refresh_token", "refresh-token");
       expect(getRefreshToken()).toBe("refresh-token");
     });
 
@@ -128,19 +102,14 @@ describe("auth", () => {
   });
 
   describe("setRefreshToken", () => {
-    it("应该将 refresh token 保存到 sessionStorage（默认）", () => {
+    it("应该将 refresh token 保存到 sessionStorage", () => {
       setRefreshToken("refresh-token");
       expect(sessionStorageMock.setItem).toHaveBeenCalledWith("refresh_token", "refresh-token");
-    });
-
-    it("应该将 refresh token 保存到 localStorage（当 rememberMe 为 true）", () => {
-      setRefreshToken("refresh-token", true);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("refresh_token", "refresh-token");
     });
   });
 
   describe("setTokenExpires", () => {
-    it("应该设置 token 过期时间到 sessionStorage（默认）", () => {
+    it("应该设置 token 过期时间到 sessionStorage", () => {
       const expiresIn = 3600; // 1 小时
       const beforeTime = Date.now();
       setTokenExpires(expiresIn);
@@ -154,16 +123,6 @@ describe("auth", () => {
       const expiresAt = parseInt(lastCall[1]);
       expect(expiresAt).toBeGreaterThanOrEqual(beforeTime + expiresIn * 1000);
       expect(expiresAt).toBeLessThanOrEqual(afterTime + expiresIn * 1000);
-    });
-
-    it("应该设置 token 过期时间到 localStorage（当 rememberMe 为 true）", () => {
-      const expiresIn = 3600;
-      setTokenExpires(expiresIn, true);
-      expect(localStorageMock.setItem).toHaveBeenCalled();
-      // 获取最后一次调用
-      const calls = (localStorageMock.setItem as ReturnType<typeof vi.fn>).mock.calls;
-      const lastCall = calls[calls.length - 1];
-      expect(lastCall[0]).toBe("token_expires");
     });
   });
 
@@ -189,13 +148,6 @@ describe("auth", () => {
       sessionStorageMock.setItem("token_expires", expiresAt.toString());
       // 提前 60 秒判断，所以 30 秒后应该被判断为过期
       expect(isTokenExpired()).toBe(true);
-    });
-
-    it("应该从 localStorage 检查过期时间（当设置了记住我时）", () => {
-      localStorageMock.setItem("remember_me", "true");
-      const expiresIn = 3600;
-      setTokenExpires(expiresIn, true);
-      expect(isTokenExpired()).toBe(false);
     });
   });
 
@@ -237,20 +189,6 @@ describe("auth", () => {
       expect(isTokenExpired()).toBe(false);
     });
 
-    it("应该保存到 localStorage（当 rememberMe 为 true）", () => {
-      const response: LoginResponse = {
-        accessToken: "access-token",
-        refreshToken: "refresh-token",
-        expiresIn: 3600,
-      };
-
-      saveTokens(response, true);
-
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("access_token", "access-token");
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("refresh_token", "refresh-token");
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("remember_me", "true");
-    });
-
     it("应该只保存存在的 token", () => {
       const response: LoginResponse = {
         accessToken: "access-token",
@@ -262,23 +200,50 @@ describe("auth", () => {
       expect(getAccessToken()).toBe("access-token");
       expect(getRefreshToken()).toBeNull();
     });
+
+    it("应该保存所有 token（使用 OAuth 2.0 格式，snake_case）", () => {
+      const response: LoginResponse = {
+        access_token: "access-token",
+        refresh_token: "refresh-token",
+        expires_in: 3600,
+      };
+
+      saveTokens(response);
+
+      expect(getAccessToken()).toBe("access-token");
+      expect(getRefreshToken()).toBe("refresh-token");
+      expect(isTokenExpired()).toBe(false);
+    });
+
+    it("应该优先使用 camelCase，其次使用 snake_case", () => {
+      const response: LoginResponse = {
+        accessToken: "camel-case-token",
+        access_token: "snake-case-token",
+        refreshToken: "camel-case-refresh",
+        refresh_token: "snake-case-refresh",
+        expiresIn: 3600,
+        expires_in: 1800,
+      };
+
+      saveTokens(response);
+
+      // 应该优先使用 camelCase
+      expect(getAccessToken()).toBe("camel-case-token");
+      expect(getRefreshToken()).toBe("camel-case-refresh");
+    });
   });
 
   describe("clearTokens", () => {
     it("应该清除所有 token 和存储", () => {
-      setAccessToken("token", true);
-      setRefreshToken("refresh-token", true);
-      setTokenExpires(3600, true);
+      setAccessToken("token");
+      setRefreshToken("refresh-token");
+      setTokenExpires(3600);
 
       clearTokens();
 
       expect(getAccessToken()).toBeNull();
       expect(getRefreshToken()).toBeNull();
       expect(isTokenExpired()).toBe(true);
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("access_token");
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("refresh_token");
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("token_expires");
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith("remember_me");
       expect(sessionStorageMock.removeItem).toHaveBeenCalledWith("access_token");
       expect(sessionStorageMock.removeItem).toHaveBeenCalledWith("refresh_token");
       expect(sessionStorageMock.removeItem).toHaveBeenCalledWith("token_expires");
@@ -317,49 +282,6 @@ describe("auth", () => {
       const expiresAt = Date.now() + 30000; // 30 秒后过期，但提前 60 秒判断
       sessionStorageMock.setItem("token_expires", expiresAt.toString());
       expect(isAuthenticated()).toBe(false);
-    });
-  });
-
-  describe("getRememberMe", () => {
-    it("应该返回 false（当未设置记住我时）", () => {
-      expect(getRememberMe()).toBe(false);
-    });
-
-    it("应该返回 true（当设置了记住我时）", () => {
-      localStorageMock.setItem("remember_me", "true");
-      expect(getRememberMe()).toBe(true);
-    });
-
-    it("应该返回 false（当记住我选项为其他值时）", () => {
-      localStorageMock.setItem("remember_me", "false");
-      expect(getRememberMe()).toBe(false);
-    });
-  });
-
-  describe("存储方式切换", () => {
-    it("应该根据记住我选项切换存储方式", () => {
-      // 初始使用 sessionStorage
-      setAccessToken("session-token");
-      expect(sessionStorageMock.setItem).toHaveBeenCalledWith("access_token", "session-token");
-
-      // 切换到 localStorage
-      setAccessToken("local-token", true);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith("access_token", "local-token");
-
-      // 切换回 sessionStorage
-      setAccessToken("session-token-2", false);
-      expect(sessionStorageMock.setItem).toHaveBeenCalledWith("access_token", "session-token-2");
-    });
-
-    it("应该在切换存储方式时正确读取 token", () => {
-      // 设置到 sessionStorage
-      setAccessToken("session-token", false);
-      expect(getAccessToken()).toBe("session-token");
-
-      // 清除并设置到 localStorage
-      clearTokens();
-      setAccessToken("local-token", true);
-      expect(getAccessToken()).toBe("local-token");
     });
   });
 });

@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * JWT 服务类
@@ -85,13 +86,14 @@ public class JwtService {
     public String generateRefreshToken(String userId, String deviceId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpiration * 1000);
-        
+
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
+        claims.put("jti", UUID.randomUUID().toString()); // 唯一标识，确保每次生成的 Token 不同
         if (deviceId != null) {
             claims.put("deviceId", deviceId);
         }
-        
+
         return Jwts.builder()
                 .claims(claims)
                 .subject(userId)

@@ -94,7 +94,6 @@ jwt:
   # Token 有效期（秒）
   access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:1800}      # 30 分钟
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800}   # 7 天
-  remember-me-expiration: ${JWT_REMEMBER_ME_EXPIRATION:7776000}     # 90 天
   
   # 签发者和受众（可选）
   issuer: ${JWT_ISSUER:https://auth.example.com}

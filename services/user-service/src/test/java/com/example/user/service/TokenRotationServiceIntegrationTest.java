@@ -2,8 +2,8 @@ package com.example.user.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.TestPropertySource;
@@ -13,16 +13,16 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * TokenRotationService 集成测试
- * 
+ * TokenRotationService 集成测试（使用 Docker 部署的 Redis）
+ *
  * 测试覆盖：
  * - Token 存储和验证
  * - Token 轮换（标记旧 Token 已使用）
  * - Token 撤销（加入黑名单）
  * - Token 重用检测
- * 
- * 注意：此测试需要真实的 Redis 环境
- * 如果 Redis 不可用，测试将被跳过
+ *
+ * 运行前请先启动 Redis：docker-compose up -d redis（连接 localhost:6379）
+ * 若 Redis 不可用，测试将被跳过
  */
 @SpringBootTest
 @Transactional
@@ -30,9 +30,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
     // 禁用 Nacos 自动配置
     "spring.cloud.nacos.discovery.enabled=false",
     "spring.cloud.nacos.config.enabled=false",
-    // 禁用 Dubbo 自动配置
+    // 禁用 Dubbo 自动配置（使用随机端口避免多测试并行时端口冲突）
     "dubbo.application.name=test",
     "dubbo.registry.address=N/A",
+    "dubbo.protocol.port=-1",
     // JWT 配置
     "jwt.algorithm=RS256",
     "jwt.private-key-path=classpath:keys/private.pem",
@@ -41,13 +42,12 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
     "jwt.refresh-token-expiration=604800",
     "jwt.issuer=https://auth.example.com",
     "jwt.audience=api.example.com",
-    // Redis 配置（使用测试 Redis）
-    // 注意：如果 Redis 不可用，测试将被跳过
+    // Redis 配置（使用 Docker 部署的 Redis，localhost:6379）
     "spring.data.redis.host=${REDIS_HOST:localhost}",
     "spring.data.redis.port=${REDIS_PORT:6379}",
     "spring.data.redis.password=${REDIS_PASSWORD:}",
-    "spring.data.redis.database=15", // 使用数据库 15 避免影响其他数据
-    "spring.data.redis.timeout=2000" // 设置较短的超时时间，快速失败
+    "spring.data.redis.database=15",
+    "spring.data.redis.timeout=2000",
     // 数据库配置（使用 H2 内存数据库）
     "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
     "spring.datasource.driver-class-name=org.h2.Driver",
@@ -66,6 +66,7 @@ class TokenRotationServiceIntegrationTest {
     private JwtService jwtService;
     
     @Autowired(required = false)
+    @Qualifier("stringRedisTemplate")
     private RedisTemplate<String, String> redisTemplate;
 
     private String testUserId;
@@ -75,9 +76,9 @@ class TokenRotationServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // 检查 Redis 是否可用，如果不可用则跳过所有测试
+        // 检查 Redis 是否可用（需先启动 Docker Redis：docker-compose up -d redis）
         assumeTrue(tokenRotationService != null && redisTemplate != null && jwtService != null,
-            "Redis 不可用，跳过集成测试。请设置 REDIS_HOST 和 REDIS_PORT 环境变量，或启动 Redis 服务。");
+            "Redis 不可用，跳过集成测试。请先启动 Docker Redis：docker-compose up -d redis");
         
         testUserId = "123";
         testDeviceId = "device-123";

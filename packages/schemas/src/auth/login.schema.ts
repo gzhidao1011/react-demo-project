@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { passwordSchema, usernameSchema } from "../common";
+import { emailSchema, passwordSchema } from "../common";
 
 /**
  * 登录表单 schema
  */
 export const loginSchema = z.object({
-  username: usernameSchema,
+  email: emailSchema,
   password: passwordSchema,
 });
 

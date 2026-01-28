@@ -1,0 +1,11 @@
+# 测试环境配置：使用 Docker 部署的 Redis
+# 运行测试前请先启动 Redis：docker-compose up -d redis
+# 本机执行测试时连接 localhost:6379
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 15
+      timeout: 2000

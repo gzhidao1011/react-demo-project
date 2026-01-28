@@ -8,6 +8,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * 安全配置类
@@ -41,8 +42,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // 禁用 CSRF（API 使用 JWT，不需要 CSRF）
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 无状态会话
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // 认证接口公开访问
-                .requestMatchers("/actuator/health").permitAll() // 健康检查公开访问
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll() // 认证接口公开访问
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll() // 健康检查公开访问
                 .anyRequest().authenticated() // 其他接口需要认证
             );
         

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * - 邮箱不能为空
  * - 邮箱格式验证
  * - 密码不能为空
- * - rememberMe 字段可选（默认 false）
  * - 有效数据通过验证
  */
 class LoginRequestValidationTest {
@@ -124,38 +123,6 @@ class LoginRequestValidationTest {
                 violations.stream()
                         .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                         .collect(Collectors.joining(", ")));
-    }
-
-    @Test
-    void shouldHaveRememberMeDefaultValue() {
-        // rememberMe 字段应该有默认值 false
-        assertNotNull(request.getRememberMe(), "rememberMe 字段不应为 null");
-        assertEquals(false, request.getRememberMe(), 
-                "rememberMe 默认值应为 false");
-    }
-
-    @Test
-    void shouldAcceptRememberMeTrue() {
-        request.setEmail("test@example.com");
-        request.setPassword("password123");
-        request.setRememberMe(true);
-
-        Set<ConstraintViolation<LoginRequest>> violations = validator.validate(request);
-
-        assertTrue(violations.isEmpty(), "rememberMe 为 true 时应通过验证");
-        assertTrue(request.getRememberMe(), "rememberMe 应能设置为 true");
-    }
-
-    @Test
-    void shouldAcceptRememberMeFalse() {
-        request.setEmail("test@example.com");
-        request.setPassword("password123");
-        request.setRememberMe(false);
-
-        Set<ConstraintViolation<LoginRequest>> violations = validator.validate(request);
-
-        assertTrue(violations.isEmpty(), "rememberMe 为 false 时应通过验证");
-        assertFalse(request.getRememberMe(), "rememberMe 应能设置为 false");
     }
 
     @Test

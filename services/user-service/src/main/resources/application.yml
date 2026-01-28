@@ -74,7 +74,6 @@ jwt:
   # Token 有效期（秒）
   access-token-expiration: 1800      # 30 分钟
   refresh-token-expiration: 604800   # 7 天
-  remember-me-expiration: 7776000   # 90 天
   
   # 签发者和受众（可选）
   issuer: ${JWT_ISSUER:https://auth.example.com}
@@ -87,3 +86,11 @@ password:
   require-lowercase: true
   require-digit: true
   require-special: true
+
+# 限流配置
+rate-limit:
+  login:
+    max-attempts-per-ip: 100      # IP 限流：每 IP 每小时最多 100 次
+    max-attempts-per-user: 5      # 用户限流：每用户每 15 分钟最多 5 次
+    ip-window-seconds: 3600       # IP 限流时间窗口（1 小时）
+    user-window-seconds: 900      # 用户限流时间窗口（15 分钟）

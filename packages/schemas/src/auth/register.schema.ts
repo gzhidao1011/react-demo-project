@@ -1,15 +1,13 @@
 import { z } from "zod";
-import { emailSchema, passwordSchema, phoneSchema, usernameSchema } from "../common";
+import { emailSchema, passwordSchema } from "../common";
 
 /**
  * 注册表单基础 schema
  */
 const baseRegisterSchema = z.object({
-  username: usernameSchema,
   email: emailSchema,
   password: passwordSchema,
   confirmPassword: z.string().min(1, "请确认密码"),
-  phone: phoneSchema,
 });
 
 /**
