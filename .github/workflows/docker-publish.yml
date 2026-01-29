@@ -105,12 +105,17 @@ jobs:
     strategy:
       matrix:
         service:
+          # api-gateway 和 user-service 的 Dockerfile 需要 ./services 作为 context（多模块 Maven 项目）
           - name: user-service
-            context: ./services/user-service
+            context: ./services
+            dockerfile: ./services/user-service/Dockerfile
           - name: order-service
+            # order-service 的 Dockerfile 只需单模块 context（COPY target/*.jar）
             context: ./services/order-service
+            dockerfile: ./services/order-service/Dockerfile
           - name: api-gateway
-            context: ./services/api-gateway
+            context: ./services
+            dockerfile: ./services/api-gateway/Dockerfile
 
     steps:
       # 1. 检出代码
@@ -165,7 +170,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service.context }}
-          file: ${{ matrix.service.context }}/Dockerfile
+          file: ${{ matrix.service.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
