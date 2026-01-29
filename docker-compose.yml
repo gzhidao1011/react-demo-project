@@ -113,11 +113,11 @@ services:
 
   # ==================== Java 微服务 ====================
 
-  # 用户服务
+  # 用户服务（多模块 Maven 项目，需要 ./services 作为 context）
   user-service:
     build:
-      context: ./services/user-service
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: user-service/Dockerfile
     image: microservices/user-service:latest
     container_name: user-service
     environment:
@@ -147,7 +147,7 @@ services:
       - microservices-network
     restart: unless-stopped
 
-  # 订单服务
+  # 订单服务（单模块，需先 mvn package 生成 jar）
   order-service:
     build:
       context: ./services/order-service
@@ -178,11 +178,11 @@ services:
       - microservices-network
     restart: unless-stopped
 
-  # API 网关
+  # API 网关（多模块 Maven 项目，需要 ./services 作为 context）
   api-gateway:
     build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: api-gateway/Dockerfile
     image: microservices/api-gateway:latest
     container_name: api-gateway
     environment:
