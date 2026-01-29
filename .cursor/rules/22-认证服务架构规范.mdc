@@ -70,8 +70,8 @@ user-service/
     │   │   └── UserService.java
     │   ├── entity/
     │   │   └── UserEntity.java
-    │   └── repository/
-    │       └── UserRepository.java
+    │   └── mapper/
+    │       └── UserMapper.java
     │
     └── common/                   # 共享模块
         ├── exception/

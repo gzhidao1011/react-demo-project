@@ -17,14 +17,7 @@ spring:
     username: root
     password: root123
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate  # 使用 Flyway 管理数据库结构，JPA 仅验证
-    show-sql: true  # 显示 SQL 语句
-    properties:
-      hibernate:
-        format_sql: true
-  
+
   # Flyway 数据库迁移配置
   flyway:
     enabled: true
@@ -94,3 +87,10 @@ rate-limit:
     max-attempts-per-user: 5      # 用户限流：每用户每 15 分钟最多 5 次
     ip-window-seconds: 3600       # IP 限流时间窗口（1 小时）
     user-window-seconds: 900      # 用户限流时间窗口（15 分钟）
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.example.user.entity
+  configuration:
+    map-underscore-to-camel-case: true

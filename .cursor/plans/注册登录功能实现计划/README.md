@@ -8,12 +8,12 @@ isProject: false
 
 ## 项目概述
 
-实现基于邮箱和密码的注册登录功能，遵循 **OAuth 2.0 标准**和 **JWT 最佳实践**（参考 Auth0、Okta、Firebase Auth），包括前后端完整实现。前端使用 React + React Hook Form + Zod，后端使用 Spring Boot + JPA + MySQL + Redis，密码使用 BCrypt 加密，认证使用 JWT Token（RS256 算法），支持 Refresh Token 轮换、限流保护、密码策略等安全措施。
+实现基于邮箱和密码的注册登录功能，遵循 **OAuth 2.0 标准**和 **JWT 最佳实践**（参考 Auth0、Okta、Firebase Auth），包括前后端完整实现。前端使用 React + React Hook Form + Zod，后端使用 Spring Boot + MyBatis + MySQL + Redis，密码使用 BCrypt 加密，认证使用 JWT Token（RS256 算法），支持 Refresh Token 轮换、限流保护、密码策略等安全措施。
 
 ## 技术栈
 
 - **前端**：React Router、React Hook Form、Zod、TypeScript、react-hot-toast
-- **后端**：Spring Boot 3.x、Spring Data JPA、MySQL、Redis、BCrypt、JWT (jjwt 0.12.3)
+- **后端**：Spring Boot 3.x、MyBatis、MySQL、Redis、BCrypt、JWT (jjwt 0.12.3)
 - **数据库**：MySQL（用户数据）、Redis（Refresh Token 存储、限流计数）
 - **安全标准**：OAuth 2.0 (RFC 6749)、JWT (RFC 7519)、OWASP 安全指南
 

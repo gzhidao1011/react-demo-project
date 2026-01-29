@@ -1858,16 +1858,28 @@ docker volume rm mysql-data
 #### 在 `pom.xml` 添加依赖
 
 ```xml
-<!-- Spring Data JPA -->
+<!-- MyBatis -->
 <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-data-jpa</artifactId>
+    <groupId>org.mybatis.spring.boot</groupId>
+    <artifactId>mybatis-spring-boot-starter</artifactId>
+    <version>3.0.3</version>
 </dependency>
 
 <!-- MySQL 驱动 -->
 <dependency>
     <groupId>com.mysql</groupId>
-    <artifactId>mysql-connector-java</artifactId>
+    <artifactId>mysql-connector-j</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
+<!-- Flyway（数据库迁移） -->
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-mysql</artifactId>
 </dependency>
 ```
 
@@ -1882,63 +1894,83 @@ spring:
     username: root
     password: root123  # 与 Docker 安装时设置的密码一致
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update  # 自动创建/更新表结构
-    show-sql: true  # 显示 SQL 语句
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        format_sql: true  # 格式化 SQL 输出
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.example.user.entity
+  configuration:
+    map-underscore-to-camel-case: true
 ```
 
 > **配置说明**：
 > - `serverTimezone=Asia/Shanghai`：设置时区为中国时区
 > - `characterEncoding=utf8mb4`：支持 emoji 等特殊字符
 > - `allowPublicKeyRetrieval=true`：允许公钥检索（MySQL 8.0 需要）
-> - `ddl-auto=update`：自动更新表结构，生产环境建议改为 `validate` 或 `none`
+> - Flyway 管理表结构，生产环境使用 `validate-on-migrate: true` 验证迁移
 
 #### 创建实体类
 
 ```java
-package com.example.user.model;
+package com.example.user.entity;
 
-import jakarta.persistence.*;
 import lombok.Data;
 
-@Entity
-@Table(name = "users")
 @Data
-public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class UserEntity {
     private Long id;
-    
-    @Column(nullable = false)
     private String name;
-    
-    @Column(unique = true, nullable = false)
     private String email;
-    
     private String phone;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
 ```
 
-#### 创建 Repository
+#### 创建 Mapper 接口和 XML
 
 ```java
-package com.example.user.repository;
+// UserMapper.java
+package com.example.user.mapper;
 
-import com.example.user.model.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import com.example.user.entity.UserEntity;
+import org.apache.ibatis.annotations.Mapper;
 
-@Repository
-public interface UserRepository extends JpaRepository<User, Long> {
-    // JpaRepository 已经提供了基本的 CRUD 方法
-    // 可以添加自定义查询方法
-    User findByEmail(String email);
+@Mapper
+public interface UserMapper {
+    UserEntity findById(Long id);
+    UserEntity findByEmail(String email);
+    List<UserEntity> findAll();
+    int insert(UserEntity user);
+    int update(UserEntity user);
+    int deleteById(Long id);
 }
+```
+
+```xml
+<!-- mapper/UserMapper.xml -->
+<mapper namespace="com.example.user.mapper.UserMapper">
+    <resultMap id="UserResultMap" type="com.example.user.entity.UserEntity">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="email" column="email"/>
+        <result property="phone" column="phone"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+    <select id="findById" resultMap="UserResultMap">
+        SELECT * FROM users WHERE id = #{id}
+    </select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (name, email, phone, created_at, updated_at)
+        VALUES (#{name}, #{email}, #{phone}, #{createdAt}, #{updatedAt})
+    </insert>
+    <!-- 其他 SQL 方法 -->
+</mapper>
 ```
 
 #### 修改 Controller 使用数据库
@@ -1949,32 +1981,45 @@ public interface UserRepository extends JpaRepository<User, Long> {
 public class UserController {
     
     @Autowired
-    private UserRepository userRepository;  // 注入 Repository
+    private UserMapper userMapper;  // 注入 Mapper
     
     @GetMapping
     public List<User> getAllUsers() {
-        return userRepository.findAll();  // 从数据库查询
+        return userMapper.findAll().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
     
     @GetMapping("/{id}")
     public User getUserById(@PathVariable Long id) {
-        return userRepository.findById(id).orElse(null);
+        UserEntity entity = userMapper.findById(id);
+        return entity != null ? convertToDto(entity) : null;
     }
     
     @PostMapping
     public User createUser(@RequestBody User user) {
-        return userRepository.save(user);  // 保存到数据库
+        UserEntity entity = convertToEntity(user);
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
+        userMapper.insert(entity);
+        return convertToDto(entity);
     }
     
     @PutMapping("/{id}")
     public User updateUser(@PathVariable Long id, @RequestBody User user) {
-        user.setId(id);
-        return userRepository.save(user);
+        UserEntity entity = userMapper.findById(id);
+        if (entity == null) return null;
+        entity.setName(user.getName());
+        entity.setEmail(user.getEmail());
+        entity.setPhone(user.getPhone());
+        entity.setUpdatedAt(LocalDateTime.now());
+        userMapper.update(entity);
+        return convertToDto(entity);
     }
     
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
-        userRepository.deleteById(id);
+        userMapper.deleteById(id);
     }
 }
 ```
@@ -2227,7 +2272,7 @@ docker-compose down
 
 ### 第三阶段：进阶（3-4周）
 
-1. 数据库集成（MySQL、JPA）
+1. 数据库集成（MySQL、MyBatis）
 2. 消息队列（RabbitMQ/Kafka）
 3. 配置中心（Nacos Config）
 4. 分布式事务（Seata）
@@ -2442,7 +2487,7 @@ docker run -d -p 8848:8848 -p 9848:9848 --name nacos \
 2. ✅ **Spring Boot 基础**：创建第一个 REST API
 3. ✅ **微服务架构**：多服务、服务注册、API 网关
 4. ✅ **服务通信**：使用 Dubbo 进行 RPC 服务调用
-5. ✅ **数据库集成**：MySQL + JPA
+5. ✅ **数据库集成**：MySQL + MyBatis
 6. ✅ **容器化部署**：Docker + Docker Compose
 
 ### 下一步行动

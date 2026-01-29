@@ -7,8 +7,8 @@ import com.example.api.model.CreateOrderRequest;
 import com.example.api.model.User;
 import com.example.api.service.UserService;
 import com.example.order.entity.OrderEntity;
+import com.example.order.mapper.OrderMapper;
 import com.example.order.model.Order;
-import com.example.order.repository.OrderRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -33,14 +33,14 @@ public class OrderController {
     private UserService userService;
     
     @Autowired
-    private OrderRepository orderRepository;
+    private OrderMapper orderMapper;
     
     /**
      * 获取所有订单
      */
     @GetMapping
     public Result<List<Order>> getAllOrders() {
-        List<Order> orders = orderRepository.findAll().stream()
+        List<Order> orders = orderMapper.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
         return Result.success(orders);
@@ -51,8 +51,10 @@ public class OrderController {
      */
     @GetMapping("/{id}")
     public Result<Order> getOrderById(@PathVariable("id") Long id) {
-        OrderEntity entity = orderRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ResultCode.ORDER_NOT_FOUND));
+        OrderEntity entity = orderMapper.findById(id);
+        if (entity == null) {
+            throw new BusinessException(ResultCode.ORDER_NOT_FOUND);
+        }
         return Result.success(convertToDto(entity));
     }
     
@@ -61,7 +63,7 @@ public class OrderController {
      */
     @GetMapping("/user/{userId}")
     public Result<List<Order>> getOrdersByUserId(@PathVariable("userId") Long userId) {
-        List<Order> orders = orderRepository.findByUserId(userId).stream()
+        List<Order> orders = orderMapper.findByUserId(userId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
         return Result.success(orders);
@@ -78,15 +80,18 @@ public class OrderController {
             throw new BusinessException(ResultCode.USER_NOT_FOUND, "用户不存在，无法创建订单");
         }
         
+        var now = java.time.LocalDateTime.now();
         OrderEntity entity = new OrderEntity();
         entity.setUserId(request.getUserId());
         entity.setProductName(request.getProductName());
         entity.setPrice(BigDecimal.valueOf(request.getPrice()));
         entity.setQuantity(request.getQuantity() != null ? request.getQuantity() : 1);
         entity.setStatus("待支付");
-        
-        OrderEntity saved = orderRepository.save(entity);
-        return Result.success("订单创建成功", convertToDto(saved));
+        entity.setCreatedAt(now);
+        entity.setUpdatedAt(now);
+
+        orderMapper.insert(entity);
+        return Result.success("订单创建成功", convertToDto(entity));
     }
     
     /**
@@ -102,12 +107,14 @@ public class OrderController {
             throw new BusinessException(ResultCode.ORDER_STATUS_ERROR, "无效的订单状态: " + status);
         }
         
-        OrderEntity entity = orderRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ResultCode.ORDER_NOT_FOUND));
-        
+        OrderEntity entity = orderMapper.findById(id);
+        if (entity == null) {
+            throw new BusinessException(ResultCode.ORDER_NOT_FOUND);
+        }
         entity.setStatus(status);
-        OrderEntity saved = orderRepository.save(entity);
-        return Result.success("订单状态更新成功", convertToDto(saved));
+        entity.setUpdatedAt(java.time.LocalDateTime.now());
+        orderMapper.update(entity);
+        return Result.success("订单状态更新成功", convertToDto(entity));
     }
     
     /**
@@ -115,10 +122,10 @@ public class OrderController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteOrder(@PathVariable("id") Long id) {
-        if (!orderRepository.existsById(id)) {
+        if (!orderMapper.existsById(id)) {
             throw new BusinessException(ResultCode.ORDER_NOT_FOUND);
         }
-        orderRepository.deleteById(id);
+        orderMapper.deleteById(id);
         return Result.success();
     }
     

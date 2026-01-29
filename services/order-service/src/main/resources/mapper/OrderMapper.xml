@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.order.mapper.OrderMapper">
+
+    <resultMap id="OrderResultMap" type="com.example.order.entity.OrderEntity">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="productName" column="product_name"/>
+        <result property="price" column="price"/>
+        <result property="quantity" column="quantity"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="OrderResultMap">
+        SELECT id, user_id, product_name, price, quantity, status, created_at, updated_at
+        FROM orders
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="OrderResultMap">
+        SELECT id, user_id, product_name, price, quantity, status, created_at, updated_at
+        FROM orders
+    </select>
+
+    <select id="findByUserId" resultMap="OrderResultMap">
+        SELECT id, user_id, product_name, price, quantity, status, created_at, updated_at
+        FROM orders
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByStatus" resultMap="OrderResultMap">
+        SELECT id, user_id, product_name, price, quantity, status, created_at, updated_at
+        FROM orders
+        WHERE status = #{status}
+    </select>
+
+    <select id="findByUserIdAndStatus" resultMap="OrderResultMap">
+        SELECT id, user_id, product_name, price, quantity, status, created_at, updated_at
+        FROM orders
+        WHERE user_id = #{userId} AND status = #{status}
+    </select>
+
+    <select id="existsById" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM orders WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (user_id, product_name, price, quantity, status, created_at, updated_at)
+        VALUES (#{userId}, #{productName}, #{price}, #{quantity}, #{status}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="update">
+        UPDATE orders
+        SET user_id = #{userId}, product_name = #{productName}, price = #{price},
+            quantity = #{quantity}, status = #{status}, updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM orders WHERE id = #{id}
+    </delete>
+</mapper>

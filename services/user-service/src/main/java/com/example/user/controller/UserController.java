@@ -6,9 +6,10 @@ import com.example.api.exception.BusinessException;
 import com.example.api.model.User;
 import com.example.api.service.UserService;
 import com.example.user.entity.UserEntity;
-import com.example.user.repository.UserRepository;
+import com.example.user.mapper.UserMapper;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,9 +24,12 @@ public class UserController {
     
     @Autowired
     private UserService userService;
-    
+
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     
     /**
      * 获取所有用户
@@ -53,20 +57,21 @@ public class UserController {
      */
     @PostMapping
     public Result<User> createUser(@Valid @RequestBody User user) {
-        // 检查邮箱是否已存在
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (userMapper.existsByEmail(user.getEmail())) {
             throw new BusinessException(ResultCode.EMAIL_ALREADY_EXISTS, "邮箱已存在: " + user.getEmail());
         }
-        
+
+        var now = java.time.LocalDateTime.now();
         UserEntity entity = new UserEntity();
         entity.setName(user.getName());
         entity.setEmail(user.getEmail());
         entity.setPhone(user.getPhone());
-        
-        UserEntity saved = userRepository.save(entity);
-        
-        User result = convertToDto(saved);
-        return Result.success("用户创建成功", result);
+        entity.setPassword(passwordEncoder.encode("ChangeMe123!")); // 默认密码，建议用户修改
+        entity.setCreatedAt(now);
+        entity.setUpdatedAt(now);
+
+        userMapper.insert(entity);
+        return Result.success("用户创建成功", convertToDto(entity));
     }
     
     /**
@@ -74,21 +79,20 @@ public class UserController {
      */
     @PutMapping("/{id}")
     public Result<User> updateUser(@PathVariable("id") Long id, @Valid @RequestBody User user) {
-        UserEntity entity = userRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ResultCode.USER_NOT_FOUND));
-        
-        // 如果修改了邮箱，检查新邮箱是否已被其他用户使用
-        if (!entity.getEmail().equals(user.getEmail()) && userRepository.existsByEmail(user.getEmail())) {
+        UserEntity entity = userMapper.findById(id);
+        if (entity == null) {
+            throw new BusinessException(ResultCode.USER_NOT_FOUND);
+        }
+        if (!entity.getEmail().equals(user.getEmail()) && userMapper.existsByEmail(user.getEmail())) {
             throw new BusinessException(ResultCode.EMAIL_ALREADY_EXISTS, "邮箱已存在: " + user.getEmail());
         }
-        
+
         entity.setName(user.getName());
         entity.setEmail(user.getEmail());
         entity.setPhone(user.getPhone());
-        UserEntity saved = userRepository.save(entity);
-        
-        User result = convertToDto(saved);
-        return Result.success("用户更新成功", result);
+        entity.setUpdatedAt(java.time.LocalDateTime.now());
+        userMapper.update(entity);
+        return Result.success("用户更新成功", convertToDto(entity));
     }
     
     /**
@@ -96,10 +100,10 @@ public class UserController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteUser(@PathVariable("id") Long id) {
-        if (!userRepository.existsById(id)) {
+        if (!userMapper.existsById(id)) {
             throw new BusinessException(ResultCode.USER_NOT_FOUND);
         }
-        userRepository.deleteById(id);
+        userMapper.deleteById(id);
         return Result.success();
     }
     

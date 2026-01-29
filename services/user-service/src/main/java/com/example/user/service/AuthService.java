@@ -7,7 +7,7 @@ import com.example.api.model.LoginResponse;
 import com.example.api.model.RegisterRequest;
 import com.example.api.model.RefreshTokenRequest;
 import com.example.user.entity.UserEntity;
-import com.example.user.repository.UserRepository;
+import com.example.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,7 +24,7 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class AuthService {
     
-    private final UserRepository userRepository;
+    private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final PasswordPolicyService passwordPolicyService;
@@ -45,7 +45,7 @@ public class AuthService {
     @Transactional
     public LoginResponse register(RegisterRequest request) {
         // 1. 验证邮箱唯一性
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userMapper.existsByEmail(request.getEmail())) {
             throw new BusinessException(ResultCode.EMAIL_ALREADY_EXISTS);
         }
         
@@ -60,10 +60,12 @@ public class AuthService {
         UserEntity user = new UserEntity();
         user.setEmail(request.getEmail());
         user.setName(request.getEmail().split("@")[0]); // 默认使用邮箱前缀作为用户名
-        // 密码加密存储
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        
-        UserEntity savedUser = userRepository.save(user);
+        user.setCreatedAt(java.time.LocalDateTime.now());
+        user.setUpdatedAt(java.time.LocalDateTime.now());
+
+        userMapper.insert(user);
+        UserEntity savedUser = user;
         
         // 4. 生成 JWT Token
         String accessToken = jwtService.generateAccessToken(
@@ -108,8 +110,10 @@ public class AuthService {
      */
     public LoginResponse login(LoginRequest request) {
         // 1. 查找用户
-        UserEntity user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new BusinessException(ResultCode.INVALID_CREDENTIALS));
+        UserEntity user = userMapper.findByEmail(request.getEmail());
+        if (user == null) {
+            throw new BusinessException(ResultCode.INVALID_CREDENTIALS);
+        }
         
         // 2. 验证密码（不明确提示是邮箱还是密码错误，防止用户枚举攻击）
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
@@ -185,8 +189,10 @@ public class AuthService {
             }
             
             // 6. 获取用户信息
-            UserEntity user = userRepository.findById(Long.parseLong(userId))
-                .orElseThrow(() -> new BusinessException(ResultCode.USER_NOT_FOUND));
+            UserEntity user = userMapper.findById(Long.parseLong(userId));
+            if (user == null) {
+                throw new BusinessException(ResultCode.USER_NOT_FOUND);
+            }
             
             // 7. 生成新的 Access Token 和 Refresh Token
             String accessToken = jwtService.generateAccessToken(

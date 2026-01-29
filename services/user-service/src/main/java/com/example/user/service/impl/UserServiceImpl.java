@@ -3,7 +3,7 @@ package com.example.user.service.impl;
 import com.example.api.model.User;
 import com.example.api.service.UserService;
 import com.example.user.entity.UserEntity;
-import com.example.user.repository.UserRepository;
+import com.example.user.mapper.UserMapper;
 import jakarta.annotation.PostConstruct;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -33,36 +33,37 @@ public class UserServiceImpl implements UserService {
      */
     @PostConstruct
     public void initData() {
-        if (userRepository.count() == 0) {
+        if (userMapper.count() == 0) {
+            var now = java.time.LocalDateTime.now();
             UserEntity user1 = new UserEntity();
             user1.setName("张三");
             user1.setEmail("zhangsan@example.com");
             user1.setPhone("13800138000");
-            // 设置测试密码（BCrypt 加密）
             user1.setPassword(passwordEncoder.encode("password123"));
-            
+            user1.setCreatedAt(now);
+            user1.setUpdatedAt(now);
+            userMapper.insert(user1);
+
             UserEntity user2 = new UserEntity();
             user2.setName("李四");
             user2.setEmail("lisi@example.com");
             user2.setPhone("13900139000");
-            // 设置测试密码（BCrypt 加密）
             user2.setPassword(passwordEncoder.encode("password123"));
-            
-            userRepository.save(user1);
-            userRepository.save(user2);
+            user2.setCreatedAt(now);
+            user2.setUpdatedAt(now);
+            userMapper.insert(user2);
         }
     }
     
     @Override
     public User getUserById(Long id) {
-        return userRepository.findById(id)
-                .map(this::convertToDto)
-                .orElse(null);
+        UserEntity entity = userMapper.findById(id);
+        return entity != null ? convertToDto(entity) : null;
     }
-    
+
     @Override
     public List<User> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userMapper.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }

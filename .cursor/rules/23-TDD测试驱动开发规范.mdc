@@ -1131,7 +1131,7 @@ describe("authLogin", () => {
 class AuthServiceTest {
     
     @Mock
-    private UserRepository userRepository;
+    private UserMapper userMapper;
     
     @Mock
     private JwtService jwtService;
@@ -1148,7 +1148,7 @@ class AuthServiceTest {
         user.setEmail(email);
         user.setPasswordHash(BCrypt.hashpw(password, BCrypt.gensalt()));
         
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(userMapper.findByEmail(email)).thenReturn(user);
         when(jwtService.generateAccessToken(user)).thenReturn("access-token");
         when(jwtService.generateRefreshToken(user)).thenReturn("refresh-token");
         

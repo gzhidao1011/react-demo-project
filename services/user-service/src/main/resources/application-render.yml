@@ -28,15 +28,6 @@ spring:
       idle-timeout: 30000
       connection-timeout: 30000
       max-lifetime: 1800000
-  jpa:
-    hibernate:
-      ddl-auto: validate  # 使用 Flyway 管理数据库结构，JPA 仅验证
-    show-sql: false  # 生产环境关闭 SQL 日志
-    properties:
-      hibernate:
-        format_sql: false
-        dialect: org.hibernate.dialect.MySQL8Dialect
-  
   # Flyway 数据库迁移配置
   flyway:
     enabled: true
@@ -74,4 +65,4 @@ logging:
   level:
     root: INFO
     com.example: INFO
-    org.hibernate.SQL: WARN
+    org.apache.ibatis: WARN

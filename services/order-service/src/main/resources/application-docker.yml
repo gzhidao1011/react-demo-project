@@ -27,13 +27,11 @@ spring:
       idle-timeout: 30000
       connection-timeout: 30000
       max-lifetime: 1800000
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
 
 # Dubbo 配置
 dubbo:
@@ -62,4 +60,4 @@ logging:
   level:
     root: INFO
     com.example: INFO
-    org.hibernate.SQL: WARN
+    org.apache.ibatis: WARN

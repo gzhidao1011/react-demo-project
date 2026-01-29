@@ -50,13 +50,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
     "rate-limit.login.ip-window-seconds=60",
     "rate-limit.login.user-window-seconds=30",
     // 数据库配置（使用 H2 内存数据库）
-    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL",
     "spring.datasource.driver-class-name=org.h2.Driver",
-    "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.jpa.show-sql=false",
-    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-    // 禁用 Flyway（测试使用 Hibernate 自动创建表）
-    "spring.flyway.enabled=false"
+    "spring.flyway.enabled=false",
+    "spring.sql.init.mode=always"
 })
 class RateLimitServiceTest {
 

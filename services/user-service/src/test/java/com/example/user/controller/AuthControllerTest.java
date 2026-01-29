@@ -4,7 +4,7 @@ import com.example.api.model.LoginRequest;
 import com.example.api.model.LoginResponse;
 import com.example.api.model.RegisterRequest;
 import com.example.api.model.RefreshTokenRequest;
-import com.example.user.repository.UserRepository;
+import com.example.user.mapper.UserMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,13 +58,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.data.redis.database=15",
     "spring.data.redis.timeout=2000",
     // 数据库配置（使用 H2 内存数据库）
-    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL",
     "spring.datasource.driver-class-name=org.h2.Driver",
-    "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.jpa.show-sql=false",
-    "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-    // 禁用 Flyway（测试使用 Hibernate 自动创建表）
-    "spring.flyway.enabled=false"
+    "spring.flyway.enabled=false",
+    "spring.sql.init.mode=always"
 })
 class AuthControllerTest {
 
@@ -75,7 +72,7 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private UserRepository userRepository;
+    private UserMapper userMapper;
 
     @Autowired
     @Qualifier("stringRedisTemplate")
@@ -83,8 +80,7 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        // 清理数据库
-        userRepository.deleteAll();
+        userMapper.deleteAll();
         // 清理 Redis 测试数据（与 TokenRotationService 使用相同 key 前缀）
         try {
             var refreshKeys = redisTemplate.keys("refresh_token:*");

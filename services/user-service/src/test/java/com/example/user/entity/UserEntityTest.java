@@ -1,7 +1,6 @@
 package com.example.user.entity;
 
 import com.example.api.model.User;
-import jakarta.persistence.Column;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,12 +11,10 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * UserEntity 单元测试
- * 
- * TDD 方式：先写测试，驱动实现 password 字段和 toDTO() 方法
- * 
+ * UserEntity 单元测试（MyBatis 实体）
+ *
  * 测试覆盖：
- * - password 字段存在且配置正确（非空、长度 >= 255）
+ * - password 字段存在且为 String 类型（MyBatis 实体无 JPA 注解，约束由 Flyway 管理）
  * - toDTO() 方法存在且不暴露 password 字段
  * - toDTO() 正确转换其他字段（id、name、email、phone）
  */
@@ -37,16 +34,11 @@ class UserEntityTest {
     }
 
     @Test
-    void shouldHavePasswordFieldWithNonNullColumnConstraint() throws Exception {
-        // 验证 password 字段存在
+    void shouldHavePasswordField() throws Exception {
+        // 验证 password 字段存在且为 String 类型（MyBatis 实体，约束由 Flyway 管理）
         Field passwordField = UserEntity.class.getDeclaredField("password");
         assertNotNull(passwordField, "应存在 password 字段");
-
-        // 验证 @Column 注解配置
-        Column column = passwordField.getAnnotation(Column.class);
-        assertNotNull(column, "password 字段应声明 @Column 注解");
-        assertFalse(column.nullable(), "password 字段应为非空（nullable = false）");
-        assertTrue(column.length() >= 255, "password 字段长度应至少 255 字符（BCrypt 哈希值需要）");
+        assertEquals(String.class, passwordField.getType(), "password 字段应为 String 类型（BCrypt 哈希值）");
     }
 
     @Test
