@@ -62,4 +62,7 @@ management:
 logging:
   level:
     root: INFO
-    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.gateway: DEBUG  # 启用调试日志以查看路由匹配情况
+    org.springframework.cloud.gateway.filter: DEBUG
+    org.springframework.cloud.gateway.handler: DEBUG
+    org.springframework.cloud.loadbalancer: DEBUG

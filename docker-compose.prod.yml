@@ -113,6 +113,9 @@ services:
 
   user-service:
     image: ${REGISTRY:-gzhidao1010}/user-service:${TAG:-latest}
+    build:
+      context: ./services
+      dockerfile: user-service/Dockerfile
     container_name: user-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -170,6 +173,9 @@ services:
 
   api-gateway:
     image: ${REGISTRY:-gzhidao1010}/api-gateway:${TAG:-latest}
+    build:
+      context: ./services
+      dockerfile: api-gateway/Dockerfile
     container_name: api-gateway
     environment:
       - SPRING_PROFILES_ACTIVE=docker
