@@ -8,7 +8,7 @@ export interface UseChatOptions {
   initialMessages?: Array<{
     id: string
     role: "user" | "assistant" | "system"
-    parts: Array<{ type: string; text?: string }>
+    parts: Array<{ type: "text"; text: string }>
   }>
   /** 错误回调，用于调试（如流结束后仍显示错误时可查看控制台） */
   onError?: (error: Error) => void

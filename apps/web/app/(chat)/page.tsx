@@ -72,6 +72,7 @@ export default function ChatPage() {
       const t = setTimeout(() => setIsTransitioning(false), 150)
       return () => clearTimeout(t)
     }
+    return undefined
   }, [conversationId])
 
   // 记录消息首次出现时间（用于相对时间戳）
@@ -191,9 +192,16 @@ export default function ChatPage() {
   const handleSend = useCallback(
     (text: string, files?: File[]) => {
       clearError()
+      // 将 File[] 转为 FileList（sendMessage 期望 FileList）
+      let fileList: FileList | undefined
+      if (files?.length) {
+        const dt = new DataTransfer()
+        files.forEach((f) => dt.items.add(f))
+        fileList = dt.files
+      }
       sendMessage({
         text: text || " ",
-        files: files?.length ? files : undefined,
+        files: fileList,
         ...(editingMessageId ? { messageId: editingMessageId } : {}),
       })
       setInput("")
@@ -348,7 +356,14 @@ export default function ChatPage() {
                     : []),
                   <ChatMessage
                     key={msg.id}
-                    message={msg}
+                    message={{
+                      id: msg.id,
+                      role: msg.role,
+                      parts: msg.parts,
+                      metadata: (msg as { metadata?: unknown }).metadata as
+                        | { usage?: { inputTokens?: number; outputTokens?: number } }
+                        | undefined,
+                    }}
                     createdAt={ts}
                     onCopy={handleCopy}
                     onFeedback={handleFeedback}

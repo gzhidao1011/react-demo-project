@@ -2,12 +2,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 import ChatPage from "./page";
 
 // Mock useChatWithConversation
 const mockRegenerate = vi.fn();
-const mockUseChatWithConversation = vi.fn(() => ({
+const mockUseChatWithConversation = vi.fn((_opts?: unknown) => ({
   messages: [],
   sendMessage: vi.fn(),
   status: "ready",
@@ -17,7 +17,7 @@ const mockUseChatWithConversation = vi.fn(() => ({
   clearError: vi.fn(),
 }));
 vi.mock("./hooks/use-chat", () => ({
-  useChatWithConversation: (opts: unknown) => mockUseChatWithConversation(opts),
+  useChatWithConversation: mockUseChatWithConversation,
 }));
 
 // Mock useConversations
@@ -106,7 +106,7 @@ describe("ChatPage", () => {
         stop: vi.fn(),
         regenerate: mockRegenerate,
         clearError: vi.fn(),
-      });
+      } as never);
     });
 
     it("应显示重新生成按钮", () => {

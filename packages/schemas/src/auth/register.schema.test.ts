@@ -276,8 +276,10 @@ describe("registerSchema", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(z.ZodError);
         const zodError = error as z.ZodError;
-        expect(zodError.errors).toBeDefined();
-        const confirmPasswordError = zodError.errors.find((e) => e.path.includes("confirmPassword"));
+        expect(zodError.issues).toBeDefined();
+        const confirmPasswordError = zodError.issues.find((e: z.ZodIssue) =>
+          e.path.includes("confirmPassword"),
+        );
         expect(confirmPasswordError).toBeDefined();
         expect(confirmPasswordError?.message).toContain("不一致");
       }

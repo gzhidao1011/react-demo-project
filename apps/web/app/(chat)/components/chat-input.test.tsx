@@ -87,8 +87,7 @@ describe("ChatInput", () => {
     it("点击附件应显示文件选择器", () => {
       render(<ChatInput {...defaultProps} />);
 
-      const attachBtn = screen.getByRole("button", { name: /附件|添加图片|上传/i });
-      const fileInput = document.querySelector('input[type="file"]');
+      const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
       expect(fileInput).toBeInTheDocument();
       expect(fileInput).toHaveAttribute("accept", expect.stringContaining("image"));
     });
@@ -99,7 +98,7 @@ describe("ChatInput", () => {
       const file = new File(["image"], "test.png", { type: "image/png" });
       render(<ChatInput {...defaultProps} value="描述图片" onSend={onSend} />);
 
-      const fileInput = document.querySelector('input[type="file"]');
+      const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
       expect(fileInput).toBeInTheDocument();
       await user.upload(fileInput!, file);
 
@@ -115,7 +114,7 @@ describe("ChatInput", () => {
       const file = new File(["image"], "pic.jpg", { type: "image/jpeg" });
       render(<ChatInput {...defaultProps} value="" onSend={onSend} />);
 
-      const fileInput = document.querySelector('input[type="file"]');
+      const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
       await user.upload(fileInput!, file);
 
       await user.click(screen.getByRole("button", { name: /发送/ }));
