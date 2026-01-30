@@ -6,7 +6,15 @@ import { useParams } from "react-router";
 import ChatPage from "./page";
 
 // 使用 vi.hoisted 确保 mock 变量在 vi.mock 工厂执行时可用
-const { mockRegenerate, mockUseChatWithConversation, mockCreateConversation, mockDeleteConversation, mockSetActiveId, mockUpdateConversationTitle, mockNavigate } = vi.hoisted(() => {
+const {
+  mockRegenerate,
+  mockUseChatWithConversation,
+  mockCreateConversation,
+  mockDeleteConversation,
+  mockSetActiveId,
+  mockUpdateConversationTitle,
+  mockNavigate,
+} = vi.hoisted(() => {
   const mockRegenerate = vi.fn();
   const mockUseChatWithConversation = vi.fn((_opts?: unknown) => ({
     messages: [],

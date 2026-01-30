@@ -16,6 +16,7 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "test:watch": "turbo run test:watch",
+    "prepush": "pnpm check:types && pnpm check && pnpm test",
     "fix": "turbo run fix",
     "fix:format": "biome format --write",
     "fix:lint": "biome lint --write",
@@ -24,9 +25,11 @@
     "check:lint": "biome lint",
     "check:format": "biome format",
     "check:types": "turbo run check:types",
-    "prebuild": "pnpm test"
+    "prebuild": "pnpm test",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "9.1.7",
     "turbo": "2.7.4",
     "@biomejs/biome": "2.3.11",
     "@repo/biome-config": "workspace:*"
