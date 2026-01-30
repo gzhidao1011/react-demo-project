@@ -67,7 +67,7 @@ export default function SignInPage({
 
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
-        navigate("/", { replace: true });
+        navigate("/chat", { replace: true });
       }, 2000);
     } catch (error) {
       // 统一处理错误：内联错误显示 + 系统级错误 Toast

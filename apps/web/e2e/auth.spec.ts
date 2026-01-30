@@ -69,10 +69,10 @@ test.describe("认证流程", () => {
       // 3. 提交表单
       await page.click('button:has-text("创建账户")');
 
-      // 4. 验证成功消息和跳转
+      // 4. 验证成功消息和跳转（注册成功后自动登录，跳转首页）
       // 注意：toast 消息使用 sonner，会在页面右上角显示
       // 等待表单提交完成和页面跳转（注册成功后会在 2 秒后跳转）
-      await expect(page).toHaveURL(/.*sign-in/, { timeout: 10000 });
+      await expect(page).toHaveURL("/", { timeout: 10000 });
     });
 
     test("应该显示邮箱格式错误", async ({ page }) => {

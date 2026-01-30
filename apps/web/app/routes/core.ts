@@ -5,4 +5,5 @@ export const coreRoutes: RouteConfigEntry[] = [
   layout("./(home)/layout.tsx", [index("./(home)/page.tsx")]),
   layout("./(all)/sign-up/layout.tsx", [route("sign-up", "./(all)/sign-up/page.tsx")]),
   layout("./(all)/sign-in/layout.tsx", [route("sign-in", "./(all)/sign-in/page.tsx")]),
+  layout("./(chat)/layout.tsx", [route("chat", "./(chat)/page.tsx")]),
 ];

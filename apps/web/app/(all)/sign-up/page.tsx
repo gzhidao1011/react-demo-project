@@ -45,12 +45,12 @@ export default function SignUpPage() {
       // 调用注册 API
       await authRegister(registerData);
 
-      toast.success("注册成功！正在跳转到登录页...", {
+      toast.success("注册成功！正在进入...", {
         duration: 2000,
       });
-      // 延迟跳转，让用户看到成功提示
+      // 延迟跳转，让用户看到成功提示（Token 已由 API 拦截器自动保存，直接进入首页）
       setTimeout(() => {
-        navigate("/sign-in", { replace: true });
+        navigate("/chat", { replace: true });
       }, 2000);
     } catch (error) {
       toastError(error, setError as UseFormSetError<FieldValues>, "注册失败，请检查网络连接");
