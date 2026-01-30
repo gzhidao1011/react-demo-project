@@ -9,8 +9,10 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.List;
@@ -42,13 +45,15 @@ public class GlobalExceptionHandler {
 
     /**
      * 处理业务异常
-     * 根据错误码类型返回对应的 HTTP 状态码
+     * 根据错误码类型返回对应的 HTTP 状态码（限流返回 429，其他返回 400）
      */
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Void> handleBusinessException(BusinessException e, HttpServletRequest request) {
+    public ResponseEntity<Result<Void>> handleBusinessException(BusinessException e, HttpServletRequest request) {
         log.warn("业务异常: URI={}, Code={}, Message={}", request.getRequestURI(), e.getCode(), e.getMessage());
-        return Result.error(e.getCode(), e.getMessage());
+        HttpStatus status = e.getCode() == ResultCode.RATE_LIMIT_EXCEEDED.getCode()
+                ? HttpStatus.TOO_MANY_REQUESTS
+                : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(Result.error(e.getCode(), e.getMessage()));
     }
 
     // ==================== 参数校验异常 ====================
@@ -152,6 +157,16 @@ public class GlobalExceptionHandler {
     // ==================== HTTP 方法和路由异常 ====================
 
     /**
+     * 处理 Content-Type 不支持异常（如缺少 Content-Type 头）
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    public Result<Void> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException e, HttpServletRequest request) {
+        log.warn("媒体类型不支持: URI={}, Message={}", request.getRequestURI(), e.getMessage());
+        return Result.error(ResultCode.BAD_REQUEST, "不支持的 Content-Type，请使用 application/json");
+    }
+
+    /**
      * 处理请求方法不支持异常
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -159,6 +174,21 @@ public class GlobalExceptionHandler {
     public Result<Void> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e, HttpServletRequest request) {
         log.warn("请求方法不支持: URI={}, Method={}", request.getRequestURI(), e.getMethod());
         return Result.error(ResultCode.METHOD_NOT_ALLOWED, "不支持的请求方法: " + e.getMethod());
+    }
+
+    /**
+     * 处理 ResponseStatusException（403、404 等）
+     * 保留原始 HTTP 状态码，返回统一 Result 格式
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Result<Void>> handleResponseStatusException(ResponseStatusException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
+        log.warn("响应状态异常: URI={}, Status={}, Reason={}", request.getRequestURI(), status, e.getReason());
+        ResultCode code = status == HttpStatus.NOT_FOUND ? ResultCode.NOT_FOUND
+                : status == HttpStatus.FORBIDDEN ? ResultCode.FORBIDDEN
+                : ResultCode.BAD_REQUEST;
+        Result<Void> body = Result.error(code, e.getReason() != null ? e.getReason() : code.getMessage());
+        return ResponseEntity.status(status).body(body);
     }
 
     /**

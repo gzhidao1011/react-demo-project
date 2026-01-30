@@ -1,0 +1,50 @@
+server:
+  port: 8003  # Chat 服务端口（与 user-service 8001、order-service 8002 并列）
+
+spring:
+  application:
+    name: chat-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/chat_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: root
+    password: root123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
+
+# 健康检查
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# JWT 配置（与 user-service 共享公钥验证）
+jwt:
+  algorithm: RS256
+  public-key-path: classpath:keys/public.pem
+  issuer: ${JWT_ISSUER:https://auth.example.com}
+  audience: ${JWT_AUDIENCE:api.example.com}
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.example.chat.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+# System prompt 配置（可配置的 AI 角色、语气）
+chat:
+  system-prompt: "You are a helpful assistant. When unsure, say so and suggest rephrasing."
+  # 限流配置（按用户，内存版；多实例部署时建议改用 Redis）
+  rate-limit:
+    max-requests-per-minute: 30
+    window-seconds: 60

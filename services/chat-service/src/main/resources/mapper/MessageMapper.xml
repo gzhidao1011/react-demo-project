@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.chat.mapper.MessageMapper">
+
+    <resultMap id="MessageResultMap" type="com.example.chat.entity.Message">
+        <id property="id" column="id"/>
+        <result property="conversationId" column="conversation_id"/>
+        <result property="role" column="role"/>
+        <result property="content" column="content"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findByConversationIdOrderByCreatedAtAsc" resultMap="MessageResultMap">
+        SELECT id, conversation_id, role, content, created_at
+        FROM message
+        WHERE conversation_id = #{conversationId}
+        ORDER BY created_at ASC
+    </select>
+
+    <insert id="insert">
+        INSERT INTO message (id, conversation_id, role, content, created_at)
+        VALUES (#{id}, #{conversationId}, #{role}, #{content}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByConversationId">
+        DELETE FROM message
+        WHERE conversation_id = #{conversationId}
+    </delete>
+</mapper>

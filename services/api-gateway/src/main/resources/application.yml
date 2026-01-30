@@ -34,7 +34,14 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/api/auth/**
-    
+        # Chat 服务路由（SSE 流式响应需更长超时）
+        - id: chat-service
+          uri: lb://chat-service
+          predicates:
+            - Path=/api/chat/**
+          metadata:
+            response-timeout: 60000  # 60 秒（流式响应可能较长）
+
     nacos:
       discovery:
         server-addr: localhost:8848  # Nacos 服务器地址

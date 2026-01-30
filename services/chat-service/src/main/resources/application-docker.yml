@@ -1,0 +1,11 @@
+# Docker 环境配置
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:nacos:8848}
+
+jwt:
+  public-key-path: classpath:keys/public.pem
+  issuer: ${JWT_ISSUER:https://auth.example.com}
+  audience: ${JWT_AUDIENCE:api.example.com}
