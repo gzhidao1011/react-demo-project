@@ -1,0 +1,13 @@
+# Spring Boot Docker Compose 配置
+# 启用后，API 网关启动时会自动拉起基础设施（MySQL、Redis、Nacos、Sentinel）
+# 使用方式：mvn spring-boot:run -pl api-gateway -Dspring-boot.run.profiles=docker-compose
+# 或：make gateway-compose
+
+spring:
+  docker:
+    compose:
+      enabled: true
+      # 相对于 api-gateway 模块目录，指向项目根目录的 compose 文件
+      file: ../../docker-compose.infra.yml
+      # start-only：仅启动不停止，多个服务共享基础设施
+      lifecycle-management: start-only

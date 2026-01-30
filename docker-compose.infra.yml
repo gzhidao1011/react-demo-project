@@ -1,0 +1,116 @@
+# ==================== 基础设施专用 Compose ====================
+# 供 Spring Boot spring-boot-docker-compose 或 make up 使用
+# 仅包含 MySQL、Redis、Nacos、Sentinel
+#
+# 使用方式：
+#   docker-compose -f docker-compose.infra.yml up -d
+#   或由 Spring Boot 应用启动时自动拉起（spring-boot-docker-compose）
+# ==============================================================
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  nacos:
+    image: nacos/nacos-server:v2.3.0
+    container_name: nacos
+    environment:
+      - MODE=standalone
+      - PREFER_HOST_MODE=hostname
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - MYSQL_SERVICE_HOST=mysql
+      - MYSQL_SERVICE_PORT=3306
+      - MYSQL_SERVICE_DB_NAME=nacos
+      - MYSQL_SERVICE_USER=root
+      - MYSQL_SERVICE_PASSWORD=root123
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=10000&socketTimeout=30000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+      - NACOS_AUTH_ENABLE=false
+      - JVM_XMS=256m
+      - JVM_XMX=512m
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    volumes:
+      - nacos-data:/home/nacos/data
+      - nacos-logs:/home/nacos/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/console/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.6
+    container_name: sentinel
+    environment:
+      - JAVA_OPTS=-Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858
+    ports:
+      - "8858:8858"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+networks:
+  microservices-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  mysql-data:
+    driver: local
+  nacos-data:
+    driver: local
+  nacos-logs:
+    driver: local
+  redis-data:
+    driver: local

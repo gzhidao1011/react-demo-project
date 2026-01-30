@@ -46,10 +46,14 @@ pnpm --filter @repo/web test:e2e   # E2E 测试
 ### 后端
 
 ```bash
-cd services/user-service
-mvn spring-boot:run         # 启动用户服务
-mvn test                    # 单元测试
-mvn verify                  # 集成测试
+cd services
+make up                     # 启动基础设施
+make dev                    # 一键启动所有微服务
+make gateway-compose        # 网关自动拉起基础设施
+make user / order / gateway # 单独启动某服务
+make build                  # 构建 jar
+make test                   # 单元测试
+make help                   # 查看所有命令
 ```
 
 ### Docker

@@ -6,6 +6,7 @@
 
 | 文档 | 说明 |
 |------|------|
+| [local-dev-analysis.md](./local-dev-analysis.md) | 本地开发启动模式分析与国外主流实践对比 |
 | [architecture.md](./architecture.md) | 微服务架构说明（Nacos、Dubbo、Sentinel、API Gateway） |
 | [docker-deployment.md](./docker-deployment.md) | 后端服务 Docker 部署与发布 |
 | [java-microservices-guide.md](./java-microservices-guide.md) | Java 微服务从零搭建教程 |
@@ -20,6 +21,7 @@
 
 ## 快速入口
 
+- **本地启动**：在 `services` 目录下执行 `make up && make dev`，或 `make gateway-compose` 后分别启动各服务
 - **了解架构**：从 [architecture.md](./architecture.md) 开始
 - **学习微服务**：参考 [java-microservices-guide.md](./java-microservices-guide.md)
 - **认证开发**：参考 [jwt-authentication-guide.md](./jwt-authentication-guide.md)

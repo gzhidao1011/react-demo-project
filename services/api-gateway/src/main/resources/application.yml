@@ -1,7 +1,12 @@
 server:
   port: 8080  # 网关端口
 
+# 默认禁用 Docker Compose，需先 make up 启动基础设施
+# 使用 make gateway-compose 或 -Dspring-boot.run.profiles=docker-compose 可自动拉起
 spring:
+  docker:
+    compose:
+      enabled: false
   application:
     name: api-gateway
   cloud:

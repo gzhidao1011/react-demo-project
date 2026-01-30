@@ -35,8 +35,10 @@ Write-Host ""
 Write-Host "⚠️  请在新终端窗口中启动后端和前端服务：" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "后端服务（终端 2）：" -ForegroundColor Cyan
-Write-Host "  cd services/user-service"
-Write-Host "  mvn spring-boot:run"
+Write-Host "  cd services"
+Write-Host "  make up    # 启动基础设施"
+Write-Host "  make dev   # 启动所有微服务"
+Write-Host "  或 make gateway-compose  # 网关自动拉起基础设施"
 Write-Host ""
 Write-Host "前端服务（终端 3）：" -ForegroundColor Cyan
 Write-Host "  pnpm dev"

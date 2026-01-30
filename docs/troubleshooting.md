@@ -5,13 +5,15 @@
 ## 目录
 
 - [端口冲突](#1-端口冲突)
-- [API Gateway 404 错误](#2-api-gateway-404-错误)
-- [Docker 镜像静态资源不是最新](#3-docker-镜像静态资源不是最新)
-- [数据库连接失败](#4-数据库连接失败)
-- [Redis 连接失败](#5-redis-连接失败)
-- [前端 API 请求失败](#6-前端-api-请求失败)
-- [依赖安装失败](#7-依赖安装失败)
-- [Maven 构建失败](#8-maven-构建失败)
+- [503 Unable to find instance for user-service](#2-503-unable-to-find-instance-for-user-service)
+- [API Gateway 404 错误](#3-api-gateway-404-错误)
+- [Docker 镜像静态资源不是最新](#4-docker-镜像静态资源不是最新)
+- [数据库连接失败](#5-数据库连接失败)
+- [Redis 连接失败](#6-redis-连接失败)
+- [前端 API 请求失败](#7-前端-api-请求失败)
+- [依赖安装失败](#8-依赖安装失败)
+- [Maven 构建失败](#9-maven-构建失败)
+- [Windows 上没有 make 命令](#10-windows-上没有-make-命令)
 
 ---
 
@@ -74,7 +76,67 @@ docker-compose down
 
 ---
 
-## 2. API Gateway 404 错误
+## 2. 503 Unable to find instance for user-service
+
+### 问题描述
+
+访问 `/api/auth/register` 等接口时返回 503，错误信息为：
+
+```
+Unable to find instance for user-service
+```
+
+### 原因
+
+API Gateway 通过 Nacos 服务发现将 `/api/auth/**` 路由到 `user-service`，但 **user-service 未运行或未成功注册到 Nacos**。
+
+### 解决方案
+
+**1. 确保基础设施已启动**
+
+```bash
+# 方式一：使用 Makefile
+cd services
+make up
+
+# 方式二：使用 Docker Compose
+docker-compose up -d mysql redis nacos sentinel
+
+# 等待约 30 秒后检查 Nacos 是否就绪
+curl http://localhost:8848/nacos/v1/console/health/readiness
+```
+
+**2. 启动所有微服务（推荐）**
+
+```bash
+cd services
+make dev
+```
+
+该命令会并行启动 API Gateway、User Service、Order Service。**三个服务都必须运行**，缺一不可。
+
+**3. 若使用 gateway-compose 单独启动**
+
+```bash
+cd services
+make gateway-compose   # 终端 1：启动网关并自动拉起基础设施
+make user             # 终端 2：启动用户服务
+make order            # 终端 3：启动订单服务
+```
+
+**4. 验证 user-service 是否注册成功**
+
+- 访问 Nacos 控制台：http://localhost:8848/nacos（默认 nacos/nacos）
+- 在「服务管理」→「服务列表」中查看是否有 `user-service`
+- 检查 user-service 健康：`curl http://localhost:8001/actuator/health`
+
+### 预防措施
+
+本地开发时务必使用 `make dev` 一次性启动所有微服务，或确保 user-service 和 order-service 在 API Gateway 之前或同时启动。
+
+---
+
+## 3. API Gateway 404 错误
 
 ### 问题描述
 
@@ -116,7 +178,7 @@ curl -X POST http://localhost:8080/api/auth/register \
 
 ---
 
-## 3. Docker 镜像静态资源不是最新
+## 4. Docker 镜像静态资源不是最新
 
 ### 问题描述
 
@@ -147,7 +209,7 @@ docker-compose -f docker-compose.prod.yml up -d --build
 
 ---
 
-## 4. 数据库连接失败
+## 5. 数据库连接失败
 
 ### 检查清单
 
@@ -167,7 +229,7 @@ cd services/user-service && mvn spring-boot:run
 
 ---
 
-## 5. Redis 连接失败
+## 6. Redis 连接失败
 
 ### 检查清单
 
@@ -183,7 +245,7 @@ docker-compose restart redis
 
 ---
 
-## 6. 前端 API 请求失败
+## 7. 前端 API 请求失败
 
 ### 可能原因
 
@@ -199,7 +261,7 @@ docker-compose restart redis
 
 ---
 
-## 7. 依赖安装失败
+## 8. 依赖安装失败
 
 ### 解决方案
 
@@ -215,7 +277,7 @@ pnpm install
 
 ---
 
-## 8. Maven 构建失败
+## 9. Maven 构建失败
 
 ### 解决方案
 
@@ -228,6 +290,32 @@ mvn clean install -U
 
 # 跳过测试构建
 mvn clean package -DskipTests
+```
+
+---
+
+## 10. Windows 上没有 make 命令
+
+### 问题描述
+
+在 `services` 目录下执行 `make dev` 时提示找不到 `make` 命令。
+
+### 解决方案
+
+**方式一：安装 make（推荐）**
+
+- **Git for Windows**：安装后自带 `make`，路径通常在 `C:\Program Files\Git\usr\bin\make.exe`
+- **Chocolatey**：`choco install make`
+- **WSL**：在 WSL 中运行 `make dev`
+
+**方式二：手动启动各服务**
+
+```powershell
+cd services
+# 在 3 个终端中分别执行
+mvn spring-boot:run -pl api-gateway
+mvn spring-boot:run -pl user-service
+mvn spring-boot:run -pl order-service
 ```
 
 ---

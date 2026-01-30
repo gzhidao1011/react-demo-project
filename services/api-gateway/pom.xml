@@ -58,6 +58,13 @@
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+        <!-- Spring Boot Docker Compose（开发时自动启动基础设施） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-docker-compose</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>
