@@ -42,12 +42,20 @@ export default defineConfig({
   server: {
     port: 5573,
     proxy: {
+      // Chat 联调：可选直连 chat-service（VITE_CHAT_API_DIRECT=true 时）
+      // 用于快速联调，无需启动 api-gateway 和 Nacos
+      ...(viteEnv.VITE_CHAT_API_DIRECT === "true"
+        ? {
+            "/api/chat": {
+              target: "http://localhost:8003",
+              changeOrigin: true,
+            },
+          }
+        : {}),
       // 代理 /api 请求到后端 API 网关
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
-        // 如果后端 API 路径不包含 /api，可以取消注释下面这行
-        // rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
   },

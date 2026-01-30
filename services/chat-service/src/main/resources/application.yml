@@ -4,6 +4,15 @@ server:
 spring:
   application:
     name: chat-service
+  ai:
+    openai:
+      chat:
+        options:
+          temperature: 0.7
+# LLM 配置（通过环境变量，支持 OpenAI / DeepSeek 切换）
+# LLM_PROVIDER: openai | deepseek
+# OpenAI: OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
+# DeepSeek: DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_BASE_URL
   datasource:
     url: jdbc:mysql://localhost:3306/chat_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: root

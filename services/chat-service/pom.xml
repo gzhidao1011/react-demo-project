@@ -93,6 +93,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Spring AI OpenAI（LLM 流式对话，非 starter 以控制测试时 Bean 创建） -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai</artifactId>
+        </dependency>
+
         <!-- Flyway（数据库迁移） -->
         <dependency>
             <groupId>org.flywaydb</groupId>

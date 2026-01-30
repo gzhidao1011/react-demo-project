@@ -1,11 +1,55 @@
 # Docker 环境配置
+# LLM 切换：LLM_PROVIDER=openai|deepseek，对应 OPENAI_* 或 DEEPSEEK_* 环境变量
 spring:
+  application:
+    name: chat-service
+  ai:
+    openai:
+      chat:
+        options:
+          temperature: 0.7
   cloud:
     nacos:
       discovery:
         server-addr: ${NACOS_SERVER_ADDR:nacos:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        ip: ${DOCKER_HOST_IP:chat-service}
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:chat_db}?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
 
 jwt:
   public-key-path: classpath:keys/public.pem
   issuer: ${JWT_ISSUER:https://auth.example.com}
   audience: ${JWT_AUDIENCE:api.example.com}
+
+# 健康检查配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.example.chat: INFO
+    org.apache.ibatis: WARN

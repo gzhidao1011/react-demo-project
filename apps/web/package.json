@@ -32,7 +32,10 @@
     "react-dom": "catalog:",
     "react-hook-form": "catalog:",
     "react-router": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "ai": "catalog:",
+    "@ai-sdk/react": "catalog:",
+    "react-markdown": "catalog:"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",

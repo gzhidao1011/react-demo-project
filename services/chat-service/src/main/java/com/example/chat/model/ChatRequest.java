@@ -18,6 +18,19 @@ public class ChatRequest {
     @Valid
     private List<UIMessagePart> messages;
 
-    /** 会话 ID，可选，用于加载历史、会话持久化 */
+    /** 会话 ID，可选，用于加载历史、会话持久化（AI SDK 可能发送 id 或 conversationId） */
     private String conversationId;
+
+    /** AI SDK 默认发送的 chat id，与 conversationId 等价，作为 fallback */
+    private String id;
+
+    /**
+     * 获取有效的会话 ID（兼容 id 与 conversationId）
+     */
+    public String getEffectiveConversationId() {
+        if (conversationId != null && !conversationId.isBlank()) {
+            return conversationId;
+        }
+        return (id != null && !id.isBlank()) ? id : null;
+    }
 }

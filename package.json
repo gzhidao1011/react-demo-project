@@ -10,6 +10,7 @@
     "dev": "turbo run dev --concurrency=18",
     "dev:infra": "docker-compose up -d mysql redis nacos sentinel",
     "dev:infra:logs": "docker-compose logs -f mysql redis nacos sentinel",
+    "chat:dev": "pnpm dev:infra && echo 'Chat 联调：请依次在 services 目录启动 user-service、chat-service、api-gateway，然后 pnpm -C apps/web dev。详见 .cursor/plans/chat功能实现计划/03-前后端联调指南.md'",
     "start": "turbo run start",
     "clean": "turbo run clean && rm -rf .turbo && rm -rf .next && rm -rf node_modules && rm -rf dist",
     "test": "turbo run test",

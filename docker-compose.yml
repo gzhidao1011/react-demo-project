@@ -12,6 +12,9 @@
 # 注意：首次启动前需要先构建 jar 包：
 #   cd services && mvn clean package -DskipTests
 #
+# chat-service 需配置 LLM API Key（可选，未配置时使用 Mock 模式）：
+#   复制 services/.env.example 为 services/.env，填写 OPENAI_API_KEY 或 DEEPSEEK_API_KEY
+#
 # ============================================================
 
 services:
@@ -178,6 +181,43 @@ services:
       - microservices-network
     restart: unless-stopped
 
+  # Chat 服务（SSE 流式对话、LLM 对接、会话持久化）
+  chat-service:
+    build:
+      context: ./services
+      dockerfile: chat-service/Dockerfile
+    image: microservices/chat-service:latest
+    container_name: chat-service
+    env_file:
+      - ./services/.env  # LLM 配置（OPENAI_API_KEY、DEEPSEEK_API_KEY 等）
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_SERVER_ADDR=nacos:8848
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=chat_db
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=root123
+      - DOCKER_HOST_IP=chat-service
+      - LLM_PROVIDER=${LLM_PROVIDER:-deepseek}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    ports:
+      - "8003:8003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
   # API 网关（多模块 Maven 项目，需要 ./services 作为 context）
   api-gateway:
     build:
@@ -198,6 +238,8 @@ services:
       user-service:
         condition: service_started
       order-service:
+        condition: service_started
+      chat-service:
         condition: service_started
     networks:
       - microservices-network

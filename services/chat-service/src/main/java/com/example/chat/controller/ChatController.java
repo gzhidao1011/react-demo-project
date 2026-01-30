@@ -55,7 +55,7 @@ public class ChatController {
             HttpServletResponse response) throws IOException {
 
         String effectiveUserId = userId != null ? userId : "anonymous";
-        String conversationId = request.getConversationId() != null ? request.getConversationId() : null;
+        String conversationId = request.getEffectiveConversationId();
         String userContent = extractLastUserMessage(request);
 
         // 限流校验（按用户）

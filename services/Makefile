@@ -3,11 +3,17 @@
 # Cross-platform, no Node.js required
 # ================================================================
 
-.PHONY: up down dev build test clean help user order gateway gateway-compose
+.PHONY: up down dev build test clean help user order chat gateway gateway-compose
 
 # Project root (Makefile is under services/)
 ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))..
 COMPOSE_FILE := $(ROOT_DIR)/docker-compose.yml
+
+# 加载 .env 环境变量（OPENAI_API_KEY 等），供 make dev / make chat 等使用
+ifneq (,$(wildcard .env))
+    include .env
+    export
+endif
 
 # Cross-platform sleep (Windows lacks 'sleep' command)
 # OS=Windows_NT 或 COMSPEC 含 cmd 表示 Windows
@@ -36,6 +42,7 @@ help:
 	@echo "Start individual services:"
 	@echo "  make user    - User service only"
 	@echo "  make order   - Order service only"
+	@echo "  make chat    - Chat service only"
 	@echo "  make gateway - API gateway only"
 	@echo "  make gateway-compose - Start gateway (auto-start infra, no make up needed)"
 
@@ -60,16 +67,17 @@ down:
 ifeq ($(OS),Windows_NT)
 SERVICES_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 dev:
-	@echo "Starting all microservices (API Gateway, User Service, Order Service)..."
+	@echo "Starting all microservices (API Gateway, User Service, Order Service, Chat Service)..."
 	@echo "Press Ctrl+C to stop all services (same terminal, mainstream approach)"
-	@powershell -NoProfile -Command "$$d='$(SERVICES_DIR)'; $$p1=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','api-gateway'; $$p2=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','user-service'; $$p3=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','order-service'; $$p1,$$p2,$$p3 | Wait-Process"
+	@powershell -NoProfile -Command "$$d='$(SERVICES_DIR)'; $$p1=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','api-gateway'; $$p2=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','user-service'; $$p3=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','order-service'; $$p4=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','chat-service'; $$p1,$$p2,$$p3,$$p4 | Wait-Process"
 else
 dev:
-	@echo "Starting all microservices (API Gateway, User Service, Order Service)..."
+	@echo "Starting all microservices (API Gateway, User Service, Order Service, Chat Service)..."
 	@echo "Press Ctrl+C to stop all services"
 	mvn spring-boot:run -pl api-gateway & \
 	mvn spring-boot:run -pl user-service & \
 	mvn spring-boot:run -pl order-service & \
+	mvn spring-boot:run -pl chat-service & \
 	wait
 endif
 
@@ -99,6 +107,10 @@ user:
 order:
 	@echo "Starting order service..."
 	mvn spring-boot:run -pl order-service
+
+chat:
+	@echo "Starting chat service..."
+	mvn spring-boot:run -pl chat-service
 
 gateway:
 	@echo "Starting API gateway..."

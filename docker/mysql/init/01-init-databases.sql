@@ -11,10 +11,14 @@ CREATE DATABASE IF NOT EXISTS user_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8
 -- 创建订单服务数据库
 CREATE DATABASE IF NOT EXISTS order_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- 创建 Chat 服务数据库
+CREATE DATABASE IF NOT EXISTS chat_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- 授权
 GRANT ALL PRIVILEGES ON nacos.* TO 'root'@'%';
 GRANT ALL PRIVILEGES ON user_db.* TO 'root'@'%';
 GRANT ALL PRIVILEGES ON order_db.* TO 'root'@'%';
+GRANT ALL PRIVILEGES ON chat_db.* TO 'root'@'%';
 FLUSH PRIVILEGES;
 
 -- ==================== Nacos 表结构 ====================
