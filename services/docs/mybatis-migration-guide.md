@@ -106,4 +106,3 @@ spring.sql.init.mode=always
 ## 相关文档
 
 - [Java 微服务指南](./java-microservices-guide.md) - 数据库集成章节已更新为 MyBatis
-- [JPA 替代方案分析](./jpa-alternatives-analysis.md) - 选型分析（若存在）

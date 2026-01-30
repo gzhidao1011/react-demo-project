@@ -602,7 +602,9 @@ docker exec -it mysql mysql -uroot -proot123 user_db < V1__create_users_table.sq
 
 ## 相关文档
 
-- [开发者指南](./developer-guide.md) - 项目开发规范
+- [开发者指南](./developer-guide.md) - 项目开发规范与命令速查
+- [故障排除](./troubleshooting.md) - 常见问题解决方案
+- [Docker 指南](./docker/docker-guide.md) - Docker 构建与部署
 - [API 文档](./api/auth-api.md) - API 接口文档
 - [测试规范](../../.cursor/rules/20-测试与覆盖率规范.mdc) - 测试编写规范
 - [代码风格规范](../../.cursor/rules/01-代码风格.mdc) - 代码风格指南
