@@ -1,26 +1,20 @@
-import { useCallback, useMemo, useState } from "react"
-import {
-  MagnifyingGlassIcon,
-  PencilSquareIcon,
-  PlusIcon,
-  TrashIcon,
-  XMarkIcon,
-} from "@heroicons/react/16/solid"
-import { Button, Input } from "@repo/ui"
-import type { Conversation } from "../lib/chat.types"
+import { MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/16/solid";
+import { Button, Input } from "@repo/ui";
+import { useCallback, useMemo, useState } from "react";
+import type { Conversation } from "../lib/chat.types";
 
 interface ChatSidebarProps {
-  conversations: Conversation[]
-  activeId: string | null
-  onNewChat: () => void
-  onSelectConversation: (id: string) => void
-  onDeleteConversation: (id: string) => void
-  onRenameConversation?: (id: string, title: string) => void
+  conversations: Conversation[];
+  activeId: string | null;
+  onNewChat: () => void;
+  onSelectConversation: (id: string) => void;
+  onDeleteConversation: (id: string) => void;
+  onRenameConversation?: (id: string, title: string) => void;
   /** 浮动模式：悬浮于内容之上，点击外部可关闭 */
-  overlay?: boolean
-  onClose?: () => void
+  overlay?: boolean;
+  onClose?: () => void;
   /** 关闭按钮 ref（用于焦点管理） */
-  closeButtonRef?: React.RefObject<HTMLButtonElement | null>
+  closeButtonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 /**
@@ -38,68 +32,66 @@ export function ChatSidebar({
   onClose,
   closeButtonRef,
 }: ChatSidebarProps) {
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editValue, setEditValue] = useState("")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredConversations = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    if (!q) return conversations
-    return conversations.filter((c) =>
-      c.title.toLowerCase().includes(q),
-    )
-  }, [conversations, searchQuery])
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return conversations;
+    return conversations.filter((c) => c.title.toLowerCase().includes(q));
+  }, [conversations, searchQuery]);
 
   const startEdit = useCallback((conv: Conversation) => {
-    setEditingId(conv.id)
-    setEditValue(conv.title)
-  }, [])
+    setEditingId(conv.id);
+    setEditValue(conv.title);
+  }, []);
 
   const cancelEdit = useCallback(() => {
-    setEditingId(null)
-    setEditValue("")
-  }, [])
+    setEditingId(null);
+    setEditValue("");
+  }, []);
 
   const saveEdit = useCallback(
     (id: string) => {
-      const trimmed = editValue.trim()
+      const trimmed = editValue.trim();
       if (trimmed && onRenameConversation) {
-        onRenameConversation(id, trimmed)
+        onRenameConversation(id, trimmed);
       }
-      cancelEdit()
+      cancelEdit();
     },
     [editValue, onRenameConversation, cancelEdit],
-  )
+  );
 
   const handleEditKeyDown = useCallback(
     (e: React.KeyboardEvent, id: string) => {
       if (e.key === "Enter") {
-        e.preventDefault()
-        saveEdit(id)
+        e.preventDefault();
+        saveEdit(id);
       } else if (e.key === "Escape") {
-        e.preventDefault()
-        cancelEdit()
+        e.preventDefault();
+        cancelEdit();
       }
     },
     [saveEdit, cancelEdit],
-  )
+  );
 
   const handleSelect = useCallback(
     (id: string) => {
-      onSelectConversation(id)
-      onClose?.()
+      onSelectConversation(id);
+      onClose?.();
     },
     [onSelectConversation, onClose],
-  )
+  );
 
   const handleNewChatClick = useCallback(() => {
-    onNewChat()
-    onClose?.()
-  }, [onNewChat, onClose])
+    onNewChat();
+    onClose?.();
+  }, [onNewChat, onClose]);
 
   const asideClasses = overlay
     ? "flex h-full w-full flex-col border-r border-border bg-muted shadow-xl"
-    : "flex w-64 shrink-0 flex-col border-r border-border bg-muted"
+    : "flex w-64 shrink-0 flex-col border-r border-border bg-muted";
 
   return (
     <aside className={asideClasses}>
@@ -197,8 +189,8 @@ export function ChatSidebar({
                         variant="ghost"
                         size="icon-sm"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          startEdit(conv)
+                          e.stopPropagation();
+                          startEdit(conv);
                         }}
                         aria-label={`重命名 ${conv.title}`}
                         className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-primary group-hover:opacity-100"
@@ -211,8 +203,8 @@ export function ChatSidebar({
                       variant="ghost"
                       size="icon-sm"
                       onClick={(e) => {
-                        e.stopPropagation()
-                        onDeleteConversation(conv.id)
+                        e.stopPropagation();
+                        onDeleteConversation(conv.id);
                       }}
                       aria-label={`删除 ${conv.title}`}
                       className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
@@ -227,5 +219,5 @@ export function ChatSidebar({
         )}
       </nav>
     </aside>
-  )
+  );
 }

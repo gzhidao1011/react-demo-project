@@ -5,26 +5,37 @@ import "@testing-library/jest-dom/vitest";
 import { useParams } from "react-router";
 import ChatPage from "./page";
 
-// Mock useChatWithConversation
-const mockRegenerate = vi.fn();
-const mockUseChatWithConversation = vi.fn((_opts?: unknown) => ({
-  messages: [],
-  sendMessage: vi.fn(),
-  status: "ready",
-  error: undefined,
-  stop: vi.fn(),
-  regenerate: mockRegenerate,
-  clearError: vi.fn(),
-}));
+// 使用 vi.hoisted 确保 mock 变量在 vi.mock 工厂执行时可用
+const { mockRegenerate, mockUseChatWithConversation, mockCreateConversation, mockDeleteConversation, mockSetActiveId, mockUpdateConversationTitle, mockNavigate } = vi.hoisted(() => {
+  const mockRegenerate = vi.fn();
+  const mockUseChatWithConversation = vi.fn((_opts?: unknown) => ({
+    messages: [],
+    sendMessage: vi.fn(),
+    status: "ready",
+    error: undefined,
+    stop: vi.fn(),
+    regenerate: mockRegenerate,
+    clearError: vi.fn(),
+  }));
+  const mockCreateConversation = vi.fn(() => "conv_new_123");
+  const mockDeleteConversation = vi.fn();
+  const mockSetActiveId = vi.fn();
+  const mockUpdateConversationTitle = vi.fn();
+  const mockNavigate = vi.fn();
+  return {
+    mockRegenerate,
+    mockUseChatWithConversation,
+    mockCreateConversation,
+    mockDeleteConversation,
+    mockSetActiveId,
+    mockUpdateConversationTitle,
+    mockNavigate,
+  };
+});
+
 vi.mock("./hooks/use-chat", () => ({
   useChatWithConversation: mockUseChatWithConversation,
 }));
-
-// Mock useConversations
-const mockCreateConversation = vi.fn(() => "conv_new_123");
-const mockDeleteConversation = vi.fn();
-const mockSetActiveId = vi.fn();
-const mockUpdateConversationTitle = vi.fn();
 
 vi.mock("./hooks/use-conversations", () => ({
   useConversations: vi.fn(() => ({
@@ -37,7 +48,6 @@ vi.mock("./hooks/use-conversations", () => ({
   })),
 }));
 
-const mockNavigate = vi.fn();
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
   return {

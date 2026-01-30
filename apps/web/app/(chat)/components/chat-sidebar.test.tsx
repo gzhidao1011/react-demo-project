@@ -2,8 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
-import { ChatSidebar } from "./chat-sidebar";
 import type { Conversation } from "../lib/chat.types";
+import { ChatSidebar } from "./chat-sidebar";
 
 const mockConversations: Conversation[] = [
   { id: "conv_1", title: "会话1", createdAt: 1000 },
@@ -180,14 +180,7 @@ describe("ChatSidebar", () => {
       const user = userEvent.setup({ delay: null });
       const onSelectConversation = vi.fn();
       const onClose = vi.fn();
-      render(
-        <ChatSidebar
-          {...defaultProps}
-          overlay
-          onClose={onClose}
-          onSelectConversation={onSelectConversation}
-        />,
-      );
+      render(<ChatSidebar {...defaultProps} overlay onClose={onClose} onSelectConversation={onSelectConversation} />);
 
       await user.click(screen.getByText("会话2"));
 
@@ -199,9 +192,7 @@ describe("ChatSidebar", () => {
       const user = userEvent.setup({ delay: null });
       const onNewChat = vi.fn();
       const onClose = vi.fn();
-      render(
-        <ChatSidebar {...defaultProps} overlay onClose={onClose} onNewChat={onNewChat} />,
-      );
+      render(<ChatSidebar {...defaultProps} overlay onClose={onClose} onNewChat={onNewChat} />);
 
       await user.click(screen.getByRole("button", { name: /新建|新对话/ }));
 

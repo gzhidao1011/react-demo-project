@@ -497,7 +497,7 @@ describe("SignUpPage", () => {
       );
     });
 
-    it("应该跳转到首页（注册成功后自动登录）", async () => {
+    it("应该跳转到 Chat 页（注册成功后自动登录）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
@@ -528,7 +528,7 @@ describe("SignUpPage", () => {
       // 等待 setTimeout 执行（使用 waitFor 等待导航调用，而不是使用 fake timers）
       await waitFor(
         () => {
-          expect(mockNavigateFn).toHaveBeenCalledWith("/", { replace: true });
+          expect(mockNavigateFn).toHaveBeenCalledWith("/chat", { replace: true });
         },
         { timeout: 5000 }, // 增加超时时间，因为需要等待 2 秒的 setTimeout
       );

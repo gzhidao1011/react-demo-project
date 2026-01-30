@@ -2,8 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
-import { ChatWelcome } from "./chat-welcome";
 import type { SuggestedPrompt } from "../lib/chat.types";
+import { ChatWelcome } from "./chat-welcome";
 
 const defaultPrompts: SuggestedPrompt[] = [
   { id: "1", label: "写一封邮件", text: "帮我写一封邮件" },

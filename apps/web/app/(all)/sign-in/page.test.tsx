@@ -287,7 +287,7 @@ describe("SignInPage", () => {
       });
     });
 
-    it("应该跳转到首页（登录成功后）", async () => {
+    it("应该跳转到 Chat 页（登录成功后）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthLogin.mockResolvedValue({
@@ -322,9 +322,9 @@ describe("SignInPage", () => {
       // 等待导航被调用（登录成功后有 2 秒延迟，所以需要等待更长时间）
       await waitFor(
         () => {
-          expect(mockNavigateFn).toHaveBeenCalledWith("/", { replace: true });
+          expect(mockNavigateFn).toHaveBeenCalledWith("/chat", { replace: true });
         },
-        { timeout: 3000 }, // 增加超时时间以等待 setTimeout 完成
+        { timeout: 5000 }, // 增加超时时间以等待 setTimeout 完成
       );
     });
 

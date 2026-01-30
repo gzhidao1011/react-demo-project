@@ -1,10 +1,10 @@
-import { MicrophoneIcon, PaperClipIcon } from "@heroicons/react/16/solid"
-import { Button } from "@repo/ui"
-import type { SuggestedPrompt } from "../lib/chat.types"
+import { MicrophoneIcon, PaperClipIcon } from "@heroicons/react/16/solid";
+import { Button } from "@repo/ui";
+import type { SuggestedPrompt } from "../lib/chat.types";
 
 interface ChatWelcomeProps {
-  prompts: SuggestedPrompt[]
-  onPromptSelect: (text: string) => void
+  prompts: SuggestedPrompt[];
+  onPromptSelect: (text: string) => void;
 }
 
 /**
@@ -14,19 +14,12 @@ interface ChatWelcomeProps {
 export function ChatWelcome({ prompts, onPromptSelect }: ChatWelcomeProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
-      <h2 className="text-center text-lg font-medium text-foreground">
-        你好，有什么可以帮助你的？
-      </h2>
+      <h2 className="text-center text-lg font-medium text-foreground">你好，有什么可以帮助你的？</h2>
       {/* 快捷提示词 */}
       {prompts.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2">
           {prompts.map((p) => (
-            <Button
-              key={p.id}
-              type="button"
-              variant="outline"
-              onClick={() => onPromptSelect(p.text)}
-            >
+            <Button key={p.id} type="button" variant="outline" onClick={() => onPromptSelect(p.text)}>
               {p.label}
             </Button>
           ))}
@@ -44,5 +37,5 @@ export function ChatWelcome({ prompts, onPromptSelect }: ChatWelcomeProps) {
         </span>
       </div>
     </div>
-  )
+  );
 }

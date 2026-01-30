@@ -320,7 +320,7 @@ describe("ChatMessage", () => {
     it("消息列表区域应有 role=log 或 aria-live", () => {
       const { container } = render(<ChatMessage message={userMessage} />);
 
-      const region = container.querySelector('[role="log"]') ?? container.querySelector('[aria-live]');
+      const region = container.querySelector('[role="log"]') ?? container.querySelector("[aria-live]");
       expect(region).toBeTruthy();
     });
   });
