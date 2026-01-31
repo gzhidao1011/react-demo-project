@@ -8,7 +8,9 @@
 #   - GitHub: ghcr.io/gzhidao1010
 #
 # 使用方法：
-#   docker-compose -f docker-compose.prod.yml up -d
+#   1. 确保 services/.env 已配置（复制 services/.env.example 为 services/.env 并修改）
+#   2. 发版命令（加载 services/.env 参数）：
+#      docker-compose -f docker-compose.prod.yml --env-file services/.env up -d --build
 #
 # ================================================================
 
@@ -171,6 +173,44 @@ services:
       - microservices-network
     restart: unless-stopped
 
+  # Chat 服务（SSE 流式对话、LLM 对接、会话持久化）
+  # 需在 services/.env 中配置 LLM API Key（DEEPSEEK_API_KEY 或 OPENAI_API_KEY）
+  chat-service:
+    image: ${REGISTRY:-gzhidao1010}/chat-service:${TAG:-latest}
+    build:
+      context: ./services
+      dockerfile: chat-service/Dockerfile
+    container_name: chat-service
+    env_file:
+      - ./services/.env
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_SERVER_ADDR=nacos:8848
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=chat_db
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123}
+      - DOCKER_HOST_IP=chat-service
+      - LLM_PROVIDER=${LLM_PROVIDER:-deepseek}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    ports:
+      - "8003:8003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
   api-gateway:
     image: ${REGISTRY:-gzhidao1010}/api-gateway:${TAG:-latest}
     build:
@@ -190,6 +230,8 @@ services:
       user-service:
         condition: service_started
       order-service:
+        condition: service_started
+      chat-service:
         condition: service_started
     networks:
       - microservices-network
