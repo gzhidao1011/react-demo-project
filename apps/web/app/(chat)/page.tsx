@@ -17,12 +17,25 @@ export default function ChatPage() {
   const { conversations, activeId, createConversation, deleteConversation, setActiveId, updateConversationTitle } =
     useConversations();
 
+  const handleChatError = useCallback((err: Error) => {
+    console.error("[Chat] useChat error:", err);
+  }, []);
+
+  const handleChatFinish = useCallback(
+    (options: { message: { metadata?: { conversationId?: string; conversationTitle?: string } }; messages: unknown[] }) => {
+      const meta = options.message?.metadata;
+      if (meta?.conversationId && meta?.conversationTitle) {
+        updateConversationTitle(meta.conversationId, meta.conversationTitle);
+      }
+    },
+    [updateConversationTitle],
+  );
+
   const { messages, sendMessage, status, error, stop, regenerate, clearError } = useChatWithConversation({
     conversationId,
     initialMessages: [],
-    onError: (err) => {
-      console.error("[Chat] useChat error:", err);
-    },
+    onError: handleChatError,
+    onFinish: handleChatFinish,
   });
 
   // 发送失败时 Toast 提示（用户可立即得知原因）

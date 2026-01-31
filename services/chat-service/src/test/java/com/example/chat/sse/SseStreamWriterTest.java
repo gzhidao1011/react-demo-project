@@ -136,7 +136,8 @@ class SseStreamWriterTest {
         writer.writeFinish(meta);
 
         String result = out.toString(StandardCharsets.UTF_8);
-        assertTrue(result.contains("data:{\"type\":\"finish\",\"conversationId\":\"conv_123\",\"conversationTitle\":\"测试标题\"}"));
+        assertTrue(result.contains("\"type\":\"finish\""));
+        assertTrue(result.contains("\"messageMetadata\":{\"conversationId\":\"conv_123\",\"conversationTitle\":\"测试标题\"}"));
     }
 
     @Test
@@ -197,6 +198,7 @@ class SseStreamWriterTest {
 
         String result = out.toString(StandardCharsets.UTF_8);
         assertTrue(result.contains("\"type\":\"finish\""));
+        assertTrue(result.contains("\"messageMetadata\""));
         assertTrue(result.contains("\"conversationId\":\"conv_123\""));
         assertTrue(result.contains("\"conversationTitle\":\"测试标题\""));
         assertTrue(result.contains("\"usage\":{\"promptTokens\":10,\"completionTokens\":20,\"totalTokens\":30}"));

@@ -77,7 +77,8 @@ public class SseStreamWriter {
     }
 
     /**
-     * 写入 finish 事件，附带 conversationId、conversationTitle（供前端更新侧边栏）
+     * 写入 finish 事件，附带 messageMetadata（符合 AI SDK Data Stream 协议）
+     * 会话元信息放入 messageMetadata，供前端 useChat 解析并更新侧边栏
      *
      * @param meta 会话元信息，可为 null
      */
@@ -85,18 +86,22 @@ public class SseStreamWriter {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("type", "finish");
         if (meta != null) {
+            Map<String, Object> messageMetadata = new LinkedHashMap<>();
             if (meta.getConversationId() != null) {
-                m.put("conversationId", meta.getConversationId());
+                messageMetadata.put("conversationId", meta.getConversationId());
             }
             if (meta.getConversationTitle() != null) {
-                m.put("conversationTitle", meta.getConversationTitle());
+                messageMetadata.put("conversationTitle", meta.getConversationTitle());
             }
             if (meta.getUsage() != null) {
                 Map<String, Object> usage = new LinkedHashMap<>();
                 usage.put("promptTokens", meta.getUsage().getPromptTokens());
                 usage.put("completionTokens", meta.getUsage().getCompletionTokens());
                 usage.put("totalTokens", meta.getUsage().getTotalTokens());
-                m.put("usage", usage);
+                messageMetadata.put("usage", usage);
+            }
+            if (!messageMetadata.isEmpty()) {
+                m.put("messageMetadata", messageMetadata);
             }
         }
         writeJson(m);
