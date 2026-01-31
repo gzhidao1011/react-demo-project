@@ -87,14 +87,14 @@ jobs:
 
       # 9. 启动微服务测试所需基础设施（MySQL、Redis）
       - name: Start infra for microservices tests
-        run: docker-compose up -d mysql redis
+        run: docker compose up -d mysql redis
 
       # 10. 等待基础设施就绪
       - name: Wait for infra
         run: |
           echo "Waiting for MySQL and Redis..."
           sleep 15
-          docker-compose ps mysql redis
+          docker compose ps mysql redis
 
       # 11. 运行微服务测试
       - name: Run microservices tests
