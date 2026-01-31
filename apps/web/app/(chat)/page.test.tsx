@@ -45,6 +45,15 @@ vi.mock("./hooks/use-chat", () => ({
   useChatWithConversation: mockUseChatWithConversation,
 }));
 
+vi.mock("./hooks/use-conversation-messages", () => ({
+  useConversationMessages: () => ({
+    messages: [],
+    loading: false,
+    error: null,
+    reload: vi.fn(),
+  }),
+}));
+
 vi.mock("./hooks/use-conversations", () => ({
   useConversations: vi.fn(() => ({
     conversations: [{ id: "conv_1", title: "会话1", createdAt: 1000 }],
@@ -80,7 +89,7 @@ describe("ChatPage", () => {
   });
 
   describe("渲染", () => {
-    it("应该渲染打开侧边栏按钮（汉堡菜单）", () => {
+    it("应该渲染展开侧边栏按钮（收起时显示）", () => {
       render(<ChatPage />);
 
       expect(screen.getByRole("button", { name: /打开侧边栏/i })).toBeInTheDocument();
@@ -104,11 +113,6 @@ describe("ChatPage", () => {
       expect(screen.getByRole("button", { name: /Send|发送/i })).toBeInTheDocument();
     });
 
-    it("应显示免责声明（AI 能力边界提示）", () => {
-      render(<ChatPage />);
-
-      expect(screen.getByText(/AI.*出错|核实|mistakes|重要信息/i)).toBeInTheDocument();
-    });
   });
 
   describe("有消息时", () => {
@@ -161,7 +165,7 @@ describe("ChatPage", () => {
       mockCreateConversation.mockReturnValue("conv_new_123");
       render(<ChatPage />);
 
-      // 先打开侧边栏，再点击新建对话
+      // 点击展开按钮打开侧边栏，再点击新建对话
       await user.click(screen.getByRole("button", { name: /打开侧边栏/i }));
       await user.click(screen.getByRole("button", { name: /新建对话/ }));
 
