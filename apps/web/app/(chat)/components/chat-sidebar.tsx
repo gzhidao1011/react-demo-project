@@ -12,8 +12,8 @@ import {
   cn,
   Input,
 } from "@repo/ui";
-import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
 import type { KeyboardEvent, MouseEvent, RefObject } from "react";
+import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
 import type { Conversation } from "../lib/chat.types";
 
 const EMPTY_LIST_MSG = "No conversations yet";

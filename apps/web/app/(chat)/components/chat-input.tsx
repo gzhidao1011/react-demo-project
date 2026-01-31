@@ -1,7 +1,7 @@
 import { PaperClipIcon } from "@heroicons/react/16/solid";
 import { Button, cn, Textarea } from "@repo/ui";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, ClipboardEvent, DragEvent, KeyboardEvent, RefObject } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 interface ChatInputProps {
   value: string;

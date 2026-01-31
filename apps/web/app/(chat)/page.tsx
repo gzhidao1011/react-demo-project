@@ -1,7 +1,7 @@
 import { Bars3Icon } from "@heroicons/react/16/solid";
 import { Button } from "@repo/ui";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ChatContent, ChatSidebar } from "./components";
 import { useConversationMessages } from "./hooks/use-conversation-messages";

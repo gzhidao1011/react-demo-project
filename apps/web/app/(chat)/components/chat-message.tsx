@@ -6,8 +6,8 @@ import {
   PencilSquareIcon,
 } from "@heroicons/react/16/solid";
 import { Button, cn } from "@repo/ui";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 
 const PROSE_CLASSES =
   "prose prose-sm dark:prose-invert max-w-none [&_pre]:rounded [&_pre]:bg-muted [&_pre]:p-2 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1";

@@ -1,7 +1,7 @@
 import { toast } from "@repo/propel";
 import { Button } from "@repo/ui";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChatWithConversation } from "../hooks/use-chat";
 import type { InitialMessage } from "../hooks/use-conversation-messages";
 import { formatDateSeparator } from "../lib/format-time";
