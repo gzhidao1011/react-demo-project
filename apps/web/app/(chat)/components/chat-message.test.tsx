@@ -109,7 +109,7 @@ describe("ChatMessage", () => {
     it("AI 消息应显示复制按钮", () => {
       render(<ChatMessage message={assistantMessage} onCopy={vi.fn()} />);
 
-      expect(screen.getByRole("button", { name: /复制/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Copy/i })).toBeInTheDocument();
     });
 
     it("点击复制应调用 onCopy 并传入消息文本", async () => {
@@ -117,7 +117,7 @@ describe("ChatMessage", () => {
       const onCopy = vi.fn();
       render(<ChatMessage message={assistantMessage} onCopy={onCopy} />);
 
-      await user.click(screen.getByRole("button", { name: /复制/ }));
+      await user.click(screen.getByRole("button", { name: /Copy/i }));
 
       expect(onCopy).toHaveBeenCalledWith("你好！有什么可以帮助你的？");
     });
@@ -125,7 +125,7 @@ describe("ChatMessage", () => {
     it("无 onCopy 时不应显示复制按钮", () => {
       render(<ChatMessage message={assistantMessage} />);
 
-      expect(screen.queryByRole("button", { name: /复制/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Copy/i })).not.toBeInTheDocument();
     });
   });
 
@@ -133,21 +133,21 @@ describe("ChatMessage", () => {
     it("AI 消息有 onFeedback 时应显示点赞和点踩按钮", () => {
       render(<ChatMessage message={assistantMessage} onFeedback={vi.fn()} />);
 
-      expect(screen.getByRole("button", { name: /点赞|好评|up/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /点踩|差评|down/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Like" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Dislike" })).toBeInTheDocument();
     });
 
     it("无 onFeedback 时不应显示反馈按钮", () => {
       render(<ChatMessage message={assistantMessage} />);
 
-      expect(screen.queryByRole("button", { name: /点赞|好评|up/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /点踩|差评|down/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Like" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Dislike" })).not.toBeInTheDocument();
     });
 
     it("用户消息不应显示反馈按钮", () => {
       render(<ChatMessage message={userMessage} onFeedback={vi.fn()} />);
 
-      expect(screen.queryByRole("button", { name: /点赞|好评|up/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Like" })).not.toBeInTheDocument();
     });
 
     it("点击点赞应调用 onFeedback 并传入 up", async () => {
@@ -155,7 +155,7 @@ describe("ChatMessage", () => {
       const onFeedback = vi.fn();
       render(<ChatMessage message={assistantMessage} onFeedback={onFeedback} />);
 
-      await user.click(screen.getByRole("button", { name: /点赞|好评|up/i }));
+      await user.click(screen.getByRole("button", { name: "Like" }));
 
       expect(onFeedback).toHaveBeenCalledWith("msg_2", "up");
     });
@@ -165,7 +165,7 @@ describe("ChatMessage", () => {
       const onFeedback = vi.fn();
       render(<ChatMessage message={assistantMessage} onFeedback={onFeedback} />);
 
-      await user.click(screen.getByRole("button", { name: /点踩|差评|down/i }));
+      await user.click(screen.getByRole("button", { name: "Dislike" }));
 
       expect(onFeedback).toHaveBeenCalledWith("msg_2", "down");
     });
@@ -291,15 +291,15 @@ describe("ChatMessage", () => {
 
       render(<ChatMessage message={messageWithUsage} />);
 
-      expect(screen.getByLabelText("Token 用量")).toBeInTheDocument();
-      expect(screen.getByText("输入 100")).toBeInTheDocument();
-      expect(screen.getByText("输出 50")).toBeInTheDocument();
+      expect(screen.getByLabelText("Token usage")).toBeInTheDocument();
+      expect(screen.getByText("Input 100")).toBeInTheDocument();
+      expect(screen.getByText("Output 50")).toBeInTheDocument();
     });
 
     it("无 metadata 或 usage 时不应显示 Token 用量", () => {
       render(<ChatMessage message={assistantMessage} />);
 
-      expect(screen.queryByLabelText("Token 用量")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Token usage")).not.toBeInTheDocument();
     });
 
     it("用户消息不应显示 Token 用量（即使用户消息有 metadata）", () => {
@@ -312,7 +312,7 @@ describe("ChatMessage", () => {
 
       render(<ChatMessage message={userMsgWithMeta} />);
 
-      expect(screen.queryByLabelText("Token 用量")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Token usage")).not.toBeInTheDocument();
     });
   });
 

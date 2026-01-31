@@ -27,7 +27,7 @@ describe("ChatSidebar", () => {
     it("应该渲染新建对话按钮", () => {
       render(<ChatSidebar {...defaultProps} />);
 
-      expect(screen.getByRole("button", { name: /新建|新对话/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /New chat/i })).toBeInTheDocument();
     });
 
     it("应该渲染会话列表", () => {
@@ -50,7 +50,7 @@ describe("ChatSidebar", () => {
       const onNewChat = vi.fn();
       render(<ChatSidebar {...defaultProps} onNewChat={onNewChat} />);
 
-      await user.click(screen.getByRole("button", { name: /新建|新对话/ }));
+      await user.click(screen.getByRole("button", { name: /New chat/i }));
 
       expect(onNewChat).toHaveBeenCalledTimes(1);
     });
@@ -70,8 +70,10 @@ describe("ChatSidebar", () => {
       const onDeleteConversation = vi.fn();
       render(<ChatSidebar {...defaultProps} onDeleteConversation={onDeleteConversation} />);
 
-      const deleteButtons = screen.getAllByRole("button", { name: /删除/ });
+      const deleteButtons = screen.getAllByRole("button", { name: /Delete/i });
       await user.click(deleteButtons[0]);
+      // 删除确认弹窗：点击 Delete 确认
+      await user.click(screen.getByRole("button", { name: /^Delete$/ }));
 
       expect(onDeleteConversation).toHaveBeenCalledWith("conv_1");
     });
@@ -82,14 +84,14 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       render(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名|编辑/ });
+      const editButtons = screen.getAllByRole("button", { name: /Rename/i });
       expect(editButtons.length).toBeGreaterThanOrEqual(1);
     });
 
     it("无 onRenameConversation 时不应显示编辑按钮", () => {
       render(<ChatSidebar {...defaultProps} />);
 
-      expect(screen.queryByRole("button", { name: /重命名|编辑/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Rename/i })).not.toBeInTheDocument();
     });
 
     it("点击编辑应进入编辑模式并显示输入框", async () => {
@@ -97,7 +99,7 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       render(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名|编辑/ });
+      const editButtons = screen.getAllByRole("button", { name: /Rename/i });
       await user.click(editButtons[0]);
 
       const input = screen.getByDisplayValue("会话1");
@@ -109,7 +111,7 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       render(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名|编辑/ });
+      const editButtons = screen.getAllByRole("button", { name: /Rename/i });
       await user.click(editButtons[0]);
 
       const input = screen.getByDisplayValue("会话1");
@@ -125,7 +127,7 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       render(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名|编辑/ });
+      const editButtons = screen.getAllByRole("button", { name: /Rename/i });
       await user.click(editButtons[0]);
 
       const input = screen.getByDisplayValue("会话1");
@@ -141,7 +143,7 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       render(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名|编辑/ });
+      const editButtons = screen.getAllByRole("button", { name: /Rename/i });
       await user.click(editButtons[0]);
 
       const input = screen.getByDisplayValue("会话1");
@@ -157,13 +159,13 @@ describe("ChatSidebar", () => {
       const onClose = vi.fn();
       render(<ChatSidebar {...defaultProps} overlay onClose={onClose} />);
 
-      expect(screen.getByRole("button", { name: /关闭侧边栏/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Close sidebar/i })).toBeInTheDocument();
     });
 
     it("无 onClose 时不应显示关闭按钮", () => {
       render(<ChatSidebar {...defaultProps} />);
 
-      expect(screen.queryByRole("button", { name: /关闭侧边栏/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Close sidebar/i })).not.toBeInTheDocument();
     });
 
     it("点击关闭按钮应调用 onClose", async () => {
@@ -171,7 +173,7 @@ describe("ChatSidebar", () => {
       const onClose = vi.fn();
       render(<ChatSidebar {...defaultProps} overlay onClose={onClose} />);
 
-      await user.click(screen.getByRole("button", { name: /关闭侧边栏/i }));
+      await user.click(screen.getByRole("button", { name: /Close sidebar/i }));
 
       expect(onClose).toHaveBeenCalledTimes(1);
     });
@@ -194,7 +196,7 @@ describe("ChatSidebar", () => {
       const onClose = vi.fn();
       render(<ChatSidebar {...defaultProps} overlay onClose={onClose} onNewChat={onNewChat} />);
 
-      await user.click(screen.getByRole("button", { name: /新建|新对话/ }));
+      await user.click(screen.getByRole("button", { name: /New chat/i }));
 
       expect(onNewChat).toHaveBeenCalledTimes(1);
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -207,7 +209,7 @@ describe("ChatSidebar", () => {
       render(<ChatSidebar {...defaultProps} />);
 
       await user.tab();
-      expect(screen.getByRole("button", { name: /新建|新对话/ })).toHaveFocus();
+      expect(screen.getByRole("button", { name: /New chat/i })).toHaveFocus();
     });
   });
 });

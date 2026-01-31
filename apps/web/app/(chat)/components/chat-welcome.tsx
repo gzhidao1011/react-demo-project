@@ -15,9 +15,7 @@ export function ChatWelcome({ prompts, onPromptSelect }: ChatWelcomeProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12">
       <div className="mx-auto max-w-3xl w-full flex flex-col items-center gap-8">
-        <h2 className="text-center text-xl font-medium text-foreground">
-          What can I help you with today?
-        </h2>
+        <h2 className="text-center text-xl font-medium text-foreground">What can I help you with today?</h2>
         {/* 快捷提示词（ChatGPT/Claude 风格） */}
         {prompts.length > 0 && (
           <div className="flex flex-wrap justify-center gap-2">

@@ -11,6 +11,12 @@ export interface InitialMessage {
 /**
  * 从后端加载会话历史消息
  * 用于刷新后恢复聊天记录
+ *
+ * @param conversationId - 会话 ID，null 时清空并停止加载
+ * @returns messages - 消息列表（InitialMessage 格式）
+ * @returns loading - 是否加载中
+ * @returns error - 加载错误
+ * @returns reload - 重新加载当前会话
  */
 export function useConversationMessages(conversationId: string | null) {
   const [messages, setMessages] = useState<InitialMessage[]>([]);

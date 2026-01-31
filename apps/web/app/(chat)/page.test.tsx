@@ -92,7 +92,7 @@ describe("ChatPage", () => {
     it("应该渲染展开侧边栏按钮（收起时显示）", () => {
       render(<ChatPage />);
 
-      expect(screen.getByRole("button", { name: /打开侧边栏/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Open sidebar/i })).toBeInTheDocument();
     });
 
     it("应该渲染欢迎区域（无消息时）", () => {
@@ -112,7 +112,6 @@ describe("ChatPage", () => {
 
       expect(screen.getByRole("button", { name: /Send|发送/i })).toBeInTheDocument();
     });
-
   });
 
   describe("有消息时", () => {
@@ -166,8 +165,8 @@ describe("ChatPage", () => {
       render(<ChatPage />);
 
       // 点击展开按钮打开侧边栏，再点击新建对话
-      await user.click(screen.getByRole("button", { name: /打开侧边栏/i }));
-      await user.click(screen.getByRole("button", { name: /新建对话/ }));
+      await user.click(screen.getByRole("button", { name: /Open sidebar/i }));
+      await user.click(screen.getByRole("button", { name: /New chat/i }));
 
       expect(mockCreateConversation).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith("/chat/conv_new_123", { replace: true });

@@ -17,9 +17,7 @@ export interface ChatMessageDTO {
  * 后端直接返回 List<MessageDTO>，无 code/message 包装
  * 404 时返回空数组（会话尚未在后端创建）
  */
-export async function chatGetConversationMessages(
-  conversationId: string,
-): Promise<ChatMessageDTO[]> {
+export async function chatGetConversationMessages(conversationId: string): Promise<ChatMessageDTO[]> {
   try {
     const response: AxiosResponse<ChatMessageDTO[]> = await apiService.get<ChatMessageDTO[]>(
       `/chat/conversations/${conversationId}/messages`,

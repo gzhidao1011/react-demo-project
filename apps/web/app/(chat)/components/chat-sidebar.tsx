@@ -1,7 +1,33 @@
 import { MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon, XMarkIcon } from "@heroicons/react/16/solid";
-import { Button, Input } from "@repo/ui";
-import { useCallback, useMemo, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  cn,
+  Input,
+} from "@repo/ui";
+import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
+import type { KeyboardEvent, MouseEvent, RefObject } from "react";
 import type { Conversation } from "../lib/chat.types";
+
+const EMPTY_LIST_MSG = "No conversations yet";
+const EMPTY_LIST_HINT = 'Click "New chat" above to get started';
+const NO_MATCH_MSG = "No matching conversations";
+const ALERT_DELETE_TITLE = "Delete conversation?";
+const ALERT_DELETE_DESC =
+  "This action cannot be undone. The conversation and all its messages will be permanently removed.";
+const ALERT_CANCEL = "Cancel";
+const ALERT_DELETE = "Delete";
+const SEARCH_PLACEHOLDER = "Search conversations...";
+const NEW_CHAT = "New chat";
+const CLOSE_SIDEBAR = "Close sidebar";
+const ASIDE_BASE = "flex flex-col border-r border-border bg-muted";
 
 interface ChatSidebarProps {
   conversations: Conversation[];
@@ -14,14 +40,14 @@ interface ChatSidebarProps {
   overlay?: boolean;
   onClose?: () => void;
   /** 关闭按钮 ref（用于焦点管理） */
-  closeButtonRef?: React.RefObject<HTMLButtonElement | null>;
+  closeButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
 /**
  * 侧边栏：新建对话、会话列表、会话重命名
- * 支持浮动/抽屉模式（参考 ChatGPT 2024 设计）
+ * 支持 overlay 模式（参考 ChatGPT/Claude 主流交互）
  */
-export function ChatSidebar({
+export const ChatSidebar = memo(function ChatSidebar({
   conversations,
   activeId,
   onNewChat,
@@ -35,12 +61,14 @@ export function ChatSidebar({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const filteredConversations = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = deferredSearchQuery.trim().toLowerCase();
     if (!q) return conversations;
     return conversations.filter((c) => c.title.toLowerCase().includes(q));
-  }, [conversations, searchQuery]);
+  }, [conversations, deferredSearchQuery]);
 
   const startEdit = useCallback((conv: Conversation) => {
     setEditingId(conv.id);
@@ -64,7 +92,7 @@ export function ChatSidebar({
   );
 
   const handleEditKeyDown = useCallback(
-    (e: React.KeyboardEvent, id: string) => {
+    (e: KeyboardEvent<HTMLInputElement>, id: string) => {
       if (e.key === "Enter") {
         e.preventDefault();
         saveEdit(id);
@@ -89,9 +117,34 @@ export function ChatSidebar({
     onClose?.();
   }, [onNewChat, onClose]);
 
-  const asideClasses = overlay
-    ? "flex h-full w-full flex-col border-r border-border bg-muted shadow-xl"
-    : "flex w-64 shrink-0 flex-col border-r border-border bg-muted";
+  const handleRenameClick = useCallback(
+    (e: MouseEvent, conv: Conversation) => {
+      e.stopPropagation();
+      startEdit(conv);
+    },
+    [startEdit],
+  );
+
+  const handleDeleteClick = useCallback((e: MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleteConfirmId(id);
+  }, []);
+
+  const handleAlertOpenChange = useCallback((open: boolean) => {
+    if (!open) setDeleteConfirmId(null);
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (deleteConfirmId) {
+      onDeleteConversation(deleteConfirmId);
+      setDeleteConfirmId(null);
+    }
+  }, [deleteConfirmId, onDeleteConversation]);
+
+  const asideClasses = useMemo(
+    () => (overlay ? `${ASIDE_BASE} h-full w-full shadow-xl` : `${ASIDE_BASE} w-64 shrink-0`),
+    [overlay],
+  );
 
   return (
     <aside className={asideClasses}>
@@ -104,7 +157,7 @@ export function ChatSidebar({
             size="icon-sm"
             onClick={onClose}
             className="rounded p-1.5 text-muted-foreground hover:bg-card hover:text-foreground"
-            aria-label="关闭侧边栏"
+            aria-label={CLOSE_SIDEBAR}
           >
             <XMarkIcon className="h-5 w-5" />
           </Button>
@@ -115,10 +168,10 @@ export function ChatSidebar({
           size="default"
           onClick={handleNewChatClick}
           className="flex flex-1 items-center justify-start gap-2 px-3 py-2"
-          aria-label="新建对话"
+          aria-label={NEW_CHAT}
         >
           <PlusIcon className="h-5 w-5" />
-          新建对话
+          {NEW_CHAT}
         </Button>
       </div>
       {/* 会话搜索（有会话时显示） */}
@@ -133,24 +186,24 @@ export function ChatSidebar({
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索会话..."
+              placeholder={SEARCH_PLACEHOLDER}
               className="h-9 w-full pl-8"
-              aria-label="搜索会话"
+              aria-label="Search conversations"
             />
           </div>
         </div>
       )}
-      <nav className="flex-1 overflow-y-auto p-2" aria-label="会话列表">
+      <nav className="flex-1 overflow-y-auto p-2" aria-label="Conversation list">
         {filteredConversations.length === 0 ? (
           <p className="px-3 py-4 text-center text-sm text-muted-foreground">
             {conversations.length === 0 ? (
               <>
-                暂无对话
+                {EMPTY_LIST_MSG}
                 <br />
-                <span className="text-xs">点击上方「新建对话」开始</span>
+                <span className="text-xs">{EMPTY_LIST_HINT}</span>
               </>
             ) : (
-              <>未找到匹配的会话</>
+              <>{NO_MATCH_MSG}</>
             )}
           </p>
         ) : (
@@ -158,9 +211,7 @@ export function ChatSidebar({
             {filteredConversations.map((conv) => (
               <div
                 key={conv.id}
-                className={`group flex items-center gap-2 rounded-lg px-3 py-2 ${
-                  activeId === conv.id ? "bg-card" : ""
-                }`}
+                className={cn("group flex items-center gap-2 rounded-lg px-3 py-2", activeId === conv.id && "bg-card")}
               >
                 {editingId === conv.id ? (
                   <Input
@@ -170,7 +221,7 @@ export function ChatSidebar({
                     onKeyDown={(e) => handleEditKeyDown(e, conv.id)}
                     onBlur={() => saveEdit(conv.id)}
                     className="min-w-0 flex-1"
-                    aria-label="编辑会话标题"
+                    aria-label="Edit conversation title"
                     autoFocus
                   />
                 ) : (
@@ -188,11 +239,8 @@ export function ChatSidebar({
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEdit(conv);
-                        }}
-                        aria-label={`重命名 ${conv.title}`}
+                        onClick={(e) => handleRenameClick(e, conv)}
+                        aria-label={`Rename ${conv.title}`}
                         className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-primary group-hover:opacity-100"
                       >
                         <PencilSquareIcon className="h-4 w-4" />
@@ -202,11 +250,8 @@ export function ChatSidebar({
                       type="button"
                       variant="ghost"
                       size="icon-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteConversation(conv.id);
-                      }}
-                      aria-label={`删除 ${conv.title}`}
+                      onClick={(e) => handleDeleteClick(e, conv.id)}
+                      aria-label={`Delete ${conv.title}`}
                       className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
                     >
                       <TrashIcon className="h-4 w-4" />
@@ -218,6 +263,21 @@ export function ChatSidebar({
           </>
         )}
       </nav>
+      {/* 删除确认弹窗（主流交互：防止误删） */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={handleAlertOpenChange}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{ALERT_DELETE_TITLE}</AlertDialogTitle>
+            <AlertDialogDescription>{ALERT_DELETE_DESC}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{ALERT_CANCEL}</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
+              {ALERT_DELETE}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
-}
+});

@@ -26,6 +26,12 @@ export interface UseChatOptions {
 /**
  * 封装 useChat + 会话 ID
  * 配置 JWT 鉴权、conversationId 传递
+ *
+ * @param options.conversationId - 当前会话 ID，用于 body 和 useChat id
+ * @param options.initialMessages - 初始消息（从 useConversationMessages 加载）
+ * @param options.onError - 错误回调，用于调试
+ * @param options.onFinish - 流结束回调，可获取 conversationId/conversationTitle
+ * @returns useChat 返回值（messages, sendMessage, status, error, stop, regenerate, clearError 等）
  */
 export function useChatWithConversation({ conversationId, initialMessages = [], onError, onFinish }: UseChatOptions) {
   const clearErrorRef = useRef<(() => void) | null>(null);

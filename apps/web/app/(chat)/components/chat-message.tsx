@@ -5,8 +5,16 @@ import {
   HandThumbUpIcon,
   PencilSquareIcon,
 } from "@heroicons/react/16/solid";
-import { Button } from "@repo/ui";
-import { useCallback, useRef, useState } from "react";
+import { Button, cn } from "@repo/ui";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+
+const PROSE_CLASSES =
+  "prose prose-sm dark:prose-invert max-w-none [&_pre]:rounded [&_pre]:bg-muted [&_pre]:p-2 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1";
+
+const ACTION_BTN_CLASSES =
+  "absolute -right-2 -top-2 rounded p-1.5 opacity-100 transition-opacity hover:bg-muted md:opacity-0 md:group-hover:opacity-100";
+
 import ReactMarkdown from "react-markdown";
 import type { MessagePart } from "../lib/chat.types";
 import { formatRelativeTime } from "../lib/format-time";
@@ -49,8 +57,99 @@ function getAllText(message: { parts: MessagePart[] }): string {
     .join("");
 }
 
+const THINKING_LABEL = "Thinking";
+
+const ReasoningBlock = memo(function ReasoningBlock({ text }: { text: string }) {
+  return (
+    <details className="text-muted-foreground">
+      <summary className="cursor-pointer select-none text-sm">{THINKING_LABEL}</summary>
+      <pre className="mt-1 whitespace-pre-wrap rounded bg-muted/50 p-2 text-xs">{text}</pre>
+    </details>
+  );
+});
+
+function getSourceLabel(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
+const SourceLink = memo(function SourceLink({ url, title }: { url: string; title?: string }) {
+  const label = title ?? getSourceLabel(url);
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block text-primary underline">
+      [{label}]
+    </a>
+  );
+});
+
+const IMAGE_MIME_PREFIX = "image/";
+const VIEW_ATTACHMENT = "View attachment";
+const IMAGE_ALT = "Attachment";
+
+const FilePart = memo(function FilePart({ url, mimeType }: { url: string; mimeType?: string }) {
+  const isImage = (mimeType ?? "").startsWith(IMAGE_MIME_PREFIX);
+  return (
+    <span className="block">
+      {isImage ? (
+        <img src={url} alt={IMAGE_ALT} className="max-h-48 max-w-full rounded object-contain" />
+      ) : (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+          {VIEW_ATTACHMENT}
+        </a>
+      )}
+    </span>
+  );
+});
+
+const ARIA_COPY_CODE = "Copy code";
+const ARIA_EDIT_MESSAGE = "Edit message";
+const ARIA_COPY = "Copy";
+const ARIA_SENT_AT_PREFIX = "Sent at";
+const FEEDBACK_BTN_CLASSES = "rounded p-1 text-muted-foreground hover:bg-muted hover:text-primary";
+const USAGE_LABEL_INPUT = "Input";
+const USAGE_LABEL_OUTPUT = "Output";
+const USAGE_ARIA = "Token usage";
+
+const UsageDisplay = memo(function UsageDisplay({
+  usage,
+}: {
+  usage?: { inputTokens?: number; outputTokens?: number };
+}) {
+  const hasInput = typeof usage?.inputTokens === "number";
+  const hasOutput = typeof usage?.outputTokens === "number";
+  if (!hasInput && !hasOutput) return null;
+  return (
+    <div className="mt-2 text-xs text-muted-foreground" aria-label={USAGE_ARIA}>
+      {hasInput && (
+        <span>
+          {USAGE_LABEL_INPUT} {usage!.inputTokens}
+        </span>
+      )}
+      {hasInput && hasOutput && " · "}
+      {hasOutput && (
+        <span>
+          {USAGE_LABEL_OUTPUT} {usage!.outputTokens}
+        </span>
+      )}
+    </div>
+  );
+});
+
+const COPIED_TIMEOUT_MS = 2000;
+const CODE_BLOCK_BTN_CLASSES =
+  "absolute right-2 top-2 rounded p-1.5 opacity-100 transition-opacity hover:bg-muted md:opacity-0 md:group-hover/code:opacity-100";
+
 /** 带复制按钮的代码块（用于 Markdown pre） */
-function CodeBlock({ children, onCopy }: { children: React.ReactNode; onCopy?: (text: string) => void }) {
+const CodeBlock = memo(function CodeBlock({
+  children,
+  onCopy,
+}: {
+  children: ReactNode;
+  onCopy?: (text: string) => void;
+}) {
   const preRef = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -59,7 +158,7 @@ function CodeBlock({ children, onCopy }: { children: React.ReactNode; onCopy?: (
     if (text && onCopy) {
       onCopy(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), COPIED_TIMEOUT_MS);
     }
   }, [onCopy]);
 
@@ -74,96 +173,114 @@ function CodeBlock({ children, onCopy }: { children: React.ReactNode; onCopy?: (
           variant="ghost"
           size="icon-xs"
           onClick={handleCopy}
-          className="absolute right-2 top-2 rounded p-1.5 opacity-100 transition-opacity hover:bg-muted md:opacity-0 md:group-hover/code:opacity-100"
-          aria-label="复制代码"
+          className={CODE_BLOCK_BTN_CLASSES}
+          aria-label={ARIA_COPY_CODE}
         >
           {copied ? <CheckIcon className="h-4 w-4 text-primary" /> : <ClipboardDocumentIcon className="h-4 w-4" />}
         </Button>
       )}
     </div>
   );
-}
+});
+
+const MarkdownContent = memo(function MarkdownContent({
+  text,
+  onCopy,
+}: {
+  text: string;
+  onCopy?: (text: string) => void;
+}) {
+  return (
+    <span className={PROSE_CLASSES}>
+      <ReactMarkdown
+        components={{
+          pre: ({ children }) => <CodeBlock onCopy={onCopy}>{children}</CodeBlock>,
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </span>
+  );
+});
+
+const FeedbackButtons = memo(function FeedbackButtons({
+  messageId,
+  onFeedback,
+}: {
+  messageId: string;
+  onFeedback: (messageId: string, direction: "up" | "down") => void;
+}) {
+  return (
+    <div className="mt-2 flex gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        onClick={() => onFeedback(messageId, "up")}
+        className={FEEDBACK_BTN_CLASSES}
+        aria-label="Like"
+      >
+        <HandThumbUpIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        onClick={() => onFeedback(messageId, "down")}
+        className={FEEDBACK_BTN_CLASSES}
+        aria-label="Dislike"
+      >
+        <HandThumbDownIcon className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+});
 
 /**
  * 单条消息（用户/AI）
  * 用户消息右对齐、主色背景、纯文本；AI 消息左对齐、muted 背景、支持 Markdown
  */
-export function ChatMessage({ message, createdAt, onCopy, onFeedback, onEdit }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({
+  message,
+  createdAt,
+  onCopy,
+  onFeedback,
+  onEdit,
+}: ChatMessageProps) {
   const isUser = message.role === "user";
   const textContent = getAllText(message);
   const showMarkdown = !isUser && textContent.length > 0;
+  const relativeTime = useMemo(() => (createdAt !== undefined ? formatRelativeTime(createdAt) : null), [createdAt]);
 
   return (
     <div
       data-role={message.role}
       role="log"
       aria-live="polite"
-      className={`group flex w-full ${isUser ? "justify-end" : "justify-start"} px-4 py-2`}
+      className={cn("group flex w-full px-4 py-2", isUser ? "justify-end" : "justify-start")}
     >
       <div
-        className={`relative max-w-[85%] rounded-lg px-4 py-2.5 ${
-          isUser ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-        }`}
+        className={cn(
+          "relative max-w-[85%] rounded-lg px-4 py-2.5",
+          isUser ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+        )}
       >
         {message.parts.map((part, index) => {
           const text = getTextContent(part);
           if (part.type === "reasoning" && part.text) {
-            return (
-              <details key={`${message.id}-reasoning-${index}`} className="text-muted-foreground">
-                <summary className="cursor-pointer select-none text-sm">Thinking</summary>
-                <pre className="mt-1 whitespace-pre-wrap rounded bg-muted/50 p-2 text-xs">{part.text}</pre>
-              </details>
-            );
+            return <ReasoningBlock key={`${message.id}-reasoning-${index}`} text={part.text} />;
           }
           if (part.type === "source-url" && part.url) {
-            const label =
-              part.title ??
-              (() => {
-                try {
-                  return new URL(part.url).hostname;
-                } catch {
-                  return part.url;
-                }
-              })();
-            return (
-              <a
-                key={`${message.id}-source-${index}`}
-                href={part.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block text-primary underline"
-              >
-                [{label}]
-              </a>
-            );
+            return <SourceLink key={`${message.id}-source-${index}`} url={part.url} title={part.title} />;
           }
           if (part.type === "file" && part.url) {
-            const isImage = (part.mimeType ?? "").startsWith("image/");
-            return (
-              <span key={`${message.id}-file-${index}`} className="block">
-                {isImage ? (
-                  <img src={part.url} alt="附件图片" className="max-h-48 max-w-full rounded object-contain" />
-                ) : (
-                  <a href={part.url} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                    查看附件
-                  </a>
-                )}
-              </span>
-            );
+            return <FilePart key={`${message.id}-file-${index}`} url={part.url} mimeType={part.mimeType} />;
           }
           if (text) {
             return (
               <span key={`${message.id}-${index}`} className="block">
                 {showMarkdown ? (
-                  <span className="prose prose-sm dark:prose-invert max-w-none [&_pre]:rounded [&_pre]:bg-muted [&_pre]:p-2 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1">
-                    <ReactMarkdown
-                      components={{
-                        pre: ({ children }) => <CodeBlock onCopy={onCopy}>{children}</CodeBlock>,
-                      }}
-                    >
-                      {text}
-                    </ReactMarkdown>
-                  </span>
+                  <MarkdownContent text={text} onCopy={onCopy} />
                 ) : (
                   <span className="whitespace-pre-wrap">{text}</span>
                 )}
@@ -178,8 +295,8 @@ export function ChatMessage({ message, createdAt, onCopy, onFeedback, onEdit }: 
             variant="ghost"
             size="icon-xs"
             onClick={() => onEdit(textContent)}
-            className="absolute -right-2 -top-2 rounded p-1.5 opacity-100 transition-opacity hover:bg-muted md:opacity-0 md:group-hover:opacity-100"
-            aria-label="编辑消息"
+            className={ACTION_BTN_CLASSES}
+            aria-label={ARIA_EDIT_MESSAGE}
           >
             <PencilSquareIcon className="h-4 w-4" />
           </Button>
@@ -190,59 +307,23 @@ export function ChatMessage({ message, createdAt, onCopy, onFeedback, onEdit }: 
             variant="ghost"
             size="icon-xs"
             onClick={() => onCopy(textContent)}
-            className="absolute -right-2 -top-2 rounded p-1.5 opacity-100 transition-opacity hover:bg-muted md:opacity-0 md:group-hover:opacity-100"
-            aria-label="复制"
+            className={ACTION_BTN_CLASSES}
+            aria-label={ARIA_COPY}
           >
             <ClipboardDocumentIcon className="h-4 w-4" />
           </Button>
         )}
-        {!isUser && onFeedback && textContent && (
-          <div className="mt-2 flex gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => onFeedback(message.id, "up")}
-              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-primary"
-              aria-label="点赞"
-            >
-              <HandThumbUpIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => onFeedback(message.id, "down")}
-              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-primary"
-              aria-label="点踩"
-            >
-              <HandThumbDownIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-        {createdAt !== undefined && (
+        {!isUser && onFeedback && textContent && <FeedbackButtons messageId={message.id} onFeedback={onFeedback} />}
+        {relativeTime !== null && (
           <div
-            className={`mt-1.5 text-[10px] text-muted-foreground ${isUser ? "text-right" : ""}`}
-            aria-label={`发送时间：${formatRelativeTime(createdAt)}`}
+            className={cn("mt-1.5 text-[10px] text-muted-foreground", isUser && "text-right")}
+            aria-label={`${ARIA_SENT_AT_PREFIX} ${relativeTime}`}
           >
-            {formatRelativeTime(createdAt)}
+            {relativeTime}
           </div>
         )}
-        {!isUser &&
-          (() => {
-            const usage = message.metadata?.usage;
-            const hasInput = typeof usage?.inputTokens === "number";
-            const hasOutput = typeof usage?.outputTokens === "number";
-            if (!hasInput && !hasOutput) return null;
-            return (
-              <div className="mt-2 text-xs text-muted-foreground" aria-label="Token 用量">
-                {hasInput && <span>输入 {usage!.inputTokens}</span>}
-                {hasInput && hasOutput && " · "}
-                {hasOutput && <span>输出 {usage!.outputTokens}</span>}
-              </div>
-            );
-          })()}
+        {!isUser && <UsageDisplay usage={message.metadata?.usage} />}
       </div>
     </div>
   );
-}
+});
