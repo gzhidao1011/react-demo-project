@@ -23,7 +23,8 @@ export default function ChatPage() {
 
   const handleChatFinish = useCallback(
     (options: { message?: unknown; messages?: unknown[] }) => {
-      const meta = (options?.message as { metadata?: { conversationId?: string; conversationTitle?: string } })?.metadata;
+      const meta = (options?.message as { metadata?: { conversationId?: string; conversationTitle?: string } })
+        ?.metadata;
       if (meta?.conversationId && meta?.conversationTitle) {
         updateConversationTitle(meta.conversationId, meta.conversationTitle);
       }
