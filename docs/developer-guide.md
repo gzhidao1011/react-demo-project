@@ -63,6 +63,17 @@ pnpm dev:infra              # 启动基础设施（MySQL、Redis、Nacos、Senti
 docker-compose up -d        # 启动所有服务
 ```
 
+### 提交前检查（prepush）
+
+`git push` 前会自动执行 pre-push 钩子，运行完整检查（类型、lint、format、前端测试、微服务测试）：
+
+```bash
+pnpm prepush                # 完整检查（含微服务，需先 pnpm dev:infra）
+pnpm prepush:frontend       # 仅前端检查（无 Java/Maven 或未启动 infra 时使用）
+```
+
+**微服务测试前置条件**：需先启动 MySQL、Redis（`pnpm dev:infra`），否则 `pnpm services:test` 会失败。仅前端开发时可用 `pnpm prepush:frontend` 后 `git push --no-verify` 跳过钩子。
+
 ## 开发规范
 
 - **代码风格**：TypeScript 严格模式，Prettier 格式化，Biome Lint

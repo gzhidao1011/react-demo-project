@@ -21,6 +21,7 @@ on:
     paths:
       - 'packages/**'
       - 'apps/**'
+      - 'services/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'turbo.json'
@@ -30,6 +31,7 @@ on:
     paths:
       - 'packages/**'
       - 'apps/**'
+      - 'services/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'turbo.json'
@@ -75,12 +77,35 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      # 8. 生成测试覆盖率报告
+      # 8. 设置 Java（微服务测试）
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      # 9. 启动微服务测试所需基础设施（MySQL、Redis）
+      - name: Start infra for microservices tests
+        run: docker-compose up -d mysql redis
+
+      # 10. 等待基础设施就绪
+      - name: Wait for infra
+        run: |
+          echo "Waiting for MySQL and Redis..."
+          sleep 15
+          docker-compose ps mysql redis
+
+      # 11. 运行微服务测试
+      - name: Run microservices tests
+        run: pnpm services:test
+
+      # 12. 生成测试覆盖率报告
       - name: Generate test coverage
         run: pnpm test:coverage
         continue-on-error: true
 
-      # 9. 上传覆盖率报告到 Artifacts
+      # 13. 上传覆盖率报告到 Artifacts
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -90,7 +115,7 @@ jobs:
             **/coverage/**
           retention-days: 30
 
-      # 10. 上传覆盖率报告到 Codecov
+      # 14. 上传覆盖率报告到 Codecov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: always()
@@ -104,7 +129,7 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
-      # 11. 测试摘要
+      # 15. 测试摘要
       - name: Test Summary
         if: always()
         run: |
@@ -113,7 +138,8 @@ jobs:
           echo "### 测试状态" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ 类型检查通过" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ 代码检查通过" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ 测试通过" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 前端测试通过" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 微服务测试通过" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 覆盖率报告" >> $GITHUB_STEP_SUMMARY
           echo "- 📦 覆盖率报告已上传到 [Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
