@@ -19,8 +19,8 @@ export interface UseChatOptions {
   }>;
   /** 错误回调，用于调试（如流结束后仍显示错误时可查看控制台） */
   onError?: (error: Error) => void;
-  /** 流结束时回调，message.metadata 可能包含后端返回的 conversationId、conversationTitle、usage */
-  onFinish?: (options: { message: { metadata?: FinishMessageMetadata }; messages: unknown[] }) => void;
+  /** 流结束时回调，options.message.metadata 可能包含后端返回的 conversationId、conversationTitle、usage */
+  onFinish?: (options: { message?: unknown; messages?: unknown[] }) => void;
 }
 
 /**
