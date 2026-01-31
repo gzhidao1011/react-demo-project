@@ -14,15 +14,21 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * AuthController 集成测试（使用 Docker 部署的 Redis）
+ * AuthController 集成测试（使用 Testcontainers 自包含 Redis）
  *
  * 测试覆盖：
  * - 注册接口（成功、邮箱已存在、密码策略验证）
@@ -30,11 +36,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - 刷新 Token 接口（成功、无效 Token、过期 Token）
  * - 登出接口
  *
- * 运行前请先启动 Redis：docker-compose up -d redis（连接 localhost:6379）
+ * 无需手动启动 Redis，Testcontainers 会在测试时自动启动 Redis 容器
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@Testcontainers
 @TestPropertySource(properties = {
     // 禁用 Nacos 自动配置
     "spring.cloud.nacos.discovery.enabled=false",
@@ -51,10 +58,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "jwt.refresh-token-expiration=604800",
     "jwt.issuer=https://auth.example.com",
     "jwt.audience=api.example.com",
-    // Redis 配置（使用 Docker 部署的 Redis，localhost:6379）
-    "spring.data.redis.host=${REDIS_HOST:localhost}",
-    "spring.data.redis.port=${REDIS_PORT:6379}",
-    "spring.data.redis.password=${REDIS_PASSWORD:}",
+    // Redis host/port 由 @DynamicPropertySource 动态注入
+    "spring.data.redis.password=",
     "spring.data.redis.database=15",
     "spring.data.redis.timeout=2000",
     // 数据库配置（使用 H2 内存数据库）
@@ -64,6 +69,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.sql.init.mode=always"
 })
 class AuthControllerTest {
+
+    @Container
+    static GenericContainer<?> redis =
+            new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+
+    @DynamicPropertySource
+    static void redisProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.redis.host", redis::getHost);
+        registry.add("spring.data.redis.port", () -> String.valueOf(redis.getFirstMappedPort()));
+    }
 
     @Autowired
     private MockMvc mockMvc;

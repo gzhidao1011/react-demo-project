@@ -6,14 +6,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * TokenRotationService 集成测试（使用 Docker 部署的 Redis）
+ * TokenRotationService 集成测试（使用 Testcontainers 自包含 Redis）
  *
  * 测试覆盖：
  * - Token 存储和验证
@@ -21,11 +26,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * - Token 撤销（加入黑名单）
  * - Token 重用检测
  *
- * 运行前请先启动 Redis：docker-compose up -d redis（连接 localhost:6379）
- * 若 Redis 不可用，测试将被跳过
+ * 无需手动启动 Redis，Testcontainers 会在测试时自动启动 Redis 容器
  */
 @SpringBootTest
 @Transactional
+@Testcontainers
 @TestPropertySource(properties = {
     // 禁用 Nacos 自动配置
     "spring.cloud.nacos.discovery.enabled=false",
@@ -42,10 +47,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
     "jwt.refresh-token-expiration=604800",
     "jwt.issuer=https://auth.example.com",
     "jwt.audience=api.example.com",
-    // Redis 配置（使用 Docker 部署的 Redis，localhost:6379）
-    "spring.data.redis.host=${REDIS_HOST:localhost}",
-    "spring.data.redis.port=${REDIS_PORT:6379}",
-    "spring.data.redis.password=${REDIS_PASSWORD:}",
+    // Redis host/port 由 @DynamicPropertySource 动态注入
+    "spring.data.redis.password=",
     "spring.data.redis.database=15",
     "spring.data.redis.timeout=2000",
     // 数据库配置（使用 H2 内存数据库）
@@ -56,13 +59,23 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 })
 class TokenRotationServiceIntegrationTest {
 
-    @Autowired(required = false)
+    @Container
+    static GenericContainer<?> redis =
+            new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+
+    @DynamicPropertySource
+    static void redisProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.redis.host", redis::getHost);
+        registry.add("spring.data.redis.port", () -> String.valueOf(redis.getFirstMappedPort()));
+    }
+
+    @Autowired
     private TokenRotationService tokenRotationService;
-    
-    @Autowired(required = false)
+
+    @Autowired
     private JwtService jwtService;
-    
-    @Autowired(required = false)
+
+    @Autowired
     @Qualifier("stringRedisTemplate")
     private RedisTemplate<String, String> redisTemplate;
 
@@ -73,10 +86,6 @@ class TokenRotationServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // 检查 Redis 是否可用（需先启动 Docker Redis：docker-compose up -d redis）
-        assumeTrue(tokenRotationService != null && redisTemplate != null && jwtService != null,
-            "Redis 不可用，跳过集成测试。请先启动 Docker Redis：docker-compose up -d redis");
-        
         testUserId = "123";
         testDeviceId = "device-123";
         

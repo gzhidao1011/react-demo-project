@@ -9,15 +9,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * RateLimitService 集成测试（使用 Docker 部署的 Redis）
+ * RateLimitService 集成测试（使用 Testcontainers 自包含 Redis）
  *
  * 测试覆盖：
  * - IP 限流：超过限制时抛出异常
@@ -26,10 +31,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * - 限流时间窗口正确设置
  * - 不同 IP 和用户的限流独立
  *
- * 运行前请先启动 Redis：docker-compose up -d redis（连接 localhost:6379）
- * 若 Redis 不可用，测试将被跳过
+ * 无需手动启动 Redis，Testcontainers 会在测试时自动启动 Redis 容器
  */
 @SpringBootTest
+@Testcontainers
 @TestPropertySource(properties = {
     // 禁用 Nacos 自动配置
     "spring.cloud.nacos.discovery.enabled=false",
@@ -38,10 +43,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
     "dubbo.application.name=test",
     "dubbo.registry.address=N/A",
     "dubbo.protocol.port=-1",
-    // Redis 配置（使用 Docker 部署的 Redis，localhost:6379）
-    "spring.data.redis.host=${REDIS_HOST:localhost}",
-    "spring.data.redis.port=${REDIS_PORT:6379}",
-    "spring.data.redis.password=${REDIS_PASSWORD:}",
+    // Redis host/port 由 @DynamicPropertySource 动态注入
+    "spring.data.redis.password=",
     "spring.data.redis.database=15",
     "spring.data.redis.timeout=2000",
     // 限流配置（使用较小的值便于测试）
@@ -57,10 +60,20 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 })
 class RateLimitServiceTest {
 
-    @Autowired(required = false)
+    @Container
+    static GenericContainer<?> redis =
+            new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+
+    @DynamicPropertySource
+    static void redisProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.redis.host", redis::getHost);
+        registry.add("spring.data.redis.port", () -> String.valueOf(redis.getFirstMappedPort()));
+    }
+
+    @Autowired
     private RateLimitService rateLimitService;
 
-    @Autowired(required = false)
+    @Autowired
     @Qualifier("redisTemplate")
     private RedisTemplate<String, String> redisTemplate;
 
@@ -83,10 +96,6 @@ class RateLimitServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 检查 Redis 是否可用
-        assumeTrue(rateLimitService != null && redisTemplate != null,
-            "Redis 不可用，跳过集成测试。请先启动 Docker Redis：docker-compose up -d redis");
-
         // 清理测试数据（确保每次测试前都是干净的环境）
         cleanupTestData();
     }

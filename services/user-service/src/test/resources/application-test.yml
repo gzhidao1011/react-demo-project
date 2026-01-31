@@ -1,6 +1,7 @@
-# 测试环境配置：使用 Docker 部署的 Redis
-# 运行测试前请先启动 Redis：docker-compose up -d redis
-# 本机执行测试时连接 localhost:6379
+# 测试环境配置
+# 依赖 Redis 的集成测试（AuthControllerTest、RateLimitServiceTest、TokenRotationServiceIntegrationTest）
+# 使用 Testcontainers 自动启动 Redis 容器，无需手动启动。
+# 运行测试需确保 Docker 已安装并运行：mvn -f services/pom.xml test -pl user-service
 spring:
   data:
     redis:
