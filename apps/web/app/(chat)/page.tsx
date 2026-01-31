@@ -319,6 +319,8 @@ export default function ChatPage() {
                 aria-live="polite"
                 aria-busy={isStreaming}
               >
+                {/* 消息区域居中，最大宽度与输入框一致（ChatGPT/Claude 风格） */}
+                <div className="mx-auto max-w-3xl">
                 {messages.flatMap((msg, index) => {
                   const ts = messageTimestampsRef.current.get(msg.id);
                   const prevTs = index > 0 ? messageTimestampsRef.current.get(messages[index - 1]!.id) : undefined;
@@ -386,12 +388,12 @@ export default function ChatPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       {isStreaming ? (
                         <Button type="button" variant="outline" size="sm" onClick={stop}>
-                          停止生成
+                          Stop generating
                         </Button>
                       ) : (
                         <>
                           <Button type="button" variant="outline" size="sm" onClick={() => regenerate()}>
-                            重新生成
+                            Regenerate
                           </Button>
                           {/* 建议回复（后续提示词） */}
                           {FOLLOW_UP_PROMPTS.map((p) => (
@@ -412,6 +414,7 @@ export default function ChatPage() {
                   </div>
                 )}
                 <div ref={messagesEndRef} aria-hidden />
+                </div>
               </div>
             )}
             {showScrollToBottom && (
@@ -421,10 +424,10 @@ export default function ChatPage() {
                 size="sm"
                 onClick={scrollToBottom}
                 className="absolute bottom-3 right-4 z-10 flex items-center gap-1 rounded-full shadow-md"
-                aria-label="滚动到底部"
+                aria-label="Scroll to bottom"
               >
                 <ChevronDownIcon className="h-4 w-4" />
-                回到底部
+                Scroll to bottom
               </Button>
             )}
           </div>
@@ -434,28 +437,33 @@ export default function ChatPage() {
             className="flex items-center justify-between gap-3 border-t border-border bg-destructive/10 px-4 py-3 text-sm text-destructive"
             role="alert"
           >
-            <span>出错了，请重试。</span>
+            <span>Something went wrong. Please try again.</span>
             <div className="flex shrink-0 gap-2">
               <Button type="button" variant="destructive" size="sm" onClick={() => regenerate()}>
-                重试
+                Retry
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={clearError}>
-                关闭
+                Dismiss
               </Button>
             </div>
           </div>
         )}
-        <p className="px-4 py-2 text-center text-xs text-muted-foreground" role="note" aria-label="免责声明">
-          AI 可能出错，请核实重要信息。
-        </p>
-        <ChatInput
-          inputRef={inputRef}
-          value={input}
-          onChange={setInput}
-          onSend={handleSend}
-          disabled={isDisabled}
-          placeholder="输入消息...（Enter 发送，Shift+Enter 换行）"
-        />
+        {/* 输入区域：居中布局，符合 ChatGPT/Claude 主流交互（参考 AI Elements） */}
+        <div className="shrink-0 border-t border-border bg-background px-4 py-4 sm:px-6">
+          <div className="mx-auto max-w-3xl">
+            <p className="mb-2 text-center text-xs text-muted-foreground" role="note" aria-label="Disclaimer">
+              AI can make mistakes. Consider checking important information.
+            </p>
+            <ChatInput
+              inputRef={inputRef}
+              value={input}
+              onChange={setInput}
+              onSend={handleSend}
+              disabled={isDisabled}
+              placeholder="Message ChatGPT... (Enter to send, Shift+Enter for new line)"
+            />
+          </div>
+        </div>
       </main>
     </div>
   );

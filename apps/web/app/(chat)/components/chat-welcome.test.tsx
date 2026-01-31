@@ -15,7 +15,7 @@ describe("ChatWelcome", () => {
     it("应该渲染欢迎文案", () => {
       render(<ChatWelcome prompts={defaultPrompts} onPromptSelect={vi.fn()} />);
 
-      expect(screen.getByText(/你好|欢迎|开始/)).toBeInTheDocument();
+      expect(screen.getByText(/What|你好|欢迎|开始/i)).toBeInTheDocument();
     });
 
     it("应该渲染快捷提示词按钮", () => {

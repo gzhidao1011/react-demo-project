@@ -89,19 +89,19 @@ describe("ChatPage", () => {
     it("应该渲染欢迎区域（无消息时）", () => {
       render(<ChatPage />);
 
-      expect(screen.getByText(/你好|欢迎|开始/)).toBeInTheDocument();
+      expect(screen.getByText(/What|你好|欢迎|开始/i)).toBeInTheDocument();
     });
 
     it("应该渲染输入框", () => {
       render(<ChatPage />);
 
-      expect(screen.getByRole("textbox", { name: /输入消息/ })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: /Message|输入消息/i })).toBeInTheDocument();
     });
 
     it("应该渲染发送按钮", () => {
       render(<ChatPage />);
 
-      expect(screen.getByRole("button", { name: /发送/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Send|发送/i })).toBeInTheDocument();
     });
 
     it("应显示免责声明（AI 能力边界提示）", () => {
@@ -130,14 +130,14 @@ describe("ChatPage", () => {
     it("应显示重新生成按钮", () => {
       render(<ChatPage />);
 
-      expect(screen.getByRole("button", { name: /重新生成/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Regenerate|重新生成/i })).toBeInTheDocument();
     });
 
     it("点击重新生成应调用 regenerate", async () => {
       const user = userEvent.setup({ delay: null });
       render(<ChatPage />);
 
-      await user.click(screen.getByRole("button", { name: /重新生成/ }));
+      await user.click(screen.getByRole("button", { name: /Regenerate|重新生成/i }));
 
       expect(mockRegenerate).toHaveBeenCalledTimes(1);
     });
@@ -173,9 +173,9 @@ describe("ChatPage", () => {
       const user = userEvent.setup({ delay: null });
       render(<ChatPage />);
 
-      await user.click(screen.getByRole("button", { name: "写一封邮件" }));
+      await user.click(screen.getByRole("button", { name: "Write an email" }));
 
-      expect(screen.getByRole("textbox")).toHaveValue("帮我写一封邮件");
+      expect(screen.getByRole("textbox")).toHaveValue("Help me write an email");
     });
   });
 });

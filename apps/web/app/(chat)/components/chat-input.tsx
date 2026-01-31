@@ -116,18 +116,19 @@ export function ChatInput({
     [addFiles],
   );
 
+  // AI Elements 风格：圆角容器、居中布局（参考 ChatGPT/Claude）
   return (
     <div
-      className="flex flex-col gap-2 border-t border-border bg-card p-4"
+      className="flex flex-col gap-2 rounded-xl border border-border bg-card shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
       {files.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 px-3 pt-3">
           {files.map((f, i) => (
             <span
               key={`${f.name}-${i}`}
-              className="inline-flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs text-foreground"
+              className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-xs text-foreground"
             >
               {f.name}
               <Button
@@ -136,7 +137,7 @@ export function ChatInput({
                 size="xs"
                 onClick={() => removeFile(i)}
                 className="h-auto min-h-0 w-auto rounded p-0.5 hover:bg-muted-foreground/20"
-                aria-label={`移除 ${f.name}`}
+                aria-label={`Remove ${f.name}`}
               >
                 ×
               </Button>
@@ -144,7 +145,7 @@ export function ChatInput({
           ))}
         </div>
       )}
-      <div className="flex gap-2">
+      <div className="flex items-end gap-2 p-2">
         <input
           ref={fileInputRef}
           type="file"
@@ -156,23 +157,13 @@ export function ChatInput({
         />
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={() => fileInputRef.current?.click()}
-          aria-label="添加图片附件"
+          className="shrink-0 text-muted-foreground hover:text-foreground"
+          aria-label="Add attachments"
         >
           <PaperClipIcon className="h-5 w-5" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          disabled
-          title="语音输入即将推出"
-          aria-label="语音输入（即将推出）"
-          className="cursor-not-allowed opacity-50"
-        >
-          <MicrophoneIcon className="h-5 w-5" />
         </Button>
         <Textarea
           ref={textareaEl}
@@ -182,12 +173,30 @@ export function ChatInput({
           onPaste={handlePaste}
           disabled={disabled}
           placeholder={placeholder}
-          aria-label="输入消息"
+          aria-label="Message"
           rows={1}
-          className={cn("min-h-[40px] max-h-[200px] flex-1 resize-none overflow-y-auto")}
+          className={cn(
+            "min-h-[40px] max-h-[200px] flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-2.5 shadow-none focus-visible:ring-0",
+          )}
         />
-        <Button type="button" variant="default" onClick={handleSubmit} disabled={!canSend} aria-label="发送">
-          发送
+        <Button
+          type="button"
+          variant="default"
+          size="icon"
+          onClick={handleSubmit}
+          disabled={!canSend}
+          className="shrink-0 rounded-lg"
+          aria-label="Send"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="h-5 w-5"
+            aria-hidden
+          >
+            <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+          </svg>
         </Button>
       </div>
     </div>

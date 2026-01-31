@@ -21,14 +21,14 @@ describe("ChatInput", () => {
     it("应该渲染输入框", () => {
       render(<ChatInput {...defaultProps} />);
 
-      const input = screen.getByRole("textbox", { name: /消息|输入/ });
+      const input = screen.getByRole("textbox", { name: /Message|输入|消息/i });
       expect(input).toBeInTheDocument();
     });
 
     it("应该渲染发送按钮", () => {
       render(<ChatInput {...defaultProps} />);
 
-      expect(screen.getByRole("button", { name: /发送/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Send|发送/i })).toBeInTheDocument();
     });
 
     it("应该显示 placeholder", () => {
@@ -60,7 +60,7 @@ describe("ChatInput", () => {
       const onSend = vi.fn();
       render(<ChatInput {...defaultProps} value="Hello" onSend={onSend} />);
 
-      await user.click(screen.getByRole("button", { name: /发送/ }));
+      await user.click(screen.getByRole("button", { name: /Send|发送/i }));
 
       expect(onSend).toHaveBeenCalledWith("Hello", undefined);
     });
@@ -70,7 +70,7 @@ describe("ChatInput", () => {
       const onSend = vi.fn();
       render(<ChatInput {...defaultProps} value="" onSend={onSend} />);
 
-      await user.click(screen.getByRole("button", { name: /发送/ }));
+      await user.click(screen.getByRole("button", { name: /Send|发送/i }));
 
       // 空内容时不应发送
       expect(onSend).not.toHaveBeenCalled();
@@ -81,7 +81,7 @@ describe("ChatInput", () => {
     it("应显示附件按钮", () => {
       render(<ChatInput {...defaultProps} />);
 
-      expect(screen.getByRole("button", { name: /附件|添加图片|上传/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Add|附件|添加图片|上传/i })).toBeInTheDocument();
     });
 
     it("点击附件应显示文件选择器", () => {
@@ -102,7 +102,7 @@ describe("ChatInput", () => {
       expect(fileInput).toBeInTheDocument();
       await user.upload(fileInput!, file);
 
-      await user.click(screen.getByRole("button", { name: /发送/ }));
+      await user.click(screen.getByRole("button", { name: /Send|发送/i }));
 
       expect(onSend).toHaveBeenCalledWith("描述图片", expect.any(Array));
       expect((onSend.mock.calls[0][1] as File[])[0]).toBe(file);
@@ -117,7 +117,7 @@ describe("ChatInput", () => {
       const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
       await user.upload(fileInput!, file);
 
-      await user.click(screen.getByRole("button", { name: /发送/ }));
+      await user.click(screen.getByRole("button", { name: /Send|发送/i }));
 
       // 有附件时即使无文字也应可发送
       expect(onSend).toHaveBeenCalled();
@@ -161,7 +161,7 @@ describe("ChatInput", () => {
     it("disabled 时发送按钮应禁用", () => {
       render(<ChatInput {...defaultProps} disabled />);
 
-      expect(screen.getByRole("button", { name: /发送/ })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /Send|发送/i })).toBeDisabled();
     });
   });
 
