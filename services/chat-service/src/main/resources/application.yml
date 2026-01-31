@@ -50,6 +50,11 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
 
+# 联网搜索配置（Function Calling 方式，需 Tavily API Key）
+web-search:
+  enabled: ${WEB_SEARCH_ENABLED:false}
+  tavily-api-key: ${TAVILY_API_KEY:}
+
 # System prompt 配置（可配置的 AI 角色、语气）
 chat:
   system-prompt: "You are a helpful assistant. When unsure, say so and suggest rephrasing."

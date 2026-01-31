@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,8 @@ public class ConversationController {
 
     /**
      * 获取指定会话的消息列表（按创建时间正序）
-     * 仅允许访问本人会话
+     * 仅允许访问本人会话。
+     * 会话不存在时返回 200 + 空数组（新建未发消息的会话尚未持久化），避免 404。
      */
     @GetMapping("/{conversationId}/messages")
     public ResponseEntity<List<MessageDTO>> listMessages(
@@ -63,7 +65,8 @@ public class ConversationController {
         String effectiveUserId = userId != null ? userId : "anonymous";
         Conversation conv = conversationMapper.findById(conversationId);
         if (conv == null) {
-            return ResponseEntity.notFound().build();
+            // 新建未发消息的会话尚未持久化，返回空数组而非 404
+            return ResponseEntity.ok(Collections.emptyList());
         }
         if (!effectiveUserId.equals(conv.getUserId())) {
             return ResponseEntity.status(403).build();
