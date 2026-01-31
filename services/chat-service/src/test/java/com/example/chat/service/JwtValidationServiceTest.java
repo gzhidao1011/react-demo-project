@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 验证：有效 Token 解析、过期 Token、无效 Token
  */
 @SpringBootTest
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
     "spring.cloud.nacos.discovery.enabled=false",
     "jwt.algorithm=RS256",
