@@ -8,6 +8,8 @@ WORKDIR /build
 
 COPY pom.xml .
 COPY api-common/pom.xml ./api-common/
+COPY user-service/pom.xml ./user-service/
+COPY order-service/pom.xml ./order-service/
 COPY chat-service/pom.xml ./chat-service/
 COPY api-gateway/pom.xml ./api-gateway/
 
