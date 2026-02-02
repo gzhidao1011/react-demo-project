@@ -8,9 +8,10 @@ const config: StorybookConfig = {
   // 说明：统一 Storybook 展示所有包的组件 stories
   // 路径相对于 Storybook 项目根目录（apps/storybook/）
   // 从 apps/storybook/ 向上三级到达 monorepo 根目录：../ -> apps/ -> ../ -> monorepo root
+  // 注意：packages/ui 暂无 stories，待添加后取消注释下一行
   stories: [
     "../../../packages/propel/src/**/*.stories.@(js|jsx|mjs|ts|tsx)",
-    "../../../packages/ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+    // "../../../packages/ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)",
   ],
   addons: ["@storybook/addon-a11y"],
   framework: {
