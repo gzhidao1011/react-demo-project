@@ -75,6 +75,7 @@ public class LoginResponse {
         private String id;
         private String email;
         private String username;
+        @JsonProperty("email_verified")
         private Boolean emailVerified;
     }
 }

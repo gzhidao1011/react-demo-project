@@ -108,7 +108,7 @@ scenarios:
           capture:
             - json: "$.data.accessToken"
               as: "accessToken"
-      - post:
+      - get:
           url: "/api/auth/me"
           headers:
             Authorization: "Bearer {{ accessToken }}"

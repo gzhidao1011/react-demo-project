@@ -11,7 +11,7 @@ import lombok.Data;
  */
 @Data
 public class RegisterRequest {
-    
+
     /**
      * 用户邮箱
      * 必须符合邮箱格式，不能为空
@@ -19,7 +19,7 @@ public class RegisterRequest {
     @NotBlank(message = "邮箱不能为空")
     @Email(message = "请输入有效的邮箱地址")
     private String email;
-    
+
     /**
      * 用户密码
      * 最少 8 个字符，最多 128 个字符，必须符合密码策略
@@ -28,10 +28,16 @@ public class RegisterRequest {
     @NotBlank(message = "密码不能为空")
     @Size(min = 8, max = 128, message = "密码长度必须在 8-128 个字符之间")
     private String password;
-    
+
     /**
      * 密码确认（可选，前端验证）
      * 后端不验证此字段，由前端确保两次密码一致
      */
     private String confirmPassword;
+
+    /**
+     * 用户同意服务条款和隐私政策的时间戳（可选，符合 GDPR/CCPA）
+     * ISO 8601 格式，如 2026-02-02T12:00:00Z
+     */
+    private java.time.Instant acceptedTermsAt;
 }

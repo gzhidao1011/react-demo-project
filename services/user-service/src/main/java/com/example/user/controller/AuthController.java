@@ -1,10 +1,18 @@
 package com.example.user.controller;
 
 import com.example.api.common.Result;
+import com.example.api.model.ChangePasswordRequest;
+import com.example.api.model.ForgotPasswordRequest;
+import com.example.api.model.ForgotPasswordResponse;
 import com.example.api.model.LoginRequest;
 import com.example.api.model.LoginResponse;
 import com.example.api.model.RegisterRequest;
+import com.example.api.model.RegisterResponse;
 import com.example.api.model.RefreshTokenRequest;
+import com.example.api.model.ResendVerificationRequest;
+import com.example.api.model.ResetPasswordRequest;
+import com.example.api.model.UserInfo;
+import com.example.api.model.VerifyEmailRequest;
 import com.example.user.service.AuthService;
 import com.example.user.service.RateLimitService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +20,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -30,16 +39,18 @@ public class AuthController {
 
     private final AuthService authService;
     private final RateLimitService rateLimitService;
+    private final com.example.user.service.PasswordResetService passwordResetService;
 
     /**
-     * 用户注册接口
+     * 用户注册接口（邮箱验证模式）
+     * 注册后不返回 token，发送验证邮件，返回 RegisterResponse
      *
      * @param request 注册请求（邮箱、密码）
-     * @return 登录响应（包含 Access Token、Refresh Token、用户信息）
+     * @return 注册响应（message、email，无 token）
      */
     @PostMapping("/register")
-    public ResponseEntity<Result<LoginResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        LoginResponse response = authService.register(request);
+    public ResponseEntity<Result<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        RegisterResponse response = authService.register(request);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE)
                 .header(HttpHeaders.PRAGMA, PRAGMA_NO_CACHE)
@@ -68,7 +79,7 @@ public class AuthController {
         // 登录成功后，如果之前有失败记录，计数会在下次登录时自动过期
         rateLimitService.checkRateLimit(ipAddress, null);
         
-        // 3. 执行登录（如果登录失败，AuthService 会抛出异常，限流计数已在 checkRateLimit 中增加）
+        // 3. 执行登录（如果登录失败，AuthService 会抛出异常）
         LoginResponse response = authService.login(request);
         
         // 4. 登录成功，返回响应
@@ -106,6 +117,129 @@ public class AuthController {
         }
         
         return ip != null ? ip : "unknown";
+    }
+
+    /**
+     * 验证邮箱接口
+     * 限流保护：每 IP 每小时最多 N 次，防暴力枚举 token
+     *
+     * @param request 验证请求（含 token）
+     * @param httpRequest HTTP 请求（用于获取 IP 地址）
+     * @return 登录响应（包含 Access Token、Refresh Token、用户信息）
+     */
+    @PostMapping("/verify-email")
+    public ResponseEntity<Result<LoginResponse>> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = getClientIpAddress(httpRequest);
+        rateLimitService.checkRateLimitForVerifyEmail(ipAddress);
+        LoginResponse response = authService.verifyEmail(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE)
+                .header(HttpHeaders.PRAGMA, PRAGMA_NO_CACHE)
+                .body(Result.success(response));
+    }
+
+    /**
+     * 重新发送验证邮件接口
+     * 用户枚举防护：无论邮箱是否存在均返回 200 + 相同成功消息
+     *
+     * @param request 请求（含 email）
+     * @return 成功响应
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Result<Void>> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        authService.resendVerification(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE)
+                .header(HttpHeaders.PRAGMA, PRAGMA_NO_CACHE)
+                .body(Result.success());
+    }
+
+    /**
+     * 忘记密码接口
+     * 用户枚举防护：无论邮箱是否存在均返回 200 + 相同成功消息
+     * 限流保护：每 IP 每小时 N 次、每邮箱每小时 M 次
+     *
+     * @param request 请求（含 email）
+     * @param httpRequest HTTP 请求（用于获取 IP 地址）
+     * @return 成功响应
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Result<ForgotPasswordResponse>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = getClientIpAddress(httpRequest);
+        rateLimitService.checkRateLimitForForgotPassword(ipAddress, request.getEmail());
+        ForgotPasswordResponse response = passwordResetService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE)
+                .header(HttpHeaders.PRAGMA, PRAGMA_NO_CACHE)
+                .body(Result.success(response));
+    }
+
+    /**
+     * 重置密码接口
+     * 限流保护：每 IP 每小时 N 次（防暴力枚举 token）
+     * 幂等性：同一 token 重复提交，首次成功后续返回 PASSWORD_RESET_TOKEN_INVALID
+     *
+     * @param request 请求（含 token、newPassword）
+     * @param httpRequest HTTP 请求（用于获取 IP 地址）
+     * @return 成功响应
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<Result<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = getClientIpAddress(httpRequest);
+        rateLimitService.checkRateLimitForResetPassword(ipAddress);
+        passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE)
+                .header(HttpHeaders.PRAGMA, PRAGMA_NO_CACHE)
+                .body(Result.success());
+    }
+
+    /**
+     * 修改密码接口
+     * 需 JWT 认证，需当前密码验证
+     *
+     * @param request 修改密码请求（当前密码、新密码）
+     * @param authentication 认证信息（由 JwtAuthFilter 注入）
+     * @return 成功响应
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<Result<Void>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+        String userIdStr = authentication != null ? authentication.getName() : null;
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
+        Long userId = Long.parseLong(userIdStr);
+        authService.changePassword(userId, request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE)
+                .header(HttpHeaders.PRAGMA, PRAGMA_NO_CACHE)
+                .body(Result.success());
+    }
+
+    /**
+     * 获取当前用户信息接口
+     * 需 JWT 认证，从 Authorization: Bearer &lt;token&gt; 提取用户身份
+     *
+     * @param authentication 认证信息（由 JwtAuthFilter 注入）
+     * @return 用户信息（id、email、username、emailVerified、createdAt 等）
+     */
+    @GetMapping("/me")
+    public ResponseEntity<Result<UserInfo>> getCurrentUser(Authentication authentication) {
+        String userIdStr = authentication != null ? authentication.getName() : null;
+        if (userIdStr == null || userIdStr.isEmpty()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+        }
+        Long userId = Long.parseLong(userIdStr);
+        UserInfo userInfo = authService.getCurrentUser(userId);
+        return ResponseEntity.ok(Result.success(userInfo));
     }
 
     /**

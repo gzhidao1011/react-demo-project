@@ -1,5 +1,6 @@
 package com.example.chat.service;
 
+import com.example.chat.test.ChatServiceTestApplication;
 import com.example.chat.model.ChatRequest;
 import com.example.chat.model.UIMessagePart;
 import org.junit.jupiter.api.Test;
@@ -17,9 +18,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * ChatService system-prompt 配置集成测试（TDD）
  * 验证：chat.system-prompt 从配置读取并影响回复内容
  */
-@SpringBootTest
+@SpringBootTest(classes = ChatServiceTestApplication.class)
 @ActiveProfiles("test")
-@TestPropertySource(properties = "chat.system-prompt=You are a coding expert. Always write clean code.")
+@TestPropertySource(
+    properties = {
+      "chat.system-prompt=You are a coding expert. Always write clean code.",
+      "OPENAI_API_KEY=",
+      "DEEPSEEK_API_KEY="
+    })
 class ChatServiceSystemPromptTest {
 
     @Autowired

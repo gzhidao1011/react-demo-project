@@ -57,7 +57,12 @@ public class SecurityConfig {
                     response.getWriter().write("{\"code\":401,\"message\":\"未授权，请登录\"}");
                 }))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll() // 认证接口公开访问
+                .requestMatchers(
+                    AntPathRequestMatcher.antMatcher("/api/auth/me"),
+                    AntPathRequestMatcher.antMatcher("/api/auth/change-password"),
+                    AntPathRequestMatcher.antMatcher("/api/auth/change-email")
+                ).authenticated() // 当前用户、修改密码、修改邮箱需 JWT 认证
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll() // 其他认证接口公开访问
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll() // 健康检查公开访问
                 .anyRequest().authenticated() // 其他接口需要认证
             )

@@ -1,9 +1,9 @@
 package com.example.user.controller;
 
 import com.example.api.model.LocaleUpdateRequest;
-import com.example.api.model.LoginRequest;
 import com.example.api.model.LoginResponse;
 import com.example.api.model.RegisterRequest;
+import com.example.api.model.VerifyEmailRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +63,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.flyway.enabled=false",
-    "spring.sql.init.mode=always"
+    "spring.sql.init.mode=always",
+    "resend.api-key=",
+    "resend.from=onboarding@resend.dev",
+    "resend.verification-link-base=http://localhost:5573",
+    "rate-limit.verify-email.max-attempts-per-ip=20",
+    "rate-limit.verify-email.ip-window-seconds=3600"
 })
 class LocaleControllerTest {
 
@@ -106,6 +111,7 @@ class LocaleControllerTest {
             }
         } catch (Exception ignored) {
         }
+        com.example.user.service.TestTokenStore.clear();
         accessToken = obtainAccessToken();
     }
 
@@ -114,16 +120,28 @@ class LocaleControllerTest {
         registerRequest.setEmail("locale-test@example.com");
         registerRequest.setPassword("Password123!");
 
-        String registerResponse = mockMvc.perform(post("/api/auth/register")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(registerRequest)))
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isOk());
+
+        String token = com.example.user.service.TestTokenStore.getToken("locale-test@example.com");
+        if (token == null) {
+            throw new IllegalStateException("测试环境应能获取验证 token");
+        }
+
+        VerifyEmailRequest verifyRequest = new VerifyEmailRequest();
+        verifyRequest.setToken(token);
+        String verifyResponse = mockMvc.perform(post("/api/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(verifyRequest)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         LoginResponse loginResponse = objectMapper.readValue(
-                objectMapper.readTree(registerResponse).get("data").toString(),
+                objectMapper.readTree(verifyResponse).get("data").toString(),
                 LoginResponse.class);
         return loginResponse.getAccessToken();
     }

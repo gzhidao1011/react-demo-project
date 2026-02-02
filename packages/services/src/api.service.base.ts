@@ -45,6 +45,7 @@ export function handleApiResponse<T>(
   // 统一按业务 code 判断是否成功，非成功场景抛出 ServerError
   if (body.code !== 0 && body.code !== 200) {
     const error: ServerError = new Error(body.message || defaultErrorMessage);
+    error.code = body.code;
 
     // 处理字段级错误
     if (body.errors && Array.isArray(body.errors) && body.errors.length > 0) {
@@ -94,7 +95,15 @@ export abstract class APIServiceBase {
     this.axiosInstance.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
         // 白名单路径不需要 Token
-        const whiteList = ["/auth/login", "/auth/register", "/auth/refresh"];
+        const whiteList = [
+          "/auth/login",
+          "/auth/register",
+          "/auth/refresh",
+          "/auth/verify-email",
+          "/auth/resend-verification",
+          "/auth/forgot-password",
+          "/auth/reset-password",
+        ];
         if (config.url && whiteList.some((path) => config.url?.includes(path))) {
           return config;
         }
@@ -143,10 +152,13 @@ export abstract class APIServiceBase {
     // 响应拦截器
     this.axiosInstance.interceptors.response.use(
       (response) => {
-        // 自动保存登录响应的 Token
+        // 自动保存登录响应的 Token（login 和 verify-email 返回 LoginResponse，register 返回 RegisterResponse 不保存）
         const url = response.config.url || "";
-        if ((url.includes("/auth/login") || url.includes("/auth/register")) && response.data?.data) {
-          saveTokens(response.data.data as LoginResponse);
+        if ((url.includes("/auth/login") || url.includes("/auth/verify-email")) && response.data?.data) {
+          const data = response.data.data as LoginResponse;
+          if (data.accessToken || data.access_token) {
+            saveTokens(response.data.data as LoginResponse);
+          }
         }
         return response;
       },

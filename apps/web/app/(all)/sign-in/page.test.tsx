@@ -1,21 +1,23 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithI18n } from "../../test-utils";
 import "@testing-library/jest-dom/vitest";
 import type { ApiResponseBase, LoginResponse } from "@repo/services";
-import type { ServerError } from "@repo/utils";
+import { ERROR_CODE_EMAIL_NOT_VERIFIED, type ServerError } from "@repo/utils";
 import SignInPage from "./page";
 
 // Mock API 调用
 vi.mock("@repo/services", () => ({
   authLogin: vi.fn(),
+  authResendVerification: vi.fn(),
 }));
 
 // Mock 路由
 const mockNavigateFn = vi.fn();
 vi.mock("react-router", () => ({
   useNavigate: () => mockNavigateFn,
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
 }));
 
 // Mock Toast
@@ -329,6 +331,31 @@ describe("SignInPage", () => {
       );
     });
 
+    it("应该显示重新发送按钮（邮箱未验证时）", async () => {
+      // Arrange
+      const user = userEvent.setup({ delay: null });
+      const mockError = new Error("请先完成邮箱验证") as ServerError;
+      mockError.code = ERROR_CODE_EMAIL_NOT_VERIFIED;
+      mockAuthLogin.mockRejectedValue(mockError);
+      mockHandleServerError.mockImplementation((_error, setError) => {
+        setError("root", { type: "server", message: "请先完成邮箱验证" });
+        return { type: "form", shouldShowToast: false };
+      });
+
+      await renderWithI18n(<SignInPage />);
+
+      // Act
+      await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
+      await user.type(screen.getByLabelText("密码"), "password123");
+      await user.click(screen.getByRole("button", { name: /登录/ }));
+
+      // Assert
+      await waitFor(() => {
+        expect(screen.getByText("请先完成邮箱验证")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /重新发送验证邮件/ })).toBeInTheDocument();
+      });
+    });
+
     it("应该显示错误消息（登录失败时）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
@@ -474,19 +501,19 @@ describe("SignInPage", () => {
       // 验证按钮文本变为"登录中..."（用户可见的反馈）
       expect(submitButton).toHaveTextContent("登录中...");
 
-      // Cleanup - 解析 Promise 以完成测试
-      resolvePromise!({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
+      // Cleanup - 在 act 中解析 Promise，避免状态更新警告
+      await act(async () => {
+        resolvePromise!({
+          code: 0,
+          message: "success",
+          data: {
+            accessToken: "access-token",
+            refreshToken: "refresh-token",
+            expiresIn: 3600,
+          },
+        });
+        await pendingPromise;
       });
-
-      // 等待 Promise 完成
-      await pendingPromise;
     });
   });
 

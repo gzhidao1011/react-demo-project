@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -120,6 +121,26 @@ public class TokenRotationService {
             redisTemplate.delete(key);
         } catch (Exception e) {
             // 如果解析失败，只加入黑名单即可
+        }
+    }
+    
+    /**
+     * 撤销指定用户的所有 Refresh Token
+     * 用于密码重置后登出所有设备
+     *
+     * @param userId 用户 ID
+     */
+    public void revokeAllByUserId(String userId) {
+        String pattern = REFRESH_TOKEN_KEY_PREFIX + userId + "*";
+        Set<String> keys = redisTemplate.keys(pattern);
+        if (keys != null && !keys.isEmpty()) {
+            for (String key : keys) {
+                String token = redisTemplate.opsForValue().get(key);
+                if (token != null && !token.isEmpty()) {
+                    addToBlacklist(token);
+                }
+                redisTemplate.delete(key);
+            }
         }
     }
     

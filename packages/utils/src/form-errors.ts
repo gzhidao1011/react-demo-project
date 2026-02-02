@@ -1,12 +1,17 @@
 import type { AxiosError } from "axios";
 import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 
+/** 业务错误码：邮箱未验证 */
+export const ERROR_CODE_EMAIL_NOT_VERIFIED = 40109;
+
 /**
  * 服务器错误 接口
- * 包含字段级错误数组
+ * 包含字段级错误数组和可选业务错误码
  */
 export interface ServerError extends Error {
   errors?: Array<{ field: string; message: string }>;
+  /** 业务错误码（如 40109 表示邮箱未验证） */
+  code?: number;
 }
 
 /**

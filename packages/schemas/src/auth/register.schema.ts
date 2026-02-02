@@ -8,6 +8,10 @@ const baseRegisterSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   confirmPassword: z.string().min(1, "请确认密码"),
+  /** 是否已同意服务条款和隐私政策（必选，符合 GDPR/CCPA） */
+  acceptedTerms: z.boolean().refine((v) => v === true, {
+    message: "请阅读并同意服务条款和隐私政策",
+  }),
 });
 
 /**

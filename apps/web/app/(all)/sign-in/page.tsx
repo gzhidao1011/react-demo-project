@@ -5,13 +5,13 @@ import { toast } from "@repo/propel";
 import type { LoginFormData } from "@repo/schemas";
 import { loginSchema } from "@repo/schemas";
 import type { LoginRequest } from "@repo/services";
-import { authLogin } from "@repo/services";
+import { authLogin, authResendVerification } from "@repo/services";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from "@repo/ui";
-import { handleServerError, saveTokens } from "@repo/utils";
+import { ERROR_CODE_EMAIL_NOT_VERIFIED, handleServerError, saveTokens } from "@repo/utils";
 import { useState } from "react";
 import type { FieldValues, UseFormSetError } from "react-hook-form";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 export default function SignInPage({
   className,
@@ -25,6 +25,9 @@ export default function SignInPage({
   const navigate = useNavigate();
   const { t } = useLocale();
   const [showPassword, setShowPassword] = useState(false);
+  /** 邮箱未验证时显示重新发送按钮 */
+  const [showResendForEmail, setShowResendForEmail] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
 
   const {
     register,
@@ -41,10 +44,25 @@ export default function SignInPage({
     },
   });
 
+  // 重新发送验证邮件（邮箱未验证时）
+  const handleResendVerification = async () => {
+    if (!showResendForEmail) return;
+    setIsResending(true);
+    try {
+      await authResendVerification(showResendForEmail);
+      toast.success(t("auth.resendVerificationSuccess"), { duration: 2000 });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("auth.resendVerificationFailed"));
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   // 处理表单提交
   const onSubmit = async (data: LoginFormData) => {
-    // 清除之前的错误
+    // 清除之前的错误和 resend 状态
     clearErrors();
+    setShowResendForEmail(null);
 
     try {
       // 准备登录请求数据
@@ -75,6 +93,14 @@ export default function SignInPage({
       // 统一处理错误：内联错误显示 + 系统级错误 Toast
       const result = handleServerError(error, setError as UseFormSetError<FieldValues>, "登录失败，请检查网络连接");
 
+      // 邮箱未验证时，显示重新发送按钮
+      const serverError = error as { code?: number };
+      if (serverError.code === ERROR_CODE_EMAIL_NOT_VERIFIED) {
+        setShowResendForEmail(data.email.trim());
+      } else {
+        setShowResendForEmail(null);
+      }
+
       // 统一处理 Toast：仅对系统级错误显示
       if (result.shouldShowToast && result.toastMessage) {
         toast.error(result.toastMessage);
@@ -95,8 +121,21 @@ export default function SignInPage({
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               {/* 表单级错误提示（仅显示错误，成功消息使用 Toast） */}
               {errors.root && errors.root.type !== "success" && (
-                <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20" role="alert">
-                  <p className="text-sm text-red-800 dark:text-red-400">{errors.root.message}</p>
+                <div className="space-y-2">
+                  <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20" role="alert">
+                    <p className="text-sm text-red-800 dark:text-red-400">{errors.root.message}</p>
+                  </div>
+                  {showResendForEmail && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleResendVerification}
+                      disabled={isResending}
+                    >
+                      {isResending ? t("auth.sending") : t("auth.resendVerification")}
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -128,9 +167,12 @@ export default function SignInPage({
                   <Label htmlFor="password" className="text-sm font-medium">
                     {t("auth.password")}
                   </Label>
-                  <a href="#" className="ml-auto inline-block text-sm underline-offset-4 hover:underline">
+                  <Link
+                    to="/forgot-password"
+                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                  >
                     {t("auth.forgotPassword")}
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <Input

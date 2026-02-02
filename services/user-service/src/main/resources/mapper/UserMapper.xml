@@ -9,30 +9,32 @@
         <result property="email" column="email"/>
         <result property="phone" column="phone"/>
         <result property="password" column="password"/>
+        <result property="emailVerified" column="email_verified"/>
+        <result property="emailVerifiedAt" column="email_verified_at"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <select id="findById" resultMap="UserResultMap">
-        SELECT id, name, email, phone, password, created_at, updated_at
+        SELECT id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at
         FROM users
         WHERE id = #{id}
     </select>
 
     <select id="findByEmail" resultMap="UserResultMap">
-        SELECT id, name, email, phone, password, created_at, updated_at
+        SELECT id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at
         FROM users
         WHERE email = #{email}
     </select>
 
     <select id="findByPhone" resultMap="UserResultMap">
-        SELECT id, name, email, phone, password, created_at, updated_at
+        SELECT id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at
         FROM users
         WHERE phone = #{phone}
     </select>
 
     <select id="findAll" resultMap="UserResultMap">
-        SELECT id, name, email, phone, password, created_at, updated_at
+        SELECT id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at
         FROM users
     </select>
 
@@ -53,14 +55,21 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO users (name, email, phone, password, created_at, updated_at)
-        VALUES (#{name}, #{email}, #{phone}, #{password}, #{createdAt}, #{updatedAt})
+        INSERT INTO users (name, email, phone, password, email_verified, created_at, updated_at)
+        VALUES (#{name}, #{email}, #{phone}, #{password}, #{emailVerified}, #{createdAt}, #{updatedAt})
     </insert>
 
     <update id="update">
         UPDATE users
-        SET name = #{name}, email = #{email}, phone = #{phone}, updated_at = #{updatedAt}
+        SET name = #{name}, email = #{email}, phone = #{phone}, email_verified = #{emailVerified},
+            email_verified_at = #{emailVerifiedAt}, updated_at = #{updatedAt}
         WHERE id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE users
+        SET password = #{encodedPassword}, updated_at = #{updatedAt}
+        WHERE id = #{userId}
     </update>
 
     <delete id="deleteById">

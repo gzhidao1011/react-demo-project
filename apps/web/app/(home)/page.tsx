@@ -2,7 +2,7 @@ import { ArrowRightIcon, Bars3Icon, CheckCircleIcon, DocumentTextIcon, HomeIcon 
 import { LocaleSwitcher, useLocale } from "@repo/i18n";
 import { ToggleMode } from "@repo/propel";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -155,12 +155,12 @@ export default function HomePage() {
               <span className="text-sm text-muted-foreground">{t("home.footer.copyright")}</span>
             </div>
             <nav className="flex items-center gap-6">
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <Link to="/privacy" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 {t("home.footer.privacy")}
-              </a>
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              </Link>
+              <Link to="/terms" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 {t("home.footer.terms")}
-              </a>
+              </Link>
               <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 {t("home.footer.contact")}
               </a>

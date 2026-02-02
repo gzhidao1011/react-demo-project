@@ -80,6 +80,16 @@ password:
   require-digit: true
   require-special: true
 
+# Resend 邮件配置
+resend:
+  api-key: ${RESEND_API_KEY:}
+  from: ${RESEND_FROM:onboarding@resend.dev}
+  verification-link-base: ${APP_FRONTEND_URL:http://localhost:5573}
+
+# 密码重置 Token 配置（可配置，高安全场景可缩短）
+password-reset:
+  token-expiry-minutes: 60  # 默认 1h；高安全可设为 15–30
+
 # 限流配置
 rate-limit:
   login:
@@ -87,6 +97,17 @@ rate-limit:
     max-attempts-per-user: 5      # 用户限流：每用户每 15 分钟最多 5 次
     ip-window-seconds: 3600       # IP 限流时间窗口（1 小时）
     user-window-seconds: 900      # 用户限流时间窗口（15 分钟）
+  verify-email:
+    max-attempts-per-ip: 10       # 验证接口限流：每 IP 每小时最多 10 次（防暴力枚举 token）
+    ip-window-seconds: 3600
+  forgot-password:
+    max-attempts-per-ip: 5        # 每 IP 每小时最多 5 次（防暴力枚举邮箱）
+    max-attempts-per-email: 3     # 每邮箱每小时最多 3 次（防滥用）
+    ip-window-seconds: 3600
+    email-window-seconds: 3600
+  reset-password:
+    max-attempts-per-ip: 10       # 每 IP 每小时最多 10 次（防暴力枚举 token）
+    ip-window-seconds: 3600
 
 # MyBatis 配置
 mybatis:

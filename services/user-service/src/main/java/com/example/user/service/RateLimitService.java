@@ -49,6 +49,39 @@ public class RateLimitService {
     private long userWindowSeconds;
     
     /**
+     * 验证邮箱接口限流配置（防暴力枚举 token）
+     */
+    @Value("${rate-limit.verify-email.max-attempts-per-ip:10}")
+    private int verifyEmailMaxAttemptsPerIp;
+    
+    @Value("${rate-limit.verify-email.ip-window-seconds:3600}")
+    private long verifyEmailIpWindowSeconds;
+    
+    /**
+     * 忘记密码接口限流配置（防暴力枚举邮箱）
+     */
+    @Value("${rate-limit.forgot-password.max-attempts-per-ip:5}")
+    private int forgotPasswordMaxAttemptsPerIp;
+    
+    @Value("${rate-limit.forgot-password.max-attempts-per-email:3}")
+    private int forgotPasswordMaxAttemptsPerEmail;
+    
+    @Value("${rate-limit.forgot-password.ip-window-seconds:3600}")
+    private long forgotPasswordIpWindowSeconds;
+    
+    @Value("${rate-limit.forgot-password.email-window-seconds:3600}")
+    private long forgotPasswordEmailWindowSeconds;
+    
+    /**
+     * 重置密码接口限流配置（防暴力枚举 token）
+     */
+    @Value("${rate-limit.reset-password.max-attempts-per-ip:10}")
+    private int resetPasswordMaxAttemptsPerIp;
+    
+    @Value("${rate-limit.reset-password.ip-window-seconds:3600}")
+    private long resetPasswordIpWindowSeconds;
+    
+    /**
      * IP 限流 Key 前缀
      */
     private static final String IP_RATE_LIMIT_KEY_PREFIX = "rate_limit:login:ip:";
@@ -57,6 +90,22 @@ public class RateLimitService {
      * 用户限流 Key 前缀
      */
     private static final String USER_RATE_LIMIT_KEY_PREFIX = "rate_limit:login:user:";
+    
+    /**
+     * 验证邮箱接口 IP 限流 Key 前缀
+     */
+    private static final String VERIFY_EMAIL_IP_KEY_PREFIX = "rate_limit:verify_email:ip:";
+    
+    /**
+     * 忘记密码接口限流 Key 前缀
+     */
+    private static final String FORGOT_PASSWORD_IP_KEY_PREFIX = "rate_limit:forgot_password:ip:";
+    private static final String FORGOT_PASSWORD_EMAIL_KEY_PREFIX = "rate_limit:forgot_password:email:";
+    
+    /**
+     * 重置密码接口 IP 限流 Key 前缀
+     */
+    private static final String RESET_PASSWORD_IP_KEY_PREFIX = "rate_limit:reset_password:ip:";
     
     /**
      * 检查限流
@@ -94,6 +143,66 @@ public class RateLimitService {
             if (userCount != null && userCount > maxAttemptsPerUser) {
                 throw new BusinessException(ResultCode.RATE_LIMIT_EXCEEDED);
             }
+        }
+    }
+    
+    /**
+     * 检查验证邮箱接口限流（每 IP 每小时最多 N 次，防暴力枚举 token）
+     * 
+     * @param ipAddress IP 地址
+     */
+    public void checkRateLimitForVerifyEmail(String ipAddress) {
+        String ipKey = VERIFY_EMAIL_IP_KEY_PREFIX + ipAddress;
+        Long ipCount = redisTemplate.opsForValue().increment(ipKey);
+        
+        if (ipCount != null && ipCount == 1) {
+            redisTemplate.expire(ipKey, verifyEmailIpWindowSeconds, TimeUnit.SECONDS);
+        }
+        
+        if (ipCount != null && ipCount > verifyEmailMaxAttemptsPerIp) {
+            throw new BusinessException(ResultCode.RATE_LIMIT_EXCEEDED);
+        }
+    }
+    
+    /**
+     * 检查忘记密码接口限流（每 IP 每小时 N 次、每邮箱每小时 M 次，防暴力枚举邮箱）
+     *
+     * @param ipAddress IP 地址
+     * @param email 邮箱地址
+     */
+    public void checkRateLimitForForgotPassword(String ipAddress, String email) {
+        String ipKey = FORGOT_PASSWORD_IP_KEY_PREFIX + ipAddress;
+        Long ipCount = redisTemplate.opsForValue().increment(ipKey);
+        if (ipCount != null && ipCount == 1) {
+            redisTemplate.expire(ipKey, forgotPasswordIpWindowSeconds, TimeUnit.SECONDS);
+        }
+        if (ipCount != null && ipCount > forgotPasswordMaxAttemptsPerIp) {
+            throw new BusinessException(ResultCode.RATE_LIMIT_EXCEEDED);
+        }
+        
+        String emailKey = FORGOT_PASSWORD_EMAIL_KEY_PREFIX + (email != null ? email.toLowerCase() : "");
+        Long emailCount = redisTemplate.opsForValue().increment(emailKey);
+        if (emailCount != null && emailCount == 1) {
+            redisTemplate.expire(emailKey, forgotPasswordEmailWindowSeconds, TimeUnit.SECONDS);
+        }
+        if (emailCount != null && emailCount > forgotPasswordMaxAttemptsPerEmail) {
+            throw new BusinessException(ResultCode.RATE_LIMIT_EXCEEDED);
+        }
+    }
+    
+    /**
+     * 检查重置密码接口限流（每 IP 每小时 N 次，防暴力枚举 token）
+     *
+     * @param ipAddress IP 地址
+     */
+    public void checkRateLimitForResetPassword(String ipAddress) {
+        String ipKey = RESET_PASSWORD_IP_KEY_PREFIX + ipAddress;
+        Long ipCount = redisTemplate.opsForValue().increment(ipKey);
+        if (ipCount != null && ipCount == 1) {
+            redisTemplate.expire(ipKey, resetPasswordIpWindowSeconds, TimeUnit.SECONDS);
+        }
+        if (ipCount != null && ipCount > resetPasswordMaxAttemptsPerIp) {
+            throw new BusinessException(ResultCode.RATE_LIMIT_EXCEEDED);
         }
     }
     

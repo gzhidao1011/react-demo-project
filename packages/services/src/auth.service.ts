@@ -10,6 +10,8 @@ export interface RegisterRequest {
   email: string;
   password: string;
   phone?: string;
+  /** 用户同意服务条款和隐私政策的时间戳（可选，符合 GDPR/CCPA）ISO 8601 格式 */
+  acceptedTermsAt?: string;
 }
 
 /**
@@ -18,6 +20,15 @@ export interface RegisterRequest {
 export interface LoginRequest {
   email: string;
   password: string;
+}
+
+/**
+ * 注册响应（邮箱验证模式）
+ * 注册后不返回 token，仅提示用户查收验证邮件
+ */
+export interface RegisterResponse {
+  message: string;
+  email: string;
 }
 
 /**
@@ -52,7 +63,8 @@ export interface RefreshTokenRequest {
 }
 
 /**
- * 用户信息响应
+ * 用户信息响应（GET /auth/me）
+ * 与后端 UserInfo 字段对应，API 返回 snake_case
  */
 export interface UserInfo {
   id: number;
@@ -60,15 +72,59 @@ export interface UserInfo {
   email: string;
   phone?: string;
   roles?: string[];
-  createdAt?: string;
+  /** 邮箱是否已验证（API 返回 email_verified） */
+  email_verified?: boolean;
+  /** 创建时间 ISO 8601（API 返回 created_at） */
+  created_at?: string;
 }
 
-export async function authRegister(data: RegisterRequest) {
+export async function authRegister(data: RegisterRequest): Promise<RegisterResponse> {
+  const response: AxiosResponse<ApiResponseBase<RegisterResponse>> = await apiService.post<
+    ApiResponseBase<RegisterResponse>
+  >("/auth/register", data);
+  const body = handleApiResponse(response, "注册失败");
+  return body.data!;
+}
+
+export async function authVerifyEmail(token: string): Promise<LoginResponse> {
   const response: AxiosResponse<ApiResponseBase<LoginResponse>> = await apiService.post<ApiResponseBase<LoginResponse>>(
-    "/auth/register",
-    data,
+    "/auth/verify-email",
+    { token },
   );
-  return handleApiResponse(response, "注册失败");
+  const body = handleApiResponse(response, "验证失败");
+  return body.data!;
+}
+
+export async function authResendVerification(email: string): Promise<void> {
+  const response: AxiosResponse<ApiResponseBase<void>> = await apiService.post<ApiResponseBase<void>>(
+    "/auth/resend-verification",
+    { email },
+  );
+  handleApiResponse(response, "重新发送失败");
+}
+
+/**
+ * 忘记密码：请求发送重置邮件
+ * 调用前对 email 做 trim().toLowerCase() 标准化
+ */
+export async function authForgotPassword(email: string): Promise<void> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const response: AxiosResponse<ApiResponseBase<{ message?: string }>> = await apiService.post<
+    ApiResponseBase<{ message?: string }>
+  >("/auth/forgot-password", { email: normalizedEmail });
+  handleApiResponse(response, "忘记密码请求失败");
+}
+
+/**
+ * 重置密码：使用 token 设置新密码
+ * 不传 email，后端仅依赖 token
+ */
+export async function authResetPassword(token: string, newPassword: string): Promise<void> {
+  const response: AxiosResponse<ApiResponseBase<void>> = await apiService.post<ApiResponseBase<void>>(
+    "/auth/reset-password",
+    { token, newPassword },
+  );
+  handleApiResponse(response, "重置密码失败");
 }
 
 export async function authLogin(data: LoginRequest) {
@@ -94,8 +150,31 @@ export async function authLogout() {
   return handleApiResponse(response, "登出失败");
 }
 
+/**
+ * 获取当前用户信息
+ * 需 JWT 认证，用于个人中心、设置页、导航栏用户信息
+ */
 export async function authGetCurrentUser() {
   const response: AxiosResponse<ApiResponseBase<UserInfo>> =
-    await apiService.post<ApiResponseBase<UserInfo>>("/auth/me");
+    await apiService.get<ApiResponseBase<UserInfo>>("/auth/me");
   return handleApiResponse(response, "获取用户信息失败");
+}
+
+/**
+ * 修改密码请求参数
+ */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/**
+ * 修改密码：需当前密码验证
+ */
+export async function authChangePassword(data: ChangePasswordRequest): Promise<void> {
+  const response: AxiosResponse<ApiResponseBase<void>> = await apiService.post<ApiResponseBase<void>>(
+    "/auth/change-password",
+    data,
+  );
+  handleApiResponse(response, "修改密码失败");
 }

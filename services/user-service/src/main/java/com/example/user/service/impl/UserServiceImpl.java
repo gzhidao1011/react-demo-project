@@ -40,6 +40,7 @@ public class UserServiceImpl implements UserService {
             user1.setEmail("zhangsan@example.com");
             user1.setPhone("13800138000");
             user1.setPassword(passwordEncoder.encode("password123"));
+            user1.setEmailVerified(false);
             user1.setCreatedAt(now);
             user1.setUpdatedAt(now);
             userMapper.insert(user1);
@@ -49,6 +50,7 @@ public class UserServiceImpl implements UserService {
             user2.setEmail("lisi@example.com");
             user2.setPhone("13900139000");
             user2.setPassword(passwordEncoder.encode("password123"));
+            user2.setEmailVerified(false);
             user2.setCreatedAt(now);
             user2.setUpdatedAt(now);
             userMapper.insert(user2);

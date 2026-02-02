@@ -127,6 +127,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+
+        <!-- Resend 邮件 SDK（邮箱验证） -->
+        <dependency>
+            <groupId>com.resend</groupId>
+            <artifactId>resend-java</artifactId>
+            <version>4.0.0</version>
+        </dependency>
         
         <!-- Spring Boot DevTools（开发时热更新） -->
         <dependency>

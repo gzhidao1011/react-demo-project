@@ -22,6 +22,17 @@ public class UserEntity {
      * 不在 DTO 转换中返回，确保安全
      */
     private String password;
+
+    /**
+     * 邮箱是否已验证
+     */
+    private Boolean emailVerified;
+
+    /**
+     * 邮箱验证时间
+     */
+    private LocalDateTime emailVerifiedAt;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

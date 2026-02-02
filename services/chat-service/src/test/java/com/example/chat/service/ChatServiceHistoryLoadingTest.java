@@ -1,5 +1,6 @@
 package com.example.chat.service;
 
+import com.example.chat.test.ChatServiceTestApplication;
 import com.example.chat.entity.Conversation;
 import com.example.chat.entity.Message;
 import com.example.chat.mapper.ConversationMapper;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -23,8 +25,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * ChatService 历史消息加载集成测试（TDD）
  * 验证：conversationId 存在时从 DB 加载历史消息作为上下文
  */
-@SpringBootTest
+@SpringBootTest(classes = ChatServiceTestApplication.class)
 @ActiveProfiles("test")
+@TestPropertySource(properties = {"OPENAI_API_KEY=", "DEEPSEEK_API_KEY="})
 @Transactional
 class ChatServiceHistoryLoadingTest {
 

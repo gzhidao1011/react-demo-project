@@ -2,12 +2,24 @@ import type { AxiosResponse } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiService } from "./api.service";
 import type { ApiResponseBase } from "./api.service.base";
-import { authLogin, authRefresh, authRegister, type LoginRequest, type LoginResponse } from "./auth.service";
+import {
+  authChangePassword,
+  authForgotPassword,
+  authGetCurrentUser,
+  authLogin,
+  authRefresh,
+  authRegister,
+  authResetPassword,
+  type LoginRequest,
+  type LoginResponse,
+  type UserInfo,
+} from "./auth.service";
 
 // Mock apiService
 vi.mock("./api.service", () => ({
   apiService: {
     post: vi.fn(),
+    get: vi.fn(),
   },
 }));
 
@@ -215,23 +227,22 @@ describe("auth.service", () => {
   });
 
   describe("authRegister", () => {
-    it("应该调用注册 API", async () => {
+    it("应该调用注册 API 并返回 RegisterResponse", async () => {
       // Arrange
       const registerData = {
         email: "user@example.com",
         password: "password123",
       };
-      const mockResponse: AxiosResponse<ApiResponseBase<LoginResponse>> = {
+      const mockResponse: AxiosResponse<ApiResponseBase<{ message: string; email: string }>> = {
         data: {
           code: 0,
           message: "success",
           data: {
-            accessToken: "access-token",
-            expiresIn: 3600,
-            refreshToken: "refresh-token",
+            message: "请查收验证邮件",
+            email: "user@example.com",
           },
         },
-      } as AxiosResponse<ApiResponseBase<LoginResponse>>;
+      } as AxiosResponse<ApiResponseBase<{ message: string; email: string }>>;
 
       vi.mocked(apiService.post).mockResolvedValue(mockResponse);
 
@@ -240,7 +251,199 @@ describe("auth.service", () => {
 
       // Assert
       expect(apiService.post).toHaveBeenCalledWith("/auth/register", registerData);
-      expect(result.data?.accessToken).toBe("access-token");
+      expect(result.message).toBe("请查收验证邮件");
+      expect(result.email).toBe("user@example.com");
+    });
+  });
+
+  describe("authForgotPassword", () => {
+    it("应该调用 forgot-password API 并传递标准化后的 email", async () => {
+      // Arrange
+      const email = "  User@Example.COM  ";
+      const mockResponse: AxiosResponse<ApiResponseBase<{ message: string }>> = {
+        data: {
+          code: 0,
+          message: "success",
+          data: { message: "请查收邮件" },
+        },
+      } as AxiosResponse<ApiResponseBase<{ message: string }>>;
+
+      vi.mocked(apiService.post).mockResolvedValue(mockResponse);
+
+      // Act
+      await authForgotPassword(email);
+
+      // Assert - email 应做 trim().toLowerCase() 标准化
+      expect(apiService.post).toHaveBeenCalledWith("/auth/forgot-password", {
+        email: "user@example.com",
+      });
+    });
+
+    it("应该成功返回（无返回值）", async () => {
+      // Arrange
+      const mockResponse: AxiosResponse<ApiResponseBase<void>> = {
+        data: { code: 0, message: "success", data: null },
+      } as AxiosResponse<ApiResponseBase<void>>;
+
+      vi.mocked(apiService.post).mockResolvedValue(mockResponse);
+
+      // Act
+      await authForgotPassword("user@example.com");
+
+      // Assert
+      expect(apiService.post).toHaveBeenCalledWith("/auth/forgot-password", {
+        email: "user@example.com",
+      });
+    });
+  });
+
+  describe("authResetPassword", () => {
+    it("应该调用 reset-password API 并传递 token 和 newPassword（不传 email）", async () => {
+      // Arrange
+      const token = "reset-token-xxx";
+      const newPassword = "newPassword123";
+      const mockResponse: AxiosResponse<ApiResponseBase<void>> = {
+        data: { code: 0, message: "success", data: null },
+      } as AxiosResponse<ApiResponseBase<void>>;
+
+      vi.mocked(apiService.post).mockResolvedValue(mockResponse);
+
+      // Act
+      await authResetPassword(token, newPassword);
+
+      // Assert - 仅传 token 和 newPassword，不传 email
+      expect(apiService.post).toHaveBeenCalledWith("/auth/reset-password", {
+        token,
+        newPassword,
+      });
+    });
+
+    it("应该成功返回（无返回值）", async () => {
+      // Arrange
+      const mockResponse: AxiosResponse<ApiResponseBase<void>> = {
+        data: { code: 0, message: "success", data: null },
+      } as AxiosResponse<ApiResponseBase<void>>;
+
+      vi.mocked(apiService.post).mockResolvedValue(mockResponse);
+
+      // Act
+      await authResetPassword("token", "newpass");
+
+      // Assert
+      expect(apiService.post).toHaveBeenCalledWith("/auth/reset-password", {
+        token: "token",
+        newPassword: "newpass",
+      });
+    });
+  });
+
+  describe("authChangePassword", () => {
+    it("应该调用 change-password API 并传递 currentPassword 和 newPassword", async () => {
+      // Arrange
+      const data = {
+        currentPassword: "oldPassword123",
+        newPassword: "newPassword456",
+      };
+      const mockResponse: AxiosResponse<ApiResponseBase<void>> = {
+        data: { code: 0, message: "success", data: null },
+      } as AxiosResponse<ApiResponseBase<void>>;
+
+      vi.mocked(apiService.post).mockResolvedValue(mockResponse);
+
+      // Act
+      await authChangePassword(data);
+
+      // Assert
+      expect(apiService.post).toHaveBeenCalledWith("/auth/change-password", data);
+    });
+
+    it("应该成功返回（无返回值）", async () => {
+      // Arrange
+      const mockResponse: AxiosResponse<ApiResponseBase<void>> = {
+        data: { code: 0, message: "success", data: null },
+      } as AxiosResponse<ApiResponseBase<void>>;
+
+      vi.mocked(apiService.post).mockResolvedValue(mockResponse);
+
+      // Act
+      await authChangePassword({
+        currentPassword: "old",
+        newPassword: "new",
+      });
+
+      // Assert
+      expect(apiService.post).toHaveBeenCalledWith("/auth/change-password", {
+        currentPassword: "old",
+        newPassword: "new",
+      });
+    });
+  });
+
+  describe("authGetCurrentUser", () => {
+    it("应该使用 GET 方法调用 /auth/me 接口", async () => {
+      // Arrange
+      const mockUserInfo: UserInfo = {
+        id: 1,
+        email: "user@example.com",
+        username: "testuser",
+        email_verified: true,
+        created_at: "2024-01-01T00:00:00.000Z",
+      };
+      const mockResponse: AxiosResponse<ApiResponseBase<UserInfo>> = {
+        data: {
+          code: 0,
+          message: "success",
+          data: mockUserInfo,
+        },
+      } as AxiosResponse<ApiResponseBase<UserInfo>>;
+
+      vi.mocked(apiService.get).mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await authGetCurrentUser();
+
+      // Assert
+      expect(apiService.get).toHaveBeenCalledWith("/auth/me");
+      expect(result.data).toEqual(mockUserInfo);
+      expect(result.data?.id).toBe(1);
+      expect(result.data?.email).toBe("user@example.com");
+      expect(result.data?.username).toBe("testuser");
+      expect(result.data?.email_verified).toBe(true);
+    });
+
+    it("应该返回 UserInfo 类型（含 id、email、username、emailVerified、createdAt）", async () => {
+      // Arrange
+      const mockUserInfo: UserInfo = {
+        id: 2,
+        email: "me@example.com",
+        username: "meuser",
+        email_verified: true,
+        created_at: "2024-02-01T12:00:00.000Z",
+      };
+      const mockResponse: AxiosResponse<ApiResponseBase<UserInfo>> = {
+        data: { code: 0, message: "success", data: mockUserInfo },
+      } as AxiosResponse<ApiResponseBase<UserInfo>>;
+
+      vi.mocked(apiService.get).mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await authGetCurrentUser();
+
+      // Assert
+      expect(result.data).toHaveProperty("id");
+      expect(result.data).toHaveProperty("email");
+      expect(result.data).toHaveProperty("username");
+      expect(result.data).toHaveProperty("email_verified");
+      expect(result.data).toHaveProperty("created_at");
+    });
+
+    it("应该处理 API 错误", async () => {
+      // Arrange
+      const mockError = new Error("未授权");
+      vi.mocked(apiService.get).mockRejectedValue(mockError);
+
+      // Act & Assert
+      await expect(authGetCurrentUser()).rejects.toThrow("未授权");
     });
   });
 });

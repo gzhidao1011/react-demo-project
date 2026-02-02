@@ -1,14 +1,15 @@
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithI18n } from "../../test-utils";
 import "@testing-library/jest-dom/vitest";
-import type { ApiResponseBase, LoginResponse } from "@repo/services";
+import type { RegisterResponse } from "@repo/services";
 import SignUpPage from "./page";
 
 // Mock API 调用
 vi.mock("@repo/services", () => ({
   authRegister: vi.fn(),
+  authResendVerification: vi.fn(),
 }));
 
 // Mock 路由
@@ -32,6 +33,8 @@ vi.mock("@repo/utils", async () => {
   return {
     ...actual,
     handleServerError: vi.fn(),
+    isSystemError: vi.fn(() => false),
+    getSystemErrorToastMessage: vi.fn(() => undefined),
   };
 });
 
@@ -189,6 +192,30 @@ describe("SignUpPage", () => {
       );
     });
 
+    it("应该显示条款未勾选错误（当未勾选条款时提交）", async () => {
+      // Arrange
+      const user = userEvent.setup({ delay: null });
+      await renderWithI18n(<SignUpPage />);
+
+      // Act - 填写有效数据但不勾选条款
+      await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
+      await user.type(screen.getByLabelText("密码"), "password123");
+      await user.type(screen.getByLabelText("确认密码"), "password123");
+      // 不勾选 acceptedTerms
+      await user.click(screen.getByRole("button", { name: /创建账户/ }));
+
+      // Assert - 验证错误消息显示且 API 未被调用
+      await waitFor(
+        () => {
+          const errorEl = screen.getByTestId("acceptedTerms-error");
+          expect(errorEl).toBeInTheDocument();
+          expect(errorEl).toHaveTextContent(/请阅读并同意/);
+        },
+        { timeout: 3000 },
+      );
+      expect(mockAuthRegister).not.toHaveBeenCalled();
+    });
+
     it("应该显示密码不一致错误（当两次密码不一致时）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
@@ -201,10 +228,11 @@ describe("SignUpPage", () => {
       await user.type(confirmPasswordInput, "password456");
       await user.tab(); // 触发 onBlur 验证
 
-      // Assert
+      // Assert - 使用 confirmPassword-error 的 data-testid 或 role="alert" 查找
       await waitFor(
         () => {
-          expect(screen.getByText(/两次输入的密码不一致/)).toBeInTheDocument();
+          const errorEl = screen.getByText(/两次输入的密码不一致/);
+          expect(errorEl).toBeInTheDocument();
         },
         { timeout: 3000 },
       );
@@ -382,25 +410,29 @@ describe("SignUpPage", () => {
       await user.tab();
       expect(screen.getByLabelText("密码")).toHaveFocus();
 
-      // 第四个 Tab：密码显示/隐藏按钮（这是正确的键盘导航行为）
+      // 第四个 Tab：密码显示/隐藏按钮
       await user.tab();
       const passwordToggleButton = screen.getAllByLabelText("显示密码")[0];
       expect(passwordToggleButton).toHaveFocus();
 
-      // 第五个 Tab：确认密码输入框
+      // 第五个 Tab：条款勾选框
+      await user.tab();
+      expect(screen.getByRole("checkbox", { name: /我已阅读并同意/ })).toHaveFocus();
+
+      // 第六个 Tab：确认密码输入框
       await user.tab();
       expect(screen.getByLabelText("确认密码")).toHaveFocus();
 
-      // 第六个 Tab：确认密码显示/隐藏按钮
+      // 第七个 Tab：确认密码显示/隐藏按钮
       await user.tab();
       const confirmPasswordToggleButton = screen.getAllByLabelText("显示密码")[1];
       expect(confirmPasswordToggleButton).toHaveFocus();
 
-      // 第七个 Tab：取消按钮
+      // 第八个 Tab：取消按钮
       await user.tab();
       expect(screen.getByRole("button", { name: /取消/ })).toHaveFocus();
 
-      // 第八个 Tab：提交按钮
+      // 第九个 Tab：提交按钮
       await user.tab();
       expect(screen.getByRole("button", { name: /创建账户/ })).toHaveFocus();
     });
@@ -411,29 +443,27 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
-      });
+        message: "请查收验证邮件",
+        email: "user@example.com",
+      } as RegisterResponse);
       await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(screen.getByRole("button", { name: /创建账户/ }));
 
-      // Assert
+      // Assert - 验证 API 被调用，含 acceptedTermsAt（合规记录）
       await waitFor(
         () => {
-          expect(mockAuthRegister).toHaveBeenCalledWith({
-            email: "user@example.com",
-            password: "password123",
-          });
+          expect(mockAuthRegister).toHaveBeenCalled();
+          const call = mockAuthRegister.mock.calls[0][0];
+          expect(call.email).toBe("user@example.com");
+          expect(call.password).toBe("password123");
+          expect(call.acceptedTermsAt).toBeDefined();
+          expect(typeof call.acceptedTermsAt).toBe("string");
         },
         { timeout: 3000 },
       );
@@ -443,29 +473,26 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
-      });
+        message: "请查收验证邮件",
+        email: "test@example.com",
+      } as RegisterResponse);
       await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "test@example.com");
       await user.type(screen.getByLabelText("密码"), "testpassword");
       await user.type(screen.getByLabelText("确认密码"), "testpassword");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(screen.getByRole("button", { name: /创建账户/ }));
 
-      // Assert
+      // Assert - 验证 API 被调用，含 acceptedTermsAt
       await waitFor(
         () => {
-          expect(mockAuthRegister).toHaveBeenCalledWith({
-            email: "test@example.com",
-            password: "testpassword",
-          });
+          expect(mockAuthRegister).toHaveBeenCalled();
+          const call = mockAuthRegister.mock.calls[0][0];
+          expect(call.email).toBe("test@example.com");
+          expect(call.password).toBe("testpassword");
+          expect(call.acceptedTermsAt).toBeDefined();
         },
         { timeout: 3000 },
       );
@@ -475,51 +502,43 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
-      });
+        message: "请查收验证邮件",
+        email: "user@example.com",
+      } as RegisterResponse);
       await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(screen.getByRole("button", { name: /创建账户/ }));
 
       // Assert
       await waitFor(
         () => {
-          expect(mockToastSuccess).toHaveBeenCalledWith("注册成功！正在进入...", {
-            duration: 2000,
+          expect(mockToastSuccess).toHaveBeenCalledWith("请查收验证邮件", {
+            duration: 3000,
           });
         },
         { timeout: 3000 },
       );
     });
 
-    it("应该跳转到 Chat 页（注册成功后自动登录）", async () => {
+    it("应该显示请查收验证邮件状态（注册成功后）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
-      });
+        message: "请查收验证邮件",
+        email: "user@example.com",
+      } as RegisterResponse);
       await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(screen.getByRole("button", { name: /创建账户/ }));
 
       // Assert - 验证 API 被调用
@@ -530,12 +549,45 @@ describe("SignUpPage", () => {
         { timeout: 3000 },
       );
 
-      // 等待 setTimeout 执行（使用 waitFor 等待导航调用，而不是使用 fake timers）
+      // 验证显示「请验证您的邮箱」状态（不再跳转 /chat）
       await waitFor(
         () => {
-          expect(mockNavigateFn).toHaveBeenCalledWith("/chat", { replace: true });
+          expect(screen.getByText("请验证您的邮箱")).toBeInTheDocument();
+          expect(screen.getByText(/验证邮件已发送至 user@example.com/)).toBeInTheDocument();
         },
-        { timeout: 5000 }, // 增加超时时间，因为需要等待 2 秒的 setTimeout
+        { timeout: 3000 },
+      );
+    });
+
+    it("应该支持使用其他邮箱返回表单", async () => {
+      // Arrange
+      const user = userEvent.setup({ delay: null });
+      mockAuthRegister.mockResolvedValue({
+        message: "请查收验证邮件",
+        email: "user@example.com",
+      } as RegisterResponse);
+      await renderWithI18n(<SignUpPage />);
+
+      // Act - 注册成功
+      await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
+      await user.type(screen.getByLabelText("密码"), "password123");
+      await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
+      await user.click(screen.getByRole("button", { name: /创建账户/ }));
+
+      // Assert - 显示检查邮件状态
+      await waitFor(() => expect(screen.getByText("请验证您的邮箱")).toBeInTheDocument());
+
+      // Act - 点击使用其他邮箱
+      await user.click(screen.getByRole("button", { name: /使用其他邮箱/ }));
+
+      // Assert - 返回注册表单
+      await waitFor(
+        () => {
+          expect(screen.getByLabelText("邮箱地址")).toBeInTheDocument();
+          expect(screen.getByRole("button", { name: /创建账户/ })).toBeInTheDocument();
+        },
+        { timeout: 3000 },
       );
     });
 
@@ -550,6 +602,7 @@ describe("SignUpPage", () => {
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(screen.getByRole("button", { name: /创建账户/ }));
 
       // Assert - 验证 toastError 被调用（toastError 是同步的，但需要等待 catch 块执行）
@@ -580,6 +633,7 @@ describe("SignUpPage", () => {
       await user.type(screen.getByLabelText("邮箱地址"), "existing@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(screen.getByRole("button", { name: /创建账户/ }));
 
       // Assert
@@ -595,8 +649,8 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       // 使用可控制的 Promise 来模拟正在进行的异步操作
-      let resolvePromise: (value: ApiResponseBase<LoginResponse>) => void;
-      const pendingPromise = new Promise<ApiResponseBase<LoginResponse>>((resolve) => {
+      let resolvePromise: (value: RegisterResponse) => void;
+      const pendingPromise = new Promise<RegisterResponse>((resolve) => {
         resolvePromise = resolve;
       });
 
@@ -608,6 +662,7 @@ describe("SignUpPage", () => {
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(submitButton);
 
       // Assert - 等待按钮被禁用（用户可见的状态）
@@ -621,27 +676,22 @@ describe("SignUpPage", () => {
       // 验证按钮文本变为"注册中..."（用户可见的反馈）
       expect(submitButton).toHaveTextContent("注册中...");
 
-      // Cleanup - 解析 Promise 以完成测试
-      resolvePromise!({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
+      // Cleanup - 在 act 中解析 Promise，避免状态更新警告
+      await act(async () => {
+        resolvePromise!({
+          message: "请查收验证邮件",
+          email: "user@example.com",
+        });
+        await pendingPromise;
       });
-
-      // 等待 Promise 完成
-      await pendingPromise;
     });
 
     it("应该显示加载状态（提交中时）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       // 使用可控制的 Promise 来模拟正在进行的异步操作
-      let resolvePromise: (value: ApiResponseBase<LoginResponse>) => void;
-      const pendingPromise = new Promise<ApiResponseBase<LoginResponse>>((resolve) => {
+      let resolvePromise: (value: RegisterResponse) => void;
+      const pendingPromise = new Promise<RegisterResponse>((resolve) => {
         resolvePromise = resolve;
       });
 
@@ -653,6 +703,7 @@ describe("SignUpPage", () => {
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(submitButton);
 
       // Assert - 等待加载状态显示（用户可见的反馈）
@@ -666,19 +717,14 @@ describe("SignUpPage", () => {
       // 验证按钮被禁用
       expect(submitButton).toBeDisabled();
 
-      // Cleanup - 解析 Promise 以完成测试
-      resolvePromise!({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
+      // Cleanup - 在 act 中解析 Promise，避免状态更新警告
+      await act(async () => {
+        resolvePromise!({
+          message: "请查收验证邮件",
+          email: "user@example.com",
+        });
+        await pendingPromise;
       });
-
-      // 等待 Promise 完成
-      await pendingPromise;
     });
   });
 
@@ -784,20 +830,16 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
-      });
+        message: "请查收验证邮件",
+        email: "user@example.com",
+      } as RegisterResponse);
       await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.keyboard("{Enter}");
 
       // Assert
@@ -829,14 +871,9 @@ describe("SignUpPage", () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
       mockAuthRegister.mockResolvedValue({
-        code: 0,
-        message: "success",
-        data: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresIn: 3600,
-        },
-      });
+        message: "请查收验证邮件",
+        email: "user@example.com",
+      } as RegisterResponse);
       await renderWithI18n(<SignUpPage />);
 
       // Act - 先触发一个验证错误
@@ -857,6 +894,7 @@ describe("SignUpPage", () => {
       await user.type(emailInput, "user@example.com");
       await user.type(screen.getByLabelText("密码"), "password123");
       await user.type(screen.getByLabelText("确认密码"), "password123");
+      await user.click(screen.getByRole("checkbox"));
       await user.click(screen.getByRole("button", { name: /创建账户/ }));
 
       // Assert - 验证错误被清除

@@ -2,6 +2,7 @@ package com.example.user.mapper;
 
 import com.example.user.entity.UserEntity;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -60,6 +61,16 @@ public interface UserMapper {
      * 更新用户
      */
     int update(UserEntity user);
+
+    /**
+     * 更新用户密码（用于密码重置）
+     *
+     * @param userId 用户 ID
+     * @param encodedPassword BCrypt 编码后的新密码
+     * @param updatedAt 更新时间
+     * @return 更新的行数
+     */
+    int updatePassword(@Param("userId") Long userId, @Param("encodedPassword") String encodedPassword, @Param("updatedAt") java.time.LocalDateTime updatedAt);
 
     /**
      * 根据 ID 删除用户

@@ -129,7 +129,7 @@ class LoginResponseSerializationTest {
         assertEquals("123", userMap.get("id"), "user.id 应正确序列化");
         assertEquals("test@example.com", userMap.get("email"), "user.email 应正确序列化");
         assertEquals("testuser", userMap.get("username"), "user.username 应正确序列化");
-        assertEquals(false, userMap.get("emailVerified"), "user.emailVerified 应正确序列化");
+        assertEquals(false, userMap.get("email_verified"), "user.email_verified 应正确序列化");
     }
 
     @Test

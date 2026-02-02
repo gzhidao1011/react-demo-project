@@ -10,6 +10,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "password123",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act: 调用 Schema 验证
@@ -25,6 +26,7 @@ describe("registerSchema", () => {
         email: "user@mail.example.com",
         password: "password123",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act: 调用 Schema 验证
@@ -40,6 +42,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "123456", // 最小 6 个字符
         confirmPassword: "123456",
+        acceptedTerms: true,
       };
 
       // Act: 调用 Schema 验证
@@ -47,6 +50,19 @@ describe("registerSchema", () => {
 
       // Assert: 验证结果
       expect(result).toEqual(validData);
+    });
+
+    it("应该拒绝未勾选条款", () => {
+      // Arrange: 未勾选 acceptedTerms
+      const invalidData = {
+        email: "user@example.com",
+        password: "password123",
+        confirmPassword: "password123",
+        acceptedTerms: false,
+      };
+
+      // Act & Assert: 验证抛出错误
+      expect(() => registerSchema.parse(invalidData)).toThrow(/请阅读并同意服务条款和隐私政策/);
     });
   });
 
@@ -57,6 +73,7 @@ describe("registerSchema", () => {
         email: "invalid-email",
         password: "password123",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -69,6 +86,7 @@ describe("registerSchema", () => {
         email: "",
         password: "password123",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -81,6 +99,7 @@ describe("registerSchema", () => {
         email: "userexample.com",
         password: "password123",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -93,6 +112,7 @@ describe("registerSchema", () => {
         email: "user@",
         password: "password123",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -107,6 +127,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "",
         confirmPassword: "",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -119,6 +140,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "12345", // 只有 5 个字符
         confirmPassword: "12345",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -132,6 +154,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: longPassword,
         confirmPassword: longPassword,
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -146,6 +169,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "password123",
         confirmPassword: "password456",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -158,6 +182,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "password123",
         confirmPassword: "",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -170,6 +195,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -183,6 +209,7 @@ describe("registerSchema", () => {
       const invalidData: Partial<RegisterFormData> = {
         password: "password123",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -194,6 +221,7 @@ describe("registerSchema", () => {
       const invalidData: Partial<RegisterFormData> = {
         email: "user@example.com",
         confirmPassword: "password123",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -205,6 +233,7 @@ describe("registerSchema", () => {
       const invalidData: Partial<RegisterFormData> = {
         email: "user@example.com",
         password: "password123",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误
@@ -219,6 +248,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "123456",
         confirmPassword: "123456",
+        acceptedTerms: true,
       };
 
       // Act: 调用 Schema 验证
@@ -235,6 +265,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password,
         confirmPassword: password,
+        acceptedTerms: true,
       };
 
       // Act: 调用 Schema 验证
@@ -250,6 +281,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "P@ssw0rd!",
         confirmPassword: "P@ssw0rd!",
+        acceptedTerms: true,
       };
 
       // Act: 调用 Schema 验证
@@ -267,6 +299,7 @@ describe("registerSchema", () => {
         email: "user@example.com",
         password: "password123",
         confirmPassword: "password456",
+        acceptedTerms: true,
       };
 
       // Act & Assert: 验证抛出错误并包含正确的错误消息
