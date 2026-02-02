@@ -52,7 +52,9 @@ public class GlobalExceptionHandler {
         log.warn("业务异常: URI={}, Code={}, Message={}", request.getRequestURI(), e.getCode(), e.getMessage());
         HttpStatus status = e.getCode() == ResultCode.RATE_LIMIT_EXCEEDED.getCode()
                 ? HttpStatus.TOO_MANY_REQUESTS
-                : HttpStatus.BAD_REQUEST;
+                : e.getCode() == ResultCode.UNAUTHORIZED.getCode()
+                        ? HttpStatus.UNAUTHORIZED
+                        : HttpStatus.BAD_REQUEST;
         return ResponseEntity.status(status).body(Result.error(e.getCode(), e.getMessage()));
     }
 

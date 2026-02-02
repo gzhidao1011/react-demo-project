@@ -1,4 +1,5 @@
 import { PaperClipIcon } from "@heroicons/react/16/solid";
+import { useLocale } from "@repo/i18n";
 import { Button, cn, Textarea } from "@repo/ui";
 import type { ChangeEvent, ClipboardEvent, DragEvent, KeyboardEvent, RefObject } from "react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -29,10 +30,6 @@ const INPUT_CONTAINER_CLASSES =
   "flex flex-col gap-2 rounded-xl border border-border bg-card shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background";
 
 const FILE_CHIP_CLASSES = "inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-xs text-foreground";
-const ARIA_ADD_ATTACHMENTS = "Add attachments";
-const ARIA_MESSAGE = "Message";
-const ARIA_SEND = "Send";
-const ARIA_REMOVE_PREFIX = "Remove";
 
 const SendIcon = memo(function SendIcon() {
   return (
@@ -47,10 +44,12 @@ export const ChatInput = memo(function ChatInput({
   onChange,
   onSend,
   disabled = false,
-  placeholder = "Message...",
+  placeholder,
   inputRef: inputRefProp,
 }: ChatInputProps) {
+  const { t } = useLocale();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const resolvedPlaceholder = placeholder ?? t("chat.messagePlaceholder");
   const textareaEl = inputRefProp ?? textareaRef;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -151,7 +150,7 @@ export const ChatInput = memo(function ChatInput({
                 size="xs"
                 onClick={() => removeFile(i)}
                 className="h-auto min-h-0 w-auto rounded p-0.5 hover:bg-muted-foreground/20"
-                aria-label={`${ARIA_REMOVE_PREFIX} ${f.name}`}
+                aria-label={`${t("chat.remove")} ${f.name}`}
               >
                 ×
               </Button>
@@ -175,7 +174,7 @@ export const ChatInput = memo(function ChatInput({
           size="icon"
           onClick={() => fileInputRef.current?.click()}
           className="shrink-0 text-muted-foreground hover:text-foreground"
-          aria-label={ARIA_ADD_ATTACHMENTS}
+          aria-label={t("chat.addAttachments")}
         >
           <PaperClipIcon className="h-5 w-5" />
         </Button>
@@ -186,8 +185,8 @@ export const ChatInput = memo(function ChatInput({
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           disabled={disabled}
-          placeholder={placeholder}
-          aria-label={ARIA_MESSAGE}
+          placeholder={resolvedPlaceholder}
+          aria-label={t("chat.messagePlaceholder")}
           rows={1}
           className={cn(TEXTAREA_CLASSES)}
         />
@@ -198,7 +197,7 @@ export const ChatInput = memo(function ChatInput({
           onClick={handleSubmit}
           disabled={!canSend}
           className="shrink-0 rounded-lg"
-          aria-label={ARIA_SEND}
+          aria-label={t("chat.send")}
         >
           <SendIcon />
         </Button>

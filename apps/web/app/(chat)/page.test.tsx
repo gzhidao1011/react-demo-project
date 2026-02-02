@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithI18n } from "../test-utils";
 import "@testing-library/jest-dom/vitest";
 import { useParams } from "react-router";
 import ChatPage from "./page";
@@ -89,26 +90,26 @@ describe("ChatPage", () => {
   });
 
   describe("渲染", () => {
-    it("应该渲染展开侧边栏按钮（收起时显示）", () => {
-      render(<ChatPage />);
+    it("应该渲染展开侧边栏按钮（收起时显示）", async () => {
+      await renderWithI18n(<ChatPage />);
 
-      expect(screen.getByRole("button", { name: /Open sidebar/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /打开侧边栏/i })).toBeInTheDocument();
     });
 
-    it("应该渲染欢迎区域（无消息时）", () => {
-      render(<ChatPage />);
+    it("应该渲染欢迎区域（无消息时）", async () => {
+      await renderWithI18n(<ChatPage />);
 
-      expect(screen.getByText(/What|你好|欢迎|开始/i)).toBeInTheDocument();
+      expect(screen.getByText(/有什么可以帮您|今天有什么可以帮您|What can I help/i)).toBeInTheDocument();
     });
 
-    it("应该渲染输入框", () => {
-      render(<ChatPage />);
+    it("应该渲染输入框", async () => {
+      await renderWithI18n(<ChatPage />);
 
       expect(screen.getByRole("textbox", { name: /Message|输入消息/i })).toBeInTheDocument();
     });
 
-    it("应该渲染发送按钮", () => {
-      render(<ChatPage />);
+    it("应该渲染发送按钮", async () => {
+      await renderWithI18n(<ChatPage />);
 
       expect(screen.getByRole("button", { name: /Send|发送/i })).toBeInTheDocument();
     });
@@ -130,15 +131,15 @@ describe("ChatPage", () => {
       } as never);
     });
 
-    it("应显示重新生成按钮", () => {
-      render(<ChatPage />);
+    it("应显示重新生成按钮", async () => {
+      await renderWithI18n(<ChatPage />);
 
-      expect(screen.getByRole("button", { name: /Regenerate|重新生成/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /重新生成|Regenerate/i })).toBeInTheDocument();
     });
 
     it("点击重新生成应调用 regenerate", async () => {
       const user = userEvent.setup({ delay: null });
-      render(<ChatPage />);
+      await renderWithI18n(<ChatPage />);
 
       await user.click(screen.getByRole("button", { name: /Regenerate|重新生成/i }));
 
@@ -162,11 +163,11 @@ describe("ChatPage", () => {
     it("点击新建对话应创建会话并跳转", async () => {
       const user = userEvent.setup({ delay: null });
       mockCreateConversation.mockReturnValue("conv_new_123");
-      render(<ChatPage />);
+      await renderWithI18n(<ChatPage />);
 
       // 点击展开按钮打开侧边栏，再点击新建对话
-      await user.click(screen.getByRole("button", { name: /Open sidebar/i }));
-      await user.click(screen.getByRole("button", { name: /New chat/i }));
+      await user.click(screen.getByRole("button", { name: /打开侧边栏|Open sidebar/i }));
+      await user.click(screen.getByRole("button", { name: /新建对话|New chat/i }));
 
       expect(mockCreateConversation).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith("/chat/conv_new_123", { replace: true });
@@ -174,9 +175,9 @@ describe("ChatPage", () => {
 
     it("点击快捷提示词应填入输入框", async () => {
       const user = userEvent.setup({ delay: null });
-      render(<ChatPage />);
+      await renderWithI18n(<ChatPage />);
 
-      await user.click(screen.getByRole("button", { name: "Write an email" }));
+      await user.click(screen.getByRole("button", { name: "写邮件" }));
 
       expect(screen.getByRole("textbox")).toHaveValue("Help me write an email");
     });

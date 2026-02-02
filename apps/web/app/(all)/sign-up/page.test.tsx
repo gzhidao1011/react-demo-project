@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithI18n } from "../../test-utils";
 import "@testing-library/jest-dom/vitest";
 import type { ApiResponseBase, LoginResponse } from "@repo/services";
 import SignUpPage from "./page";
@@ -68,57 +69,57 @@ describe("SignUpPage", () => {
   });
 
   describe("表单渲染", () => {
-    it("应该渲染邮箱输入框", () => {
+    it("应该渲染邮箱输入框", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       expect(screen.getByLabelText("邮箱地址")).toBeInTheDocument();
     });
 
-    it("应该渲染密码输入框", () => {
+    it("应该渲染密码输入框", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       expect(screen.getByLabelText("密码")).toBeInTheDocument();
     });
 
-    it("应该渲染确认密码输入框", () => {
+    it("应该渲染确认密码输入框", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       expect(screen.getByLabelText("确认密码")).toBeInTheDocument();
     });
 
-    it("应该渲染注册按钮", () => {
+    it("应该渲染注册按钮", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       expect(screen.getByRole("button", { name: /创建账户/ })).toBeInTheDocument();
     });
 
-    it("应该渲染取消按钮", () => {
+    it("应该渲染取消按钮", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       expect(screen.getByRole("button", { name: /取消/ })).toBeInTheDocument();
     });
 
-    it("应该渲染立即登录链接", () => {
+    it("应该渲染立即登录链接", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       expect(screen.getByText("立即登录")).toBeInTheDocument();
     });
 
-    it("应该初始化为空表单", () => {
+    it("应该初始化为空表单", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       const emailInput = screen.getByLabelText("邮箱地址");
@@ -134,7 +135,7 @@ describe("SignUpPage", () => {
     it("应该显示邮箱格式错误（当输入无效邮箱时）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -153,7 +154,7 @@ describe("SignUpPage", () => {
     it("应该显示密码必填错误（当密码为空时）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const passwordInput = screen.getByLabelText("密码");
 
       // Act
@@ -172,7 +173,7 @@ describe("SignUpPage", () => {
     it("应该显示密码长度错误（当密码少于 6 个字符时）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const passwordInput = screen.getByLabelText("密码");
 
       // Act
@@ -191,7 +192,7 @@ describe("SignUpPage", () => {
     it("应该显示密码不一致错误（当两次密码不一致时）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const passwordInput = screen.getByLabelText("密码");
       const confirmPasswordInput = screen.getByLabelText("确认密码");
 
@@ -212,7 +213,7 @@ describe("SignUpPage", () => {
     it("应该在失去焦点时验证字段（onBlur 模式）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -231,7 +232,7 @@ describe("SignUpPage", () => {
     it("应该在输入有效数据后清除错误消息", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act - 先输入无效数据
@@ -265,7 +266,7 @@ describe("SignUpPage", () => {
     it("应该允许用户输入邮箱", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const emailInput = screen.getByLabelText("邮箱地址") as HTMLInputElement;
 
       // Act
@@ -278,7 +279,7 @@ describe("SignUpPage", () => {
     it("应该允许用户输入密码", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const passwordInput = screen.getByLabelText("密码") as HTMLInputElement;
 
       // Act
@@ -291,7 +292,7 @@ describe("SignUpPage", () => {
     it("应该允许用户输入确认密码", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const confirmPasswordInput = screen.getByLabelText("确认密码") as HTMLInputElement;
 
       // Act
@@ -304,7 +305,7 @@ describe("SignUpPage", () => {
     it("应该允许用户切换密码显示/隐藏", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const passwordInput = screen.getByLabelText("密码") as HTMLInputElement;
       // 页面上有两个"显示密码"按钮（密码和确认密码），使用 getAllByLabelText 并选择第一个
       const toggleButtons = screen.getAllByLabelText("显示密码");
@@ -324,7 +325,7 @@ describe("SignUpPage", () => {
     it("应该允许用户切换确认密码显示/隐藏", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const confirmPasswordInput = screen.getByLabelText("确认密码") as HTMLInputElement;
       const toggleButtons = screen.getAllByLabelText("显示密码");
       const confirmPasswordToggle = toggleButtons[1]; // 第二个是确认密码的切换按钮
@@ -340,7 +341,7 @@ describe("SignUpPage", () => {
     it("应该允许用户点击取消按钮返回首页", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const cancelButton = screen.getByRole("button", { name: /取消/ });
 
       // Act
@@ -353,7 +354,7 @@ describe("SignUpPage", () => {
     it("应该允许用户点击立即登录跳转到登录页", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const loginLink = screen.getByText("立即登录");
 
       // Act
@@ -366,36 +367,40 @@ describe("SignUpPage", () => {
     it("应该支持键盘导航（Tab键在字段间切换）", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
-      // Act & Assert - 使用 Tab 键导航
-      // 第一个 Tab：邮箱输入框
+      // Act & Assert - 使用 Tab 键导航（页面含 LocaleSwitcher，第一个 Tab 会聚焦到语言切换按钮）
+      // 第一个 Tab：LocaleSwitcher（语言切换按钮）
+      await user.tab();
+      expect(screen.getByRole("button", { name: /切换语言/ })).toHaveFocus();
+
+      // 第二个 Tab：邮箱输入框
       await user.tab();
       expect(screen.getByLabelText("邮箱地址")).toHaveFocus();
 
-      // 第二个 Tab：密码输入框
+      // 第三个 Tab：密码输入框
       await user.tab();
       expect(screen.getByLabelText("密码")).toHaveFocus();
 
-      // 第三个 Tab：密码显示/隐藏按钮（这是正确的键盘导航行为）
+      // 第四个 Tab：密码显示/隐藏按钮（这是正确的键盘导航行为）
       await user.tab();
       const passwordToggleButton = screen.getAllByLabelText("显示密码")[0];
       expect(passwordToggleButton).toHaveFocus();
 
-      // 第四个 Tab：确认密码输入框
+      // 第五个 Tab：确认密码输入框
       await user.tab();
       expect(screen.getByLabelText("确认密码")).toHaveFocus();
 
-      // 第五个 Tab：确认密码显示/隐藏按钮
+      // 第六个 Tab：确认密码显示/隐藏按钮
       await user.tab();
       const confirmPasswordToggleButton = screen.getAllByLabelText("显示密码")[1];
       expect(confirmPasswordToggleButton).toHaveFocus();
 
-      // 第六个 Tab：取消按钮
+      // 第七个 Tab：取消按钮
       await user.tab();
       expect(screen.getByRole("button", { name: /取消/ })).toHaveFocus();
 
-      // 第七个 Tab：提交按钮
+      // 第八个 Tab：提交按钮
       await user.tab();
       expect(screen.getByRole("button", { name: /创建账户/ })).toHaveFocus();
     });
@@ -414,7 +419,7 @@ describe("SignUpPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -446,7 +451,7 @@ describe("SignUpPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "test@example.com");
@@ -478,7 +483,7 @@ describe("SignUpPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -509,7 +514,7 @@ describe("SignUpPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -539,7 +544,7 @@ describe("SignUpPage", () => {
       const user = userEvent.setup({ delay: null });
       const error = new Error("注册失败");
       mockAuthRegister.mockRejectedValue(error);
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -569,7 +574,7 @@ describe("SignUpPage", () => {
         },
       };
       mockAuthRegister.mockRejectedValue(error);
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "existing@example.com");
@@ -596,7 +601,7 @@ describe("SignUpPage", () => {
       });
 
       mockAuthRegister.mockReturnValue(pendingPromise);
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const submitButton = screen.getByRole("button", { name: /创建账户/ });
 
       // Act
@@ -641,7 +646,7 @@ describe("SignUpPage", () => {
       });
 
       mockAuthRegister.mockReturnValue(pendingPromise);
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const submitButton = screen.getByRole("button", { name: /创建账户/ });
 
       // Act
@@ -678,9 +683,9 @@ describe("SignUpPage", () => {
   });
 
   describe("可访问性", () => {
-    it("应该为输入框提供正确的 label 和 id", () => {
+    it("应该为输入框提供正确的 label 和 id", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       const emailInput = screen.getByLabelText("邮箱地址");
@@ -692,9 +697,9 @@ describe("SignUpPage", () => {
       expect(confirmPasswordInput).toHaveAttribute("id", "confirmPassword");
     });
 
-    it("应该为输入框和 label 正确关联（htmlFor 和 id）", () => {
+    it("应该为输入框和 label 正确关联（htmlFor 和 id）", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       const emailLabel = screen.getByText("邮箱地址").closest("label");
@@ -709,7 +714,7 @@ describe("SignUpPage", () => {
     it("应该在错误时设置 aria-invalid='true'", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -728,7 +733,7 @@ describe("SignUpPage", () => {
     it("应该为错误消息提供 role='alert'", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -748,7 +753,7 @@ describe("SignUpPage", () => {
     it("应该为错误消息提供 aria-describedby 关联", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -766,9 +771,9 @@ describe("SignUpPage", () => {
       );
     });
 
-    it("应该为密码显示/隐藏按钮提供 aria-label", () => {
+    it("应该为密码显示/隐藏按钮提供 aria-label", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       const passwordToggleButtons = screen.getAllByLabelText("显示密码");
@@ -787,7 +792,7 @@ describe("SignUpPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -806,9 +811,9 @@ describe("SignUpPage", () => {
   });
 
   describe("状态管理", () => {
-    it("应该初始化为空表单", () => {
+    it("应该初始化为空表单", async () => {
       // Arrange & Act
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Assert
       const emailInput = screen.getByLabelText("邮箱地址") as HTMLInputElement;
@@ -832,7 +837,7 @@ describe("SignUpPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignUpPage />);
+      await renderWithI18n(<SignUpPage />);
 
       // Act - 先触发一个验证错误
       const emailInput = screen.getByLabelText("邮箱地址");

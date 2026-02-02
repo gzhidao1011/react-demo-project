@@ -22,6 +22,7 @@
     "@hookform/resolvers": "catalog:",
     "@react-router/node": "catalog:",
     "@react-router/serve": "catalog:",
+    "@repo/i18n": "workspace:*",
     "@repo/propel": "workspace:*",
     "@repo/schemas": "workspace:*",
     "@repo/services": "workspace:*",

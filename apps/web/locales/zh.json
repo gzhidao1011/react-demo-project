@@ -1,0 +1,157 @@
+{
+  "home": {
+    "nav": {
+      "home": "首页",
+      "docs": "文档"
+    },
+    "hero": {
+      "title": "构建下一代",
+      "titleHighlight": "应用系统",
+      "subtitle": "强大的开发平台，让您专注于业务创新。提供完整的解决方案，从开发到部署，一站式服务。",
+      "cta": "立即开始"
+    },
+    "features": {
+      "title": "为什么选择我们",
+      "subtitle": "我们提供企业级解决方案，帮助您快速构建和部署应用",
+      "fastDeploy": {
+        "title": "快速部署",
+        "description": "一键部署，快速上线，让您的应用在几分钟内运行起来。"
+      },
+      "secure": {
+        "title": "安全可靠",
+        "description": "企业级安全保障，数据加密传输，确保您的数据安全无忧。"
+      },
+      "extensible": {
+        "title": "易于扩展",
+        "description": "灵活的架构设计，支持快速扩展，满足业务增长需求。"
+      },
+      "monitoring": {
+        "title": "智能监控",
+        "description": "实时监控系统状态，智能预警，让您随时掌握系统运行情况。"
+      }
+    },
+    "footer": {
+      "copyright": "© 2026 System. All rights reserved.",
+      "privacy": "隐私政策",
+      "terms": "服务条款",
+      "contact": "联系我们"
+    }
+  },
+  "auth": {
+    "login": "登录",
+    "signUp": "注册",
+    "signInSuccess": "登录成功！正在跳转...",
+    "signUpSuccess": "注册成功！正在进入...",
+    "loginTitle": "登录到您的账户",
+    "loginDescription": "输入您的邮箱地址以登录到您的账户",
+    "signUpTitle": "创建账户",
+    "signUpDescription": "输入您的信息以创建新账户",
+    "email": "邮箱地址",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "forgotPassword": "忘记密码？",
+    "placeholder": {
+      "email": "example@email.com",
+      "password": "请输入密码",
+      "confirmPassword": "请再次输入密码",
+      "passwordHint": "至少 6 个字符"
+    },
+    "cancel": "取消",
+    "loginButton": "登录",
+    "loggingIn": "登录中...",
+    "createAccount": "创建账户",
+    "creatingAccount": "注册中...",
+    "noAccount": "没有账户？",
+    "hasAccount": "已有账户？",
+    "signUpNow": "立即注册",
+    "signInNow": "立即登录",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "取消"
+  },
+  "chat": {
+    "loadingCreating": "创建对话中...",
+    "loadingHistory": "加载历史消息...",
+    "logoutSuccess": "已退出登录",
+    "openSidebar": "打开侧边栏 (⌘K)",
+    "openSidebarTitle": "打开侧边栏 (⌘K / Ctrl+K)",
+    "emptyList": "暂无对话",
+    "emptyListHint": "点击上方「新建对话」开始",
+    "noMatch": "没有匹配的对话",
+    "newChat": "新建对话",
+    "searchPlaceholder": "搜索对话...",
+    "searchLabel": "搜索对话",
+    "deleteConfirmTitle": "删除对话？",
+    "deleteConfirmDesc": "此操作不可撤销，对话及所有消息将被永久删除。",
+    "delete": "删除",
+    "logout": "退出登录",
+    "logoutConfirmTitle": "确认退出登录？",
+    "logoutConfirmDesc": "退出后需要重新登录才能继续使用。",
+    "closeSidebar": "关闭侧边栏",
+    "editConversationTitle": "编辑对话标题",
+    "renameConversation": "重命名 {title}",
+    "deleteConversation": "删除 {title}",
+    "welcomeTitle": "今天有什么可以帮您的？",
+    "attachImages": "附加图片",
+    "voiceComingSoon": "语音输入（即将推出）",
+    "emptyStateTitle": "有什么可以帮您的？",
+    "messagePlaceholder": "输入消息...",
+    "messagePlaceholderHint": "Enter 发送，Shift+Enter 换行",
+    "retry": "重试",
+    "dismiss": "关闭",
+    "stopGenerating": "停止生成",
+    "regenerate": "重新生成",
+    "errorNetwork": "网络错误，请检查连接并确保后端服务已启动。",
+    "errorGeneric": "出了点问题，请重试。",
+    "copied": "已复制到剪贴板",
+    "copyFailed": "复制失败",
+    "thanksFeedback": "感谢反馈！",
+    "thinking": "思考中",
+    "copyCode": "复制代码",
+    "copy": "复制",
+    "editMessage": "编辑消息",
+    "like": "点赞",
+    "dislike": "点踩",
+    "input": "输入",
+    "output": "输出",
+    "tokenUsage": "Token 用量",
+    "viewAttachment": "查看附件",
+    "attachment": "附件",
+    "addAttachments": "添加附件",
+    "send": "发送",
+    "remove": "移除",
+    "messagesFrom": "消息来自",
+    "sentAt": "发送于",
+    "generating": "生成中",
+    "loading": "加载中",
+    "prompts": {
+      "writeEmail": "写邮件",
+      "summarize": "总结文章",
+      "explainCode": "解释代码",
+      "brainstorm": "头脑风暴",
+      "explainDetail": "详细解释",
+      "translate": "翻译",
+      "simplify": "简化",
+      "giveExamples": "举例说明"
+    },
+    "time": {
+      "justNow": "刚刚",
+      "minAgo": "{count} 分钟前",
+      "yesterday": "昨天",
+      "today": "今天",
+      "daysAgo": "{count} 天前"
+    }
+  },
+  "notFound": {
+    "title": "404 - 页面未找到",
+    "goHome": "返回首页"
+  },
+  "welcome": {
+    "whatsNext": "接下来做什么？",
+    "docs": "React Router 文档",
+    "discord": "加入 Discord"
+  }
+}

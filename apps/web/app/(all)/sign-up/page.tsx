@@ -1,5 +1,6 @@
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LocaleSwitcher, useLocale } from "@repo/i18n";
 import { toast, toastError } from "@repo/propel";
 import { type RegisterFormData, registerSchema } from "@repo/schemas";
 import type { RegisterRequest } from "@repo/services";
@@ -9,8 +10,10 @@ import { useState } from "react";
 import type { FieldValues, UseFormSetError } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
+
 export default function SignUpPage() {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -45,7 +48,7 @@ export default function SignUpPage() {
       // 调用注册 API
       await authRegister(registerData);
 
-      toast.success("注册成功！正在进入...", {
+      toast.success(t("auth.signUpSuccess"), {
         duration: 2000,
       });
       // 延迟跳转，让用户看到成功提示（Token 已由 API 拦截器自动保存，直接进入首页）
@@ -58,13 +61,14 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center ">
+    <div className="flex min-h-svh w-full items-center justify-center">
+      <LocaleSwitcher className="fixed right-4 top-4 z-10" />
       <div className="w-[400px]">
         {/* 卡片容器 */}
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>创建账户</CardTitle>
-            <CardDescription>输入您的信息以创建新账户</CardDescription>
+            <CardTitle>{t("auth.signUpTitle")}</CardTitle>
+            <CardDescription>{t("auth.signUpDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -78,7 +82,7 @@ export default function SignUpPage() {
               {/* 邮箱 */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
-                  邮箱地址
+                  {t("auth.email")}
                 </Label>
                 <Input
                   id="email"
@@ -88,7 +92,7 @@ export default function SignUpPage() {
                   aria-invalid={errors.email ? "true" : "false"}
                   aria-describedby={errors.email ? "email-error" : undefined}
                   className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
-                  placeholder="example@email.com"
+                  placeholder={t("auth.placeholder.email")}
                 />
                 {errors.email && (
                   <p id="email-error" className="text-sm text-red-500 dark:text-red-400" role="alert">
@@ -100,7 +104,7 @@ export default function SignUpPage() {
               {/* 密码 */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
-                  密码
+                  {t("auth.password")}
                 </Label>
                 <div className="relative">
                   <Input
@@ -111,13 +115,13 @@ export default function SignUpPage() {
                     aria-invalid={errors.password ? "true" : "false"}
                     aria-describedby={errors.password ? "password-error" : undefined}
                     className={errors.password ? "border-red-500 focus-visible:ring-red-500 pr-10" : "pr-10"}
-                    placeholder="至少 6 个字符"
+                    placeholder={t("auth.placeholder.passwordHint")}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                    aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                   >
                     {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </button>
@@ -132,7 +136,7 @@ export default function SignUpPage() {
               {/* 确认密码 */}
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                  确认密码
+                  {t("auth.confirmPassword")}
                 </Label>
                 <div className="relative">
                   <Input
@@ -143,13 +147,13 @@ export default function SignUpPage() {
                     aria-invalid={errors.confirmPassword ? "true" : "false"}
                     aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
                     className={errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500 pr-10" : "pr-10"}
-                    placeholder="请再次输入密码"
+                    placeholder={t("auth.placeholder.confirmPassword")}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={showConfirmPassword ? "隐藏密码" : "显示密码"}
+                    aria-label={showConfirmPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                   >
                     {showConfirmPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </button>
@@ -170,19 +174,19 @@ export default function SignUpPage() {
                   disabled={isSubmitting}
                   className="flex-1"
                 >
-                  取消
+                  {t("auth.cancel")}
                 </Button>
                 <Button type="submit" disabled={isSubmitting} className="flex-1">
-                  {isSubmitting ? "注册中..." : "创建账户"}
+                  {isSubmitting ? t("auth.creatingAccount") : t("auth.createAccount")}
                 </Button>
               </div>
             </form>
 
             {/* 登录链接 */}
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              已有账户？{" "}
+              {t("auth.hasAccount")}{" "}
               <Button type="button" variant="link" onClick={() => navigate("/sign-in")} className="p-0 h-auto">
-                立即登录
+                {t("auth.signInNow")}
               </Button>
             </div>
           </CardContent>

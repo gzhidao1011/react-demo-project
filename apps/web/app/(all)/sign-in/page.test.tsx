@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithI18n } from "../../test-utils";
 import "@testing-library/jest-dom/vitest";
 import type { ApiResponseBase, LoginResponse } from "@repo/services";
 import type { ServerError } from "@repo/utils";
@@ -54,49 +55,49 @@ describe("SignInPage", () => {
   });
 
   describe("表单渲染", () => {
-    it("应该渲染邮箱输入框", () => {
+    it("应该渲染邮箱输入框", async () => {
       // Arrange & Act
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Assert
       expect(screen.getByLabelText("邮箱地址")).toBeInTheDocument();
     });
 
-    it("应该渲染密码输入框", () => {
+    it("应该渲染密码输入框", async () => {
       // Arrange & Act
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Assert
       expect(screen.getByLabelText("密码")).toBeInTheDocument();
     });
 
-    it("应该渲染登录按钮", () => {
+    it("应该渲染登录按钮", async () => {
       // Arrange & Act
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Assert
       expect(screen.getByRole("button", { name: /登录/ })).toBeInTheDocument();
     });
 
-    it("应该渲染忘记密码链接", () => {
+    it("应该渲染忘记密码链接", async () => {
       // Arrange & Act
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Assert
       expect(screen.getByText("忘记密码？")).toBeInTheDocument();
     });
 
-    it("应该渲染立即注册链接", () => {
+    it("应该渲染立即注册链接", async () => {
       // Arrange & Act
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Assert
       expect(screen.getByText("立即注册")).toBeInTheDocument();
     });
 
-    it("应该初始化为空表单", () => {
+    it("应该初始化为空表单", async () => {
       // Arrange & Act
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Assert - 使用 RTL 的断言方法而不是直接访问 DOM 属性
       const emailInput = screen.getByLabelText("邮箱地址");
@@ -110,7 +111,7 @@ describe("SignInPage", () => {
     it("应该显示邮箱格式错误（当输入无效邮箱时）", async () => {
       // Arrange
       const user = userEvent.setup();
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -126,7 +127,7 @@ describe("SignInPage", () => {
     it("应该显示密码必填错误（当密码为空时）", async () => {
       // Arrange
       const user = userEvent.setup();
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
       const passwordInput = screen.getByLabelText("密码");
 
       // Act
@@ -142,7 +143,7 @@ describe("SignInPage", () => {
     it("应该在失去焦点时验证字段（onBlur 模式）", async () => {
       // Arrange
       const user = userEvent.setup();
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -158,7 +159,7 @@ describe("SignInPage", () => {
     it("应该在输入有效数据后清除错误消息", async () => {
       // Arrange
       const user = userEvent.setup();
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -188,7 +189,7 @@ describe("SignInPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -216,7 +217,7 @@ describe("SignInPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -247,7 +248,7 @@ describe("SignInPage", () => {
         },
       };
       mockAuthLogin.mockResolvedValue(mockResponse);
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -272,7 +273,7 @@ describe("SignInPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -299,7 +300,7 @@ describe("SignInPage", () => {
           expiresIn: 3600,
         },
       });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       const emailInput = screen.getByLabelText("邮箱地址");
@@ -346,7 +347,7 @@ describe("SignInPage", () => {
         };
       });
 
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -382,7 +383,7 @@ describe("SignInPage", () => {
         };
       });
 
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -426,7 +427,7 @@ describe("SignInPage", () => {
         };
       });
 
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -454,7 +455,7 @@ describe("SignInPage", () => {
       });
 
       mockAuthLogin.mockReturnValue(pendingPromise);
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.type(screen.getByLabelText("邮箱地址"), "user@example.com");
@@ -493,7 +494,7 @@ describe("SignInPage", () => {
     it("应该允许用户输入邮箱", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -506,7 +507,7 @@ describe("SignInPage", () => {
     it("应该允许用户输入密码", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
       const passwordInput = screen.getByLabelText("密码");
 
       // Act
@@ -519,7 +520,7 @@ describe("SignInPage", () => {
     it("应该允许用户点击取消按钮返回首页", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.click(screen.getByRole("button", { name: /取消/ }));
@@ -536,7 +537,7 @@ describe("SignInPage", () => {
     it("应该允许用户点击立即注册跳转到注册页", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Act
       await user.click(screen.getByText("立即注册"));
@@ -552,9 +553,9 @@ describe("SignInPage", () => {
   });
 
   describe("可访问性", () => {
-    it("应该为输入框提供正确的 label 和 id", () => {
+    it("应该为输入框提供正确的 label 和 id", async () => {
       // Arrange & Act
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Assert
       const emailInput = screen.getByLabelText("邮箱地址");
@@ -562,9 +563,9 @@ describe("SignInPage", () => {
       expect(emailInput).toHaveAttribute("type", "email");
     });
 
-    it("应该为输入框和 label 正确关联（htmlFor 和 id）", () => {
+    it("应该为输入框和 label 正确关联（htmlFor 和 id）", async () => {
       // Arrange & Act
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
 
       // Assert
       const emailInput = screen.getByLabelText("邮箱地址");
@@ -577,7 +578,7 @@ describe("SignInPage", () => {
     it("应该在错误时设置 aria-invalid=true", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act
@@ -596,7 +597,7 @@ describe("SignInPage", () => {
     it("应该为错误消息提供 role=alert", async () => {
       // Arrange
       const user = userEvent.setup({ delay: null });
-      render(<SignInPage />);
+      await renderWithI18n(<SignInPage />);
       const emailInput = screen.getByLabelText("邮箱地址");
 
       // Act

@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 
  * 注意：测试需要 JWT 配置和密钥文件，使用 @TestPropertySource 提供测试配置
  */
-@SpringBootTest(classes = {com.example.user.service.JwtService.class, com.example.user.config.SecurityConfig.class})
+@SpringBootTest(classes = {com.example.user.service.JwtService.class, com.example.user.config.SecurityConfig.class, com.example.user.config.JwtAuthFilter.class})
 @TestPropertySource(properties = {
     // JWT 配置
     "jwt.algorithm=RS256",

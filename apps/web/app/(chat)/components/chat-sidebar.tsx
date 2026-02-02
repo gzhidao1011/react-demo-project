@@ -6,6 +6,7 @@ import {
   TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/16/solid";
+import { useLocale } from "@repo/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,21 +34,6 @@ import type { KeyboardEvent, MouseEvent } from "react";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
 import type { Conversation } from "../lib/chat.types";
 
-const EMPTY_LIST_MSG = "No conversations yet";
-const EMPTY_LIST_HINT = 'Click "New chat" above to get started';
-const NO_MATCH_MSG = "No matching conversations";
-const ALERT_DELETE_TITLE = "Delete conversation?";
-const ALERT_DELETE_DESC =
-  "This action cannot be undone. The conversation and all its messages will be permanently removed.";
-const ALERT_CANCEL = "Cancel";
-const ALERT_DELETE = "Delete";
-const SEARCH_PLACEHOLDER = "Search conversations...";
-const NEW_CHAT = "New chat";
-const CLOSE_SIDEBAR = "Close sidebar";
-const LOGOUT = "退出登录";
-const ALERT_LOGOUT_TITLE = "确认退出登录？";
-const ALERT_LOGOUT_DESC = "退出后需要重新登录才能继续使用。";
-
 interface ChatSidebarProps {
   conversations: Conversation[];
   activeId: string | null;
@@ -72,6 +58,7 @@ export const ChatSidebar = memo(function ChatSidebar({
   onRenameConversation,
   onLogout,
 }: ChatSidebarProps) {
+  const { t } = useLocale();
   const { setOpen, setOpenMobile } = useSidebar();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -188,17 +175,17 @@ export const ChatSidebar = memo(function ChatSidebar({
                 size="icon-sm"
                 onClick={closeSidebar}
                 className="rounded p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground shrink-0"
-                aria-label={CLOSE_SIDEBAR}
+                aria-label={t("chat.closeSidebar")}
               >
                 <XMarkIcon className="h-5 w-5" />
               </Button>
               <SidebarMenuButton
                 onClick={handleNewChatClick}
                 className="flex-1 justify-start gap-2"
-                aria-label={NEW_CHAT}
+                aria-label={t("chat.newChat")}
               >
                 <PlusIcon className="h-5 w-5 shrink-0" />
-                <span>{NEW_CHAT}</span>
+                <span>{t("chat.newChat")}</span>
               </SidebarMenuButton>
             </div>
           </SidebarMenuItem>
@@ -215,9 +202,9 @@ export const ChatSidebar = memo(function ChatSidebar({
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={SEARCH_PLACEHOLDER}
+              placeholder={t("chat.searchPlaceholder")}
               className="h-9 pl-8"
-              aria-label="Search conversations"
+              aria-label={t("chat.searchLabel")}
             />
           </div>
         </div>
@@ -231,12 +218,12 @@ export const ChatSidebar = memo(function ChatSidebar({
                   <p className="text-center text-sm text-muted-foreground">
                     {conversations.length === 0 ? (
                       <>
-                        {EMPTY_LIST_MSG}
+                        {t("chat.emptyList")}
                         <br />
-                        <span className="text-xs">{EMPTY_LIST_HINT}</span>
+                        <span className="text-xs">{t("chat.emptyListHint")}</span>
                       </>
                     ) : (
-                      <>{NO_MATCH_MSG}</>
+                      <>{t("chat.noMatch")}</>
                     )}
                   </p>
                 </li>
@@ -257,7 +244,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                           onKeyDown={(e) => handleEditKeyDown(e, conv.id)}
                           onBlur={() => saveEdit(conv.id)}
                           className="min-w-0 flex-1 h-8"
-                          aria-label="Edit conversation title"
+                          aria-label={t("chat.editConversationTitle")}
                           autoFocus
                         />
                       ) : (
@@ -275,7 +262,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                               variant="ghost"
                               size="icon-sm"
                               onClick={(e) => handleRenameClick(e, conv)}
-                              aria-label={`Rename ${conv.title}`}
+                              aria-label={t("chat.renameConversation", { title: conv.title })}
                               className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-primary group-hover:opacity-100 shrink-0"
                             >
                               <PencilSquareIcon className="h-4 w-4" />
@@ -286,7 +273,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                             variant="ghost"
                             size="icon-sm"
                             onClick={(e) => handleDeleteClick(e, conv.id)}
-                            aria-label={`Delete ${conv.title}`}
+                            aria-label={t("chat.deleteConversation", { title: conv.title })}
                             className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 shrink-0"
                           >
                             <TrashIcon className="h-4 w-4" />
@@ -308,10 +295,10 @@ export const ChatSidebar = memo(function ChatSidebar({
               <SidebarMenuButton
                 onClick={handleLogoutClick}
                 className="justify-start gap-2 text-muted-foreground hover:text-destructive"
-                aria-label={LOGOUT}
+                aria-label={t("chat.logout")}
               >
                 <ArrowRightStartOnRectangleIcon className="h-5 w-5 shrink-0" />
-                <span>{LOGOUT}</span>
+                <span>{t("chat.logout")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -320,13 +307,13 @@ export const ChatSidebar = memo(function ChatSidebar({
       <AlertDialog open={!!deleteConfirmId} onOpenChange={handleAlertOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{ALERT_DELETE_TITLE}</AlertDialogTitle>
-            <AlertDialogDescription>{ALERT_DELETE_DESC}</AlertDialogDescription>
+            <AlertDialogTitle>{t("chat.deleteConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("chat.deleteConfirmDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{ALERT_CANCEL}</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
-              {ALERT_DELETE}
+              {t("chat.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -334,13 +321,13 @@ export const ChatSidebar = memo(function ChatSidebar({
       <AlertDialog open={showLogoutConfirm} onOpenChange={handleLogoutAlertOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{ALERT_LOGOUT_TITLE}</AlertDialogTitle>
-            <AlertDialogDescription>{ALERT_LOGOUT_DESC}</AlertDialogDescription>
+            <AlertDialogTitle>{t("chat.logoutConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("chat.logoutConfirmDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{ALERT_CANCEL}</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleConfirmLogout}>
-              {LOGOUT}
+              {t("chat.logout")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

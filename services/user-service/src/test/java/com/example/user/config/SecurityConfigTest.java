@@ -3,6 +3,7 @@ package com.example.user.config;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
@@ -34,6 +35,10 @@ import static org.junit.jupiter.api.Assertions.*;
     "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration"
 })
 class SecurityConfigTest {
+
+    /** Mock JwtAuthFilter，SecurityConfig 依赖它但本测试不验证 JWT */
+    @MockBean
+    private JwtAuthFilter jwtAuthFilter;
 
     @Autowired(required = false)
     private PasswordEncoder passwordEncoder;

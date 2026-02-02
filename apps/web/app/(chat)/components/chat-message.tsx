@@ -5,6 +5,7 @@ import {
   HandThumbUpIcon,
   PencilSquareIcon,
 } from "@heroicons/react/16/solid";
+import { useLocale } from "@repo/i18n";
 import { Button, cn } from "@repo/ui";
 import type { ReactNode } from "react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
@@ -57,12 +58,15 @@ function getAllText(message: { parts: MessagePart[] }): string {
     .join("");
 }
 
-const THINKING_LABEL = "Thinking";
+interface ReasoningBlockProps {
+  text: string;
+  thinkingLabel: string;
+}
 
-const ReasoningBlock = memo(function ReasoningBlock({ text }: { text: string }) {
+const ReasoningBlock = memo(function ReasoningBlock({ text, thinkingLabel }: ReasoningBlockProps) {
   return (
     <details className="text-muted-foreground">
-      <summary className="cursor-pointer select-none text-sm">{THINKING_LABEL}</summary>
+      <summary className="cursor-pointer select-none text-sm">{thinkingLabel}</summary>
       <pre className="mt-1 whitespace-pre-wrap rounded bg-muted/50 p-2 text-xs">{text}</pre>
     </details>
   );
@@ -86,52 +90,53 @@ const SourceLink = memo(function SourceLink({ url, title }: { url: string; title
 });
 
 const IMAGE_MIME_PREFIX = "image/";
-const VIEW_ATTACHMENT = "View attachment";
-const IMAGE_ALT = "Attachment";
 
-const FilePart = memo(function FilePart({ url, mimeType }: { url: string; mimeType?: string }) {
+interface FilePartProps {
+  url: string;
+  mimeType?: string;
+  attachmentAlt: string;
+  viewAttachmentLabel: string;
+}
+
+const FilePart = memo(function FilePart({ url, mimeType, attachmentAlt, viewAttachmentLabel }: FilePartProps) {
   const isImage = (mimeType ?? "").startsWith(IMAGE_MIME_PREFIX);
   return (
     <span className="block">
       {isImage ? (
-        <img src={url} alt={IMAGE_ALT} className="max-h-48 max-w-full rounded object-contain" />
+        <img src={url} alt={attachmentAlt} className="max-h-48 max-w-full rounded object-contain" />
       ) : (
         <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-          {VIEW_ATTACHMENT}
+          {viewAttachmentLabel}
         </a>
       )}
     </span>
   );
 });
 
-const ARIA_COPY_CODE = "Copy code";
-const ARIA_EDIT_MESSAGE = "Edit message";
-const ARIA_COPY = "Copy";
-const ARIA_SENT_AT_PREFIX = "Sent at";
 const FEEDBACK_BTN_CLASSES = "rounded p-1 text-muted-foreground hover:bg-muted hover:text-primary";
-const USAGE_LABEL_INPUT = "Input";
-const USAGE_LABEL_OUTPUT = "Output";
-const USAGE_ARIA = "Token usage";
 
-const UsageDisplay = memo(function UsageDisplay({
-  usage,
-}: {
+interface UsageDisplayProps {
   usage?: { inputTokens?: number; outputTokens?: number };
-}) {
+  inputLabel: string;
+  outputLabel: string;
+  ariaLabel: string;
+}
+
+const UsageDisplay = memo(function UsageDisplay({ usage, inputLabel, outputLabel, ariaLabel }: UsageDisplayProps) {
   const hasInput = typeof usage?.inputTokens === "number";
   const hasOutput = typeof usage?.outputTokens === "number";
   if (!hasInput && !hasOutput) return null;
   return (
-    <div className="mt-2 text-xs text-muted-foreground" aria-label={USAGE_ARIA}>
+    <div className="mt-2 text-xs text-muted-foreground" aria-label={ariaLabel}>
       {hasInput && (
         <span>
-          {USAGE_LABEL_INPUT} {usage!.inputTokens}
+          {inputLabel} {usage!.inputTokens}
         </span>
       )}
       {hasInput && hasOutput && " · "}
       {hasOutput && (
         <span>
-          {USAGE_LABEL_OUTPUT} {usage!.outputTokens}
+          {outputLabel} {usage!.outputTokens}
         </span>
       )}
     </div>
@@ -146,9 +151,11 @@ const CODE_BLOCK_BTN_CLASSES =
 const CodeBlock = memo(function CodeBlock({
   children,
   onCopy,
+  copyCodeLabel,
 }: {
   children: ReactNode;
   onCopy?: (text: string) => void;
+  copyCodeLabel: string;
 }) {
   const preRef = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState(false);
@@ -174,7 +181,7 @@ const CodeBlock = memo(function CodeBlock({
           size="icon-xs"
           onClick={handleCopy}
           className={CODE_BLOCK_BTN_CLASSES}
-          aria-label={ARIA_COPY_CODE}
+          aria-label={copyCodeLabel}
         >
           {copied ? <CheckIcon className="h-4 w-4 text-primary" /> : <ClipboardDocumentIcon className="h-4 w-4" />}
         </Button>
@@ -183,18 +190,22 @@ const CodeBlock = memo(function CodeBlock({
   );
 });
 
-const MarkdownContent = memo(function MarkdownContent({
-  text,
-  onCopy,
-}: {
+interface MarkdownContentProps {
   text: string;
   onCopy?: (text: string) => void;
-}) {
+  copyCodeLabel: string;
+}
+
+const MarkdownContent = memo(function MarkdownContent({ text, onCopy, copyCodeLabel }: MarkdownContentProps) {
   return (
     <span className={PROSE_CLASSES}>
       <ReactMarkdown
         components={{
-          pre: ({ children }) => <CodeBlock onCopy={onCopy}>{children}</CodeBlock>,
+          pre: ({ children }) => (
+            <CodeBlock onCopy={onCopy} copyCodeLabel={copyCodeLabel}>
+              {children}
+            </CodeBlock>
+          ),
         }}
       >
         {text}
@@ -203,13 +214,19 @@ const MarkdownContent = memo(function MarkdownContent({
   );
 });
 
+interface FeedbackButtonsProps {
+  messageId: string;
+  onFeedback: (messageId: string, direction: "up" | "down") => void;
+  likeLabel: string;
+  dislikeLabel: string;
+}
+
 const FeedbackButtons = memo(function FeedbackButtons({
   messageId,
   onFeedback,
-}: {
-  messageId: string;
-  onFeedback: (messageId: string, direction: "up" | "down") => void;
-}) {
+  likeLabel,
+  dislikeLabel,
+}: FeedbackButtonsProps) {
   return (
     <div className="mt-2 flex gap-1">
       <Button
@@ -218,7 +235,7 @@ const FeedbackButtons = memo(function FeedbackButtons({
         size="icon-xs"
         onClick={() => onFeedback(messageId, "up")}
         className={FEEDBACK_BTN_CLASSES}
-        aria-label="Like"
+        aria-label={likeLabel}
       >
         <HandThumbUpIcon className="h-4 w-4" />
       </Button>
@@ -228,7 +245,7 @@ const FeedbackButtons = memo(function FeedbackButtons({
         size="icon-xs"
         onClick={() => onFeedback(messageId, "down")}
         className={FEEDBACK_BTN_CLASSES}
-        aria-label="Dislike"
+        aria-label={dislikeLabel}
       >
         <HandThumbDownIcon className="h-4 w-4" />
       </Button>
@@ -247,10 +264,14 @@ export const ChatMessage = memo(function ChatMessage({
   onFeedback,
   onEdit,
 }: ChatMessageProps) {
+  const { t, locale } = useLocale();
   const isUser = message.role === "user";
   const textContent = getAllText(message);
   const showMarkdown = !isUser && textContent.length > 0;
-  const relativeTime = useMemo(() => (createdAt !== undefined ? formatRelativeTime(createdAt) : null), [createdAt]);
+  const relativeTime = useMemo(
+    () => (createdAt !== undefined ? formatRelativeTime(createdAt, { locale, t }) : null),
+    [createdAt, locale, t],
+  );
 
   return (
     <div
@@ -268,19 +289,33 @@ export const ChatMessage = memo(function ChatMessage({
         {message.parts.map((part, index) => {
           const text = getTextContent(part);
           if (part.type === "reasoning" && part.text) {
-            return <ReasoningBlock key={`${message.id}-reasoning-${index}`} text={part.text} />;
+            return (
+              <ReasoningBlock
+                key={`${message.id}-reasoning-${index}`}
+                text={part.text}
+                thinkingLabel={t("chat.thinking")}
+              />
+            );
           }
           if (part.type === "source-url" && part.url) {
             return <SourceLink key={`${message.id}-source-${index}`} url={part.url} title={part.title} />;
           }
           if (part.type === "file" && part.url) {
-            return <FilePart key={`${message.id}-file-${index}`} url={part.url} mimeType={part.mimeType} />;
+            return (
+              <FilePart
+                key={`${message.id}-file-${index}`}
+                url={part.url}
+                mimeType={part.mimeType}
+                attachmentAlt={t("chat.attachment")}
+                viewAttachmentLabel={t("chat.viewAttachment")}
+              />
+            );
           }
           if (text) {
             return (
               <span key={`${message.id}-${index}`} className="block">
                 {showMarkdown ? (
-                  <MarkdownContent text={text} onCopy={onCopy} />
+                  <MarkdownContent text={text} onCopy={onCopy} copyCodeLabel={t("chat.copyCode")} />
                 ) : (
                   <span className="whitespace-pre-wrap">{text}</span>
                 )}
@@ -296,7 +331,7 @@ export const ChatMessage = memo(function ChatMessage({
             size="icon-xs"
             onClick={() => onEdit(textContent)}
             className={ACTION_BTN_CLASSES}
-            aria-label={ARIA_EDIT_MESSAGE}
+            aria-label={t("chat.editMessage")}
           >
             <PencilSquareIcon className="h-4 w-4" />
           </Button>
@@ -308,21 +343,35 @@ export const ChatMessage = memo(function ChatMessage({
             size="icon-xs"
             onClick={() => onCopy(textContent)}
             className={ACTION_BTN_CLASSES}
-            aria-label={ARIA_COPY}
+            aria-label={t("chat.copy")}
           >
             <ClipboardDocumentIcon className="h-4 w-4" />
           </Button>
         )}
-        {!isUser && onFeedback && textContent && <FeedbackButtons messageId={message.id} onFeedback={onFeedback} />}
+        {!isUser && onFeedback && textContent && (
+          <FeedbackButtons
+            messageId={message.id}
+            onFeedback={onFeedback}
+            likeLabel={t("chat.like")}
+            dislikeLabel={t("chat.dislike")}
+          />
+        )}
         {relativeTime !== null && (
           <div
             className={cn("mt-1.5 text-[10px] text-muted-foreground", isUser && "text-right")}
-            aria-label={`${ARIA_SENT_AT_PREFIX} ${relativeTime}`}
+            aria-label={`${t("chat.sentAt")} ${relativeTime}`}
           >
             {relativeTime}
           </div>
         )}
-        {!isUser && <UsageDisplay usage={message.metadata?.usage} />}
+        {!isUser && (
+          <UsageDisplay
+            usage={message.metadata?.usage}
+            inputLabel={t("chat.input")}
+            outputLabel={t("chat.output")}
+            ariaLabel={t("chat.tokenUsage")}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LocaleSwitcher, useLocale } from "@repo/i18n";
 import { toast } from "@repo/propel";
 import type { LoginFormData } from "@repo/schemas";
 import { loginSchema } from "@repo/schemas";
@@ -22,6 +23,7 @@ export default function SignInPage({
   actionData?: unknown;
 }) {
   const navigate = useNavigate();
+  const { t } = useLocale();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -61,7 +63,7 @@ export default function SignInPage({
       }
 
       // 显示成功消息
-      toast.success("登录成功！正在跳转...", {
+      toast.success(t("auth.signInSuccess"), {
         duration: 2000,
       });
 
@@ -82,11 +84,12 @@ export default function SignInPage({
 
   return (
     <div className={`flex min-h-svh overflow-hidden w-full items-center justify-center`} {...props}>
+      <LocaleSwitcher className="fixed right-4 top-4 z-10" />
       <div className="w-[400px]">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>登录到您的账户</CardTitle>
-            <CardDescription>输入您的邮箱地址以登录到您的账户</CardDescription>
+            <CardTitle>{t("auth.loginTitle")}</CardTitle>
+            <CardDescription>{t("auth.loginDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -100,7 +103,7 @@ export default function SignInPage({
               {/* 邮箱 */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
-                  邮箱地址
+                  {t("auth.email")}
                 </Label>
                 <Input
                   id="email"
@@ -110,7 +113,7 @@ export default function SignInPage({
                   aria-invalid={errors.email ? "true" : "false"}
                   aria-describedby={errors.email ? "email-error" : undefined}
                   className={errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}
-                  placeholder="example@email.com"
+                  placeholder={t("auth.placeholder.email")}
                 />
                 {errors.email && (
                   <p id="email-error" className="text-sm text-red-500 dark:text-red-400" role="alert">
@@ -123,10 +126,10 @@ export default function SignInPage({
               <div className="space-y-2">
                 <div className="flex items-center">
                   <Label htmlFor="password" className="text-sm font-medium">
-                    密码
+                    {t("auth.password")}
                   </Label>
                   <a href="#" className="ml-auto inline-block text-sm underline-offset-4 hover:underline">
-                    忘记密码？
+                    {t("auth.forgotPassword")}
                   </a>
                 </div>
                 <div className="relative">
@@ -138,13 +141,13 @@ export default function SignInPage({
                     aria-invalid={errors.password ? "true" : "false"}
                     aria-describedby={errors.password ? "password-error" : undefined}
                     className={errors.password ? "border-red-500 focus-visible:ring-red-500 pr-10" : "pr-10"}
-                    placeholder="请输入密码"
+                    placeholder={t("auth.placeholder.password")}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                    aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                   >
                     {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                   </button>
@@ -165,19 +168,19 @@ export default function SignInPage({
                   disabled={isSubmitting}
                   className="flex-1"
                 >
-                  取消
+                  {t("auth.cancel")}
                 </Button>
                 <Button type="submit" disabled={isSubmitting} className="flex-1">
-                  {isSubmitting ? "登录中..." : "登录"}
+                  {isSubmitting ? t("auth.loggingIn") : t("auth.loginButton")}
                 </Button>
               </div>
             </form>
 
             {/* 注册链接 */}
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              没有账户？{" "}
+              {t("auth.noAccount")}{" "}
               <Button type="button" variant="link" onClick={() => navigate("/sign-up")} className="p-0 h-auto">
-                立即注册
+                {t("auth.signUpNow")}
               </Button>
             </div>
           </CardContent>

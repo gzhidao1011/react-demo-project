@@ -57,6 +57,8 @@ public enum ResultCode {
      * 符合 NIST 和 OWASP 密码策略建议
      */
     PASSWORD_POLICY_VIOLATION(40003, "密码不符合策略要求"),
+    /** 不支持的语言代码 */
+    INVALID_LOCALE(40005, "不支持的语言"),
 
     // ==================== 限流错误（429xx）====================
     /** 请求过于频繁，请稍后再试（参考 GitHub、Stripe 的限流错误处理） */

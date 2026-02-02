@@ -1,3 +1,4 @@
+import { useLocale } from "@repo/i18n";
 import { toast } from "@repo/propel";
 import { Button } from "@repo/ui";
 import type { RefObject } from "react";
@@ -5,56 +6,52 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChatWithConversation } from "../hooks/use-chat";
 import type { InitialMessage } from "../hooks/use-conversation-messages";
 import { formatDateSeparator } from "../lib/format-time";
-import { DEFAULT_SUGGESTED_PROMPTS, FOLLOW_UP_PROMPTS } from "../lib/suggested-prompts";
+import { getDefaultSuggestedPrompts, getFollowUpPrompts } from "../lib/suggested-prompts";
 import { ChatInput } from "./chat-input";
 import { ChatMessage } from "./chat-message";
 
-/** 空状态标题 */
-const EMPTY_STATE_TITLE = "What can I help with?";
-/** 空状态输入框 placeholder */
-const EMPTY_PLACEHOLDER = "Message ChatGPT...";
-/** 有消息时底部输入框 placeholder */
-const BOTTOM_PLACEHOLDER = "Message ChatGPT... (Enter to send, Shift+Enter for new line)";
-/** 错误 Toast 文案 */
-const ERROR_NETWORK = "Network error. Please check your connection and ensure the backend is running.";
-const ERROR_GENERIC = "Something went wrong. Please try again.";
-const ERROR_BANNER_MSG = ERROR_GENERIC;
-const BTN_RETRY = "Retry";
-const BTN_DISMISS = "Dismiss";
-const TOAST_COPIED = "Copied to clipboard";
-const TOAST_COPY_FAILED = "Failed to copy";
-const TOAST_FEEDBACK = "Thanks for your feedback!";
-
 const DOT_DELAYS = [0, 150, 300] as const;
-const ARIA_GENERATING = "Generating";
 
 interface ErrorBannerProps {
+  errorMsg: string;
+  retryLabel: string;
+  dismissLabel: string;
   onRetry: () => void;
   onDismiss: () => void;
 }
 
 const ERROR_BANNER_CLASSES =
   "flex shrink-0 items-center justify-between gap-3 border-t border-border bg-destructive/10 px-4 py-3 text-sm text-destructive";
-const ErrorBanner = memo(function ErrorBanner({ onRetry, onDismiss }: ErrorBannerProps) {
+const ErrorBanner = memo(function ErrorBanner({
+  errorMsg,
+  retryLabel,
+  dismissLabel,
+  onRetry,
+  onDismiss,
+}: ErrorBannerProps) {
   return (
     <div className={ERROR_BANNER_CLASSES} role="alert">
-      <span>{ERROR_BANNER_MSG}</span>
+      <span>{errorMsg}</span>
       <div className="flex shrink-0 gap-2">
         <Button type="button" variant="destructive" size="sm" onClick={onRetry}>
-          {BTN_RETRY}
+          {retryLabel}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onDismiss}>
-          {BTN_DISMISS}
+          {dismissLabel}
         </Button>
       </div>
     </div>
   );
 });
 
-const StreamingDots = memo(function StreamingDots() {
+interface StreamingDotsProps {
+  ariaLabel: string;
+}
+
+const StreamingDots = memo(function StreamingDots({ ariaLabel }: StreamingDotsProps) {
   return (
     <div className="flex justify-start px-4 py-2" aria-hidden>
-      <div className="flex items-center gap-1 rounded-lg bg-muted px-4 py-2" role="status" aria-label={ARIA_GENERATING}>
+      <div className="flex items-center gap-1 rounded-lg bg-muted px-4 py-2" role="status" aria-label={ariaLabel}>
         {DOT_DELAYS.map((delay) => (
           <span
             key={delay}
@@ -91,48 +88,53 @@ const SuggestedPrompts = memo(function SuggestedPrompts({ prompts, onSelect }: S
   );
 });
 
-interface ActionButtonsProps {
-  isStreaming: boolean;
-  onStop: () => void;
-  onRegenerate: () => void;
-  onFollowUp: (text: string) => void;
-}
-
 interface DateSeparatorProps {
   ts: number;
+  locale: string;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }
 
-const ARIA_MESSAGES_FROM_PREFIX = "Messages from";
-const DateSeparator = memo(function DateSeparator({ ts }: DateSeparatorProps) {
-  const label = formatDateSeparator(ts);
+const DateSeparator = memo(function DateSeparator({ ts, locale, t }: DateSeparatorProps) {
+  const label = formatDateSeparator(ts, { locale, t });
+  const ariaLabel = `${t("chat.messagesFrom")} ${label}`;
   return (
-    <div className="flex justify-center py-3" role="separator" aria-label={`${ARIA_MESSAGES_FROM_PREFIX} ${label}`}>
+    <div className="flex justify-center py-3" role="separator" aria-label={ariaLabel}>
       <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">{label}</span>
     </div>
   );
 });
 
-const BTN_STOP = "Stop generating";
-const BTN_REGENERATE = "Regenerate";
+interface ActionButtonsProps {
+  isStreaming: boolean;
+  onStop: () => void;
+  onRegenerate: () => void;
+  onFollowUp: (text: string) => void;
+  stopLabel: string;
+  regenerateLabel: string;
+  prompts: Array<{ id: string; label: string; text: string }>;
+}
 
 const ActionButtons = memo(function ActionButtons({
   isStreaming,
   onStop,
   onRegenerate,
   onFollowUp,
+  stopLabel,
+  regenerateLabel,
+  prompts,
 }: ActionButtonsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {isStreaming ? (
         <Button type="button" variant="outline" size="sm" onClick={onStop}>
-          {BTN_STOP}
+          {stopLabel}
         </Button>
       ) : (
         <>
           <Button type="button" variant="outline" size="sm" onClick={onRegenerate}>
-            {BTN_REGENERATE}
+            {regenerateLabel}
           </Button>
-          {FOLLOW_UP_PROMPTS.map((p) => (
+          {prompts.map((p) => (
             <Button
               key={p.id}
               type="button"
@@ -157,6 +159,9 @@ interface EmptyStateProps {
   onSend: (text: string, files?: File[]) => void;
   disabled: boolean;
   inputRef: RefObject<HTMLTextAreaElement | null>;
+  emptyStateTitle: string;
+  messagePlaceholder: string;
+  prompts: Array<{ id: string; label: string; text: string }>;
 }
 
 interface BottomInputBarProps {
@@ -165,6 +170,7 @@ interface BottomInputBarProps {
   onInputChange: (v: string) => void;
   onSend: (text: string, files?: File[]) => void;
   disabled: boolean;
+  placeholder: string;
 }
 
 const BOTTOM_INPUT_WRAPPER =
@@ -177,6 +183,7 @@ const BottomInputBar = memo(function BottomInputBar({
   onInputChange,
   onSend,
   disabled,
+  placeholder,
 }: BottomInputBarProps) {
   return (
     <div className={BOTTOM_INPUT_WRAPPER}>
@@ -187,7 +194,7 @@ const BottomInputBar = memo(function BottomInputBar({
           onChange={onInputChange}
           onSend={onSend}
           disabled={disabled}
-          placeholder={BOTTOM_PLACEHOLDER}
+          placeholder={placeholder}
         />
       </div>
     </div>
@@ -203,12 +210,15 @@ const EmptyState = memo(function EmptyState({
   onSend,
   disabled,
   inputRef,
+  emptyStateTitle,
+  messagePlaceholder,
+  prompts,
 }: EmptyStateProps) {
   return (
     <div className={EMPTY_STATE_WRAPPER}>
       <div className={EMPTY_STATE_INNER}>
-        <h2 className="text-center text-2xl font-semibold text-foreground">{EMPTY_STATE_TITLE}</h2>
-        <SuggestedPrompts prompts={DEFAULT_SUGGESTED_PROMPTS} onSelect={onPromptSelect} />
+        <h2 className="text-center text-2xl font-semibold text-foreground">{emptyStateTitle}</h2>
+        <SuggestedPrompts prompts={prompts} onSelect={onPromptSelect} />
         <div className="w-full max-w-2xl">
           <ChatInput
             inputRef={inputRef}
@@ -216,7 +226,7 @@ const EmptyState = memo(function EmptyState({
             onChange={onInputChange}
             onSend={onSend}
             disabled={disabled}
-            placeholder={EMPTY_PLACEHOLDER}
+            placeholder={messagePlaceholder}
           />
         </div>
       </div>
@@ -239,6 +249,10 @@ export const ChatContent = memo(function ChatContent({
   initialMessages,
   onUpdateConversationTitle,
 }: ChatContentProps) {
+  const { t, locale } = useLocale();
+  const defaultPrompts = useMemo(() => getDefaultSuggestedPrompts(t), [t]);
+  const followUpPrompts = useMemo(() => getFollowUpPrompts(t), [t]);
+
   const handleChatError = useCallback((err: Error) => {
     console.error("[Chat] useChat error:", err);
   }, []);
@@ -267,13 +281,13 @@ export const ChatContent = memo(function ChatContent({
       prevErrorRef.current = error;
       const msg =
         error?.message?.includes("fetch") || error?.message?.includes("Network")
-          ? ERROR_NETWORK
-          : (error?.message ?? ERROR_GENERIC);
+          ? t("chat.errorNetwork")
+          : (error?.message ?? t("chat.errorGeneric"));
       toast.error(msg);
     } else if (!error) {
       prevErrorRef.current = null;
     }
-  }, [error]);
+  }, [error, t]);
 
   const [input, setInput] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -341,18 +355,24 @@ export const ChatContent = memo(function ChatContent({
     [handleSend],
   );
 
-  const handleCopy = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(TOAST_COPIED);
-    } catch {
-      toast.error(TOAST_COPY_FAILED);
-    }
-  }, []);
+  const handleCopy = useCallback(
+    async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast.success(t("chat.copied"));
+      } catch {
+        toast.error(t("chat.copyFailed"));
+      }
+    },
+    [t],
+  );
 
-  const handleFeedback = useCallback((_messageId: string, _direction: "up" | "down") => {
-    toast.success(TOAST_FEEDBACK);
-  }, []);
+  const handleFeedback = useCallback(
+    (_messageId: string, _direction: "up" | "down") => {
+      toast.success(t("chat.thanksFeedback"));
+    },
+    [t],
+  );
 
   const isStreaming = status === "streaming" || status === "submitted";
   const isDisabled = status !== "ready";
@@ -381,6 +401,9 @@ export const ChatContent = memo(function ChatContent({
           onSend={handleSend}
           disabled={isDisabled}
           inputRef={inputRef}
+          emptyStateTitle={t("chat.emptyStateTitle")}
+          messagePlaceholder={t("chat.messagePlaceholder")}
+          prompts={defaultPrompts}
         />
       ) : (
         <div className="relative flex flex-1 flex-col min-h-0">
@@ -396,9 +419,13 @@ export const ChatContent = memo(function ChatContent({
                 const ts = messageTimestampsRef.current.get(msg.id);
                 const prevTs = index > 0 ? messageTimestampsRef.current.get(messages[index - 1]!.id) : undefined;
                 const showDateSeparator =
-                  ts !== undefined && (prevTs === undefined || formatDateSeparator(prevTs) !== formatDateSeparator(ts));
+                  ts !== undefined &&
+                  (prevTs === undefined ||
+                    formatDateSeparator(prevTs, { locale, t }) !== formatDateSeparator(ts, { locale, t }));
                 return [
-                  ...(showDateSeparator && ts !== undefined ? [<DateSeparator key={`sep-${msg.id}`} ts={ts} />] : []),
+                  ...(showDateSeparator && ts !== undefined
+                    ? [<DateSeparator key={`sep-${msg.id}`} ts={ts} locale={locale} t={t} />]
+                    : []),
                   <ChatMessage
                     key={msg.id}
                     message={{
@@ -420,7 +447,7 @@ export const ChatContent = memo(function ChatContent({
                   />,
                 ];
               })}
-              {isStreaming && !lastAssistantMessage && <StreamingDots />}
+              {isStreaming && !lastAssistantMessage && <StreamingDots ariaLabel={t("chat.generating")} />}
               {lastAssistantMessage && (
                 <div className="flex flex-col gap-2 px-4 pb-2">
                   <ActionButtons
@@ -428,6 +455,9 @@ export const ChatContent = memo(function ChatContent({
                     onStop={handleStop}
                     onRegenerate={handleRegenerate}
                     onFollowUp={handleFollowUpClick}
+                    stopLabel={t("chat.stopGenerating")}
+                    regenerateLabel={t("chat.regenerate")}
+                    prompts={followUpPrompts}
                   />
                 </div>
               )}
@@ -436,7 +466,15 @@ export const ChatContent = memo(function ChatContent({
           </div>
         </div>
       )}
-      {hasMessages && error && <ErrorBanner onRetry={handleRegenerate} onDismiss={handleDismissError} />}
+      {hasMessages && error && (
+        <ErrorBanner
+          errorMsg={t("chat.errorGeneric")}
+          retryLabel={t("chat.retry")}
+          dismissLabel={t("chat.dismiss")}
+          onRetry={handleRegenerate}
+          onDismiss={handleDismissError}
+        />
+      )}
       {hasMessages && (
         <BottomInputBar
           inputRef={inputRef}
@@ -444,6 +482,7 @@ export const ChatContent = memo(function ChatContent({
           onInputChange={setInput}
           onSend={handleSend}
           disabled={isDisabled}
+          placeholder={t("chat.messagePlaceholderHint")}
         />
       )}
     </div>

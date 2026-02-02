@@ -51,6 +51,9 @@ catalogs:
     axios:
       specifier: 1.13.2
       version: 1.13.2
+    intl-messageformat:
+      specifier: 11.1.2
+      version: 11.1.2
     isbot:
       specifier: 5.1.31
       version: 5.1.31
@@ -70,7 +73,7 @@ catalogs:
       specifier: 7.54.2
       version: 7.54.2
     react-markdown:
-      specifier: ^10.0.0
+      specifier: 10.1.0
       version: 10.1.0
     react-router:
       specifier: 7.12.0
@@ -125,100 +128,6 @@ importers:
       turbo:
         specifier: 2.7.4
         version: 2.7.4
-
-  apps/docs:
-    dependencies:
-      '@dotenvx/dotenvx':
-        specifier: 'catalog:'
-        version: 1.49.1
-      '@headlessui/react':
-        specifier: ^2.2.0
-        version: 2.2.9(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@heroicons/react':
-        specifier: 'catalog:'
-        version: 2.2.0(react@19.2.3)
-      '@hookform/resolvers':
-        specifier: 'catalog:'
-        version: 5.2.2(react-hook-form@7.54.2(react@19.2.3))
-      '@react-router/node':
-        specifier: 'catalog:'
-        version: 7.12.0(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.2)
-      '@react-router/serve':
-        specifier: 'catalog:'
-        version: 7.12.0(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.2)
-      '@repo/propel':
-        specifier: workspace:*
-        version: link:../../packages/propel
-      '@repo/schemas':
-        specifier: workspace:*
-        version: link:../../packages/schemas
-      '@repo/services':
-        specifier: workspace:*
-        version: link:../../packages/services
-      '@repo/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      '@repo/utils':
-        specifier: workspace:*
-        version: link:../../packages/utils
-      isbot:
-        specifier: 'catalog:'
-        version: 5.1.31
-      react:
-        specifier: 'catalog:'
-        version: 19.2.3
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.2.3(react@19.2.3)
-      react-hook-form:
-        specifier: 'catalog:'
-        version: 7.54.2(react@19.2.3)
-      react-router:
-        specifier: 'catalog:'
-        version: 7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      zod:
-        specifier: 'catalog:'
-        version: 4.3.6
-    devDependencies:
-      '@react-router/dev':
-        specifier: 'catalog:'
-        version: 7.12.0(@react-router/serve@7.12.0(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.2))(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.2)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2))
-      '@repo/biome-config':
-        specifier: workspace:*
-        version: link:../../packages/biome-config
-      '@repo/tailwind-config':
-        specifier: workspace:*
-        version: link:../../packages/tailwind-config
-      '@repo/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/typescript-config
-      '@tailwindcss/vite':
-        specifier: 'catalog:'
-        version: 4.1.13(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2))
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.19.7
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.7
-      '@types/react-dom':
-        specifier: 'catalog:'
-        version: 19.2.3(@types/react@19.2.7)
-      tailwindcss:
-        specifier: 'catalog:'
-        version: 4.1.13
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.2
-      vite:
-        specifier: 'catalog:'
-        version: 7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2)
-      vite-plugin-devtools-json:
-        specifier: 'catalog:'
-        version: 1.0.0(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2))
-      vite-tsconfig-paths:
-        specifier: 'catalog:'
-        version: 6.0.4(typescript@5.9.2)(vite@7.3.1(@types/node@22.19.7)(jiti@2.6.1)(lightningcss@1.30.2))
 
   apps/storybook:
     dependencies:
@@ -295,6 +204,9 @@ importers:
       '@react-router/serve':
         specifier: 'catalog:'
         version: 7.12.0(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(typescript@5.9.2)
+      '@repo/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@repo/propel':
         specifier: workspace:*
         version: link:../../packages/propel
@@ -493,6 +405,64 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
+
+  packages/i18n:
+    dependencies:
+      '@heroicons/react':
+        specifier: 'catalog:'
+        version: 2.2.0(react@19.2.3)
+      '@repo/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../utils
+      intl-messageformat:
+        specifier: 'catalog:'
+        version: 11.1.2
+      react:
+        specifier: 'catalog:'
+        version: 19.2.3
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.3(react@19.2.3)
+    devDependencies:
+      '@repo/biome-config':
+        specifier: workspace:*
+        version: link:../biome-config
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../types
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.7
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.7)
+      '@vitest/coverage-v8':
+        specifier: ^3.2.4
+        version: 3.2.4(vitest@3.2.4)
+      '@vitest/ui':
+        specifier: ^3.2.4
+        version: 3.2.4(vitest@3.2.4)
+      react-hook-form:
+        specifier: 'catalog:'
+        version: 7.54.2(react@19.2.3)
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.20.0-beta.3(typescript@5.9.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.7)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.30.2)(msw@2.12.7(@types/node@22.19.7)(typescript@5.9.2))
 
   packages/propel:
     dependencies:
@@ -1322,6 +1292,21 @@ packages:
 
   '@fontsource-variable/inter@5.2.8':
     resolution: {integrity: sha512-kOfP2D+ykbcX/P3IFnokOhVRNoTozo5/JxhAIVYLpea/UBmCQ/YWPBfWIDuBImXX/15KH+eKh4xpEUyS2sQQGQ==}
+
+  '@formatjs/ecma402-abstract@3.1.1':
+    resolution: {integrity: sha512-jhZbTwda+2tcNrs4kKvxrPLPjx8QsBCLCUgrrJ/S+G9YrGHWLhAyFMMBHJBnBoOwuLHd7L14FgYudviKaxkO2Q==}
+
+  '@formatjs/fast-memoize@3.1.0':
+    resolution: {integrity: sha512-b5mvSWCI+XVKiz5WhnBCY3RJ4ZwfjAidU0yVlKa3d3MSgKmH1hC3tBGEAtYyN5mqL7N0G5x0BOUYyO8CEupWgg==}
+
+  '@formatjs/icu-messageformat-parser@3.5.1':
+    resolution: {integrity: sha512-sSDmSvmmoVQ92XqWb499KrIhv/vLisJU8ITFrx7T7NZHUmMY7EL9xgRowAosaljhqnj/5iufG24QrdzB6X3ItA==}
+
+  '@formatjs/icu-skeleton-parser@2.1.1':
+    resolution: {integrity: sha512-PSFABlcNefjI6yyk8f7nyX1DC7NHmq6WaCHZLySEXBrXuLOB2f935YsnzuPjlz+ibhb9yWTdPeVX1OVcj24w2Q==}
+
+  '@formatjs/intl-localematcher@0.8.1':
+    resolution: {integrity: sha512-xwEuwQFdtSq1UKtQnyTZWC+eHdv7Uygoa+H2k/9uzBVQjDyp9r20LNDNKedWXll7FssT3GRHvqsdJGYSUWqYFA==}
 
   '@headlessui/react@2.2.9':
     resolution: {integrity: sha512-Mb+Un58gwBn0/yWZfyrCh0TJyurtT+dETj7YHleylHk5od3dv2XqETPGWMyQ5/7sYN7oWdyM1u9MvC0OC8UmzQ==}
@@ -3796,6 +3781,9 @@ packages:
   inline-style-parser@0.2.7:
     resolution: {integrity: sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA==}
 
+  intl-messageformat@11.1.2:
+    resolution: {integrity: sha512-ucSrQmZGAxfiBHfBRXW/k7UC8MaGFlEj4Ry1tKiDcmgwQm1y3EDl40u+4VNHYomxJQMJi9NEI3riDRlth96jKg==}
+
   ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
     engines: {node: '>= 0.10'}
@@ -6071,6 +6059,33 @@ snapshots:
   '@floating-ui/utils@0.2.10': {}
 
   '@fontsource-variable/inter@5.2.8': {}
+
+  '@formatjs/ecma402-abstract@3.1.1':
+    dependencies:
+      '@formatjs/fast-memoize': 3.1.0
+      '@formatjs/intl-localematcher': 0.8.1
+      decimal.js: 10.6.0
+      tslib: 2.8.1
+
+  '@formatjs/fast-memoize@3.1.0':
+    dependencies:
+      tslib: 2.8.1
+
+  '@formatjs/icu-messageformat-parser@3.5.1':
+    dependencies:
+      '@formatjs/ecma402-abstract': 3.1.1
+      '@formatjs/icu-skeleton-parser': 2.1.1
+      tslib: 2.8.1
+
+  '@formatjs/icu-skeleton-parser@2.1.1':
+    dependencies:
+      '@formatjs/ecma402-abstract': 3.1.1
+      tslib: 2.8.1
+
+  '@formatjs/intl-localematcher@0.8.1':
+    dependencies:
+      '@formatjs/fast-memoize': 3.1.0
+      tslib: 2.8.1
 
   '@headlessui/react@2.2.9(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
@@ -8597,6 +8612,13 @@ snapshots:
   inherits@2.0.4: {}
 
   inline-style-parser@0.2.7: {}
+
+  intl-messageformat@11.1.2:
+    dependencies:
+      '@formatjs/ecma402-abstract': 3.1.1
+      '@formatjs/fast-memoize': 3.1.0
+      '@formatjs/icu-messageformat-parser': 3.5.1
+      tslib: 2.8.1
 
   ipaddr.js@1.9.1: {}
 

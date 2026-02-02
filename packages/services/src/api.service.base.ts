@@ -318,8 +318,8 @@ export abstract class APIServiceBase {
    * @param config - Additional axios configuration
    * @returns Axios response promise
    */
-  patch(url: string, data = {}, config: AxiosRequestConfig = {}) {
-    return this.axiosInstance.patch(url, data, config);
+  patch<T = unknown>(url: string, data = {}, config: AxiosRequestConfig = {}) {
+    return this.axiosInstance.patch<T>(url, data, config);
   }
 
   /**

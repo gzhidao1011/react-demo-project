@@ -1,0 +1,157 @@
+{
+  "home": {
+    "nav": {
+      "home": "Home",
+      "docs": "Docs"
+    },
+    "hero": {
+      "title": "Build the next generation",
+      "titleHighlight": "application system",
+      "subtitle": "A powerful development platform that lets you focus on business innovation. Complete solutions from development to deployment, all in one place.",
+      "cta": "Get Started"
+    },
+    "features": {
+      "title": "Why Choose Us",
+      "subtitle": "We provide enterprise-grade solutions to help you build and deploy applications quickly",
+      "fastDeploy": {
+        "title": "Fast Deployment",
+        "description": "One-click deployment, quick launch. Get your application running in minutes."
+      },
+      "secure": {
+        "title": "Secure & Reliable",
+        "description": "Enterprise-grade security, encrypted data transmission, ensuring your data is safe."
+      },
+      "extensible": {
+        "title": "Easy to Extend",
+        "description": "Flexible architecture design, supports rapid scaling to meet business growth needs."
+      },
+      "monitoring": {
+        "title": "Smart Monitoring",
+        "description": "Real-time system monitoring, intelligent alerts, keep you informed of system status."
+      }
+    },
+    "footer": {
+      "copyright": "© 2026 System. All rights reserved.",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "contact": "Contact Us"
+    }
+  },
+  "auth": {
+    "login": "Sign In",
+    "signUp": "Sign Up",
+    "signInSuccess": "Signed in successfully! Redirecting...",
+    "signUpSuccess": "Account created! Redirecting...",
+    "loginTitle": "Sign in to your account",
+    "loginDescription": "Enter your email address to sign in to your account",
+    "signUpTitle": "Create an account",
+    "signUpDescription": "Enter your information to create a new account",
+    "email": "Email Address",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot password?",
+    "placeholder": {
+      "email": "example@email.com",
+      "password": "Enter your password",
+      "confirmPassword": "Enter your password again",
+      "passwordHint": "At least 6 characters"
+    },
+    "cancel": "Cancel",
+    "loginButton": "Sign In",
+    "loggingIn": "Signing in...",
+    "createAccount": "Create Account",
+    "creatingAccount": "Creating account...",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signUpNow": "Sign up now",
+    "signInNow": "Sign in now",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "chat": {
+    "loadingCreating": "Creating conversation...",
+    "loadingHistory": "Loading chat history...",
+    "logoutSuccess": "Signed out successfully",
+    "openSidebar": "Open sidebar (⌘K)",
+    "openSidebarTitle": "Open sidebar (⌘K / Ctrl+K)",
+    "emptyList": "No conversations yet",
+    "emptyListHint": "Click \"New chat\" above to get started",
+    "noMatch": "No matching conversations",
+    "newChat": "New chat",
+    "searchPlaceholder": "Search conversations...",
+    "searchLabel": "Search conversations",
+    "deleteConfirmTitle": "Delete conversation?",
+    "deleteConfirmDesc": "This action cannot be undone. The conversation and all its messages will be permanently removed.",
+    "delete": "Delete",
+    "logout": "Sign out",
+    "logoutConfirmTitle": "Confirm sign out?",
+    "logoutConfirmDesc": "You will need to sign in again to continue.",
+    "closeSidebar": "Close sidebar",
+    "editConversationTitle": "Edit conversation title",
+    "renameConversation": "Rename {title}",
+    "deleteConversation": "Delete {title}",
+    "welcomeTitle": "What can I help you with today?",
+    "attachImages": "Attach images",
+    "voiceComingSoon": "Voice input (coming soon)",
+    "emptyStateTitle": "What can I help with?",
+    "messagePlaceholder": "Message...",
+    "messagePlaceholderHint": "Enter to send, Shift+Enter for new line",
+    "retry": "Retry",
+    "dismiss": "Dismiss",
+    "stopGenerating": "Stop generating",
+    "regenerate": "Regenerate",
+    "errorNetwork": "Network error. Please check your connection and ensure the backend is running.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "copied": "Copied to clipboard",
+    "copyFailed": "Failed to copy",
+    "thanksFeedback": "Thanks for your feedback!",
+    "thinking": "Thinking",
+    "copyCode": "Copy code",
+    "copy": "Copy",
+    "editMessage": "Edit message",
+    "like": "Like",
+    "dislike": "Dislike",
+    "input": "Input",
+    "output": "Output",
+    "tokenUsage": "Token usage",
+    "viewAttachment": "View attachment",
+    "attachment": "Attachment",
+    "addAttachments": "Add attachments",
+    "send": "Send",
+    "remove": "Remove",
+    "messagesFrom": "Messages from",
+    "sentAt": "Sent at",
+    "generating": "Generating",
+    "loading": "Loading",
+    "prompts": {
+      "writeEmail": "Write an email",
+      "summarize": "Summarize article",
+      "explainCode": "Explain code",
+      "brainstorm": "Brainstorm ideas",
+      "explainDetail": "Explain in more detail",
+      "translate": "Translate",
+      "simplify": "Simplify",
+      "giveExamples": "Give examples"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minAgo": "{count} min ago",
+      "yesterday": "Yesterday",
+      "today": "Today",
+      "daysAgo": "{count} days ago"
+    }
+  },
+  "notFound": {
+    "title": "404 - Page Not Found",
+    "goHome": "Go to Home"
+  },
+  "welcome": {
+    "whatsNext": "What's next?",
+    "docs": "React Router Docs",
+    "discord": "Join Discord"
+  }
+}
