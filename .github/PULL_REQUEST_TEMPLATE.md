@@ -29,7 +29,6 @@
 
 ### 前端应用
 - [ ] `apps/web`
-- [ ] `apps/docs`
 - [ ] `apps/storybook`
 
 ### 共享包

@@ -234,14 +234,6 @@ services:
       - key: VITE_API_BASE_URL
         value: https://api-gateway.onrender.com
   
-  # Docs 应用（Static Site）
-  - type: web
-    name: docs
-    env: static
-    buildCommand: pnpm install && pnpm --filter @repo/docs build
-    staticPublishPath: ./apps/docs/build/client
-    plan: starter  # 免费计划
-  
   # Storybook（Static Site）
   - type: web
     name: storybook

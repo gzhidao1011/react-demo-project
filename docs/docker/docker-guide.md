@@ -56,7 +56,7 @@ docker-compose -f docker-compose.prod.yml up -d --build
 
 ```bash
 # 强制重新构建前端应用
-docker-compose -f docker-compose.prod.yml up -d --build web docs storybook
+docker-compose -f docker-compose.prod.yml up -d --build web storybook
 ```
 
 ## 静态资源不是最新
@@ -70,7 +70,7 @@ docker-compose -f docker-compose.prod.yml up -d --build web docs storybook
 #### 方案 1：强制重新构建（推荐）
 
 ```bash
-docker-compose -f docker-compose.prod.yml up -d --build web docs storybook
+docker-compose -f docker-compose.prod.yml up -d --build web storybook
 ```
 
 #### 方案 2：使用版本标签（生产环境最佳实践）
@@ -84,7 +84,7 @@ docker-compose -f docker-compose.prod.yml up -d --build
 
 ```bash
 docker-compose -f docker-compose.prod.yml down
-docker rmi gzhidao1010/web:latest gzhidao1010/docs:latest gzhidao1010/storybook:latest -f
+docker rmi gzhidao1010/web:latest gzhidao1010/storybook:latest -f
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
@@ -94,7 +94,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ```bash
 # 修改代码后，强制重新构建前端应用
-docker-compose -f docker-compose.prod.yml up -d --build web docs storybook
+docker-compose -f docker-compose.prod.yml up -d --build web storybook
 
 # 查看构建日志
 docker-compose -f docker-compose.prod.yml logs -f web
@@ -107,9 +107,8 @@ docker-compose -f docker-compose.prod.yml logs -f web
 export TAG=v1.0.0
 
 # 2. 构建并推送镜像
-docker-compose -f docker-compose.prod.yml build web docs storybook
+docker-compose -f docker-compose.prod.yml build web storybook
 docker push gzhidao1010/web:${TAG}
-docker push gzhidao1010/docs:${TAG}
 docker push gzhidao1010/storybook:${TAG}
 
 # 3. 部署

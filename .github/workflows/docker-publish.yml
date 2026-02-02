@@ -193,8 +193,6 @@ jobs:
         app:
           - name: web
             dockerfile: ./apps/web/Dockerfile
-          - name: docs
-            dockerfile: ./apps/docs/Dockerfile
           - name: storybook
             dockerfile: ./apps/storybook/Dockerfile
 
@@ -287,5 +285,4 @@ jobs:
           echo "| App | Image |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| web | \`${{ secrets.DOCKERHUB_USERNAME }}/web\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| docs | \`${{ secrets.DOCKERHUB_USERNAME }}/docs\` |" >> $GITHUB_STEP_SUMMARY
           echo "| storybook | \`${{ secrets.DOCKERHUB_USERNAME }}/storybook\` |" >> $GITHUB_STEP_SUMMARY

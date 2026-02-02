@@ -33,7 +33,6 @@
 react-demo-project/
 ├── apps/                    # 前端应用
 │   ├── web/                 # Web 应用（React Router）
-│   ├── docs/                # 文档应用
 │   └── storybook/          # Storybook 组件展示
 ├── packages/                # 共享包
 │   ├── ui/                  # UI 组件库

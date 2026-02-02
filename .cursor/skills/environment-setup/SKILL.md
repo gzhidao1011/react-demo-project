@@ -135,7 +135,7 @@ pnpm --filter @repo/web dev
 pnpm dev
 
 # Start specific app
-pnpm --filter @repo/docs dev
+pnpm --filter @repo/storybook storybook
 ```
 
 ### 2. Build Services

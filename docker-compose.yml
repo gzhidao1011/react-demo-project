@@ -271,28 +271,6 @@ services:
       retries: 3
       start_period: 10s
 
-  # Docs 应用（不暴露端口，仅内部访问）
-  docs:
-    build:
-      context: .
-      dockerfile: apps/docs/Dockerfile
-      args:
-        APP_NAME: docs
-    image: microservices/docs:latest
-    container_name: docs
-    # 不暴露端口，仅通过反向代理访问
-    expose:
-      - "80"
-    networks:
-      - microservices-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
   # 组件库 Storybook（不暴露端口，仅内部访问）
   storybook:
     build:
@@ -326,7 +304,6 @@ services:
       - ./docker/nginx/ssl:/etc/nginx/ssl:ro  # SSL 证书（可选）
     depends_on:
       - web
-      - docs
       - storybook
       - api-gateway
     networks:

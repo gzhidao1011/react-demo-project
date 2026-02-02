@@ -264,29 +264,6 @@ services:
       retries: 3
       start_period: 10s
 
-  # Docs 应用（不暴露端口，仅内部访问）
-  # 支持本地构建或远程镜像：如果镜像不存在，会自动构建
-  docs:
-    image: ${REGISTRY:-gzhidao1010}/docs:${TAG:-latest}
-    build:
-      context: .
-      dockerfile: apps/docs/Dockerfile
-      args:
-        APP_NAME: docs
-    container_name: docs
-    # 不暴露端口，仅通过反向代理访问
-    expose:
-      - "80"
-    networks:
-      - microservices-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
   # 组件库 Storybook（不暴露端口，仅内部访问）
   # 使用远程镜像为主，同时保留 build 作为兜底（镜像不存在时可本地构建）
   storybook:
@@ -320,7 +297,6 @@ services:
       - ./docker/nginx/ssl:/etc/nginx/ssl:ro  # SSL 证书（可选）
     depends_on:
       - web
-      - docs
       - storybook
       - api-gateway
     networks:

@@ -192,7 +192,7 @@ Docker Compose 在镜像已存在时会直接使用旧镜像，不会重新构�
 
 ```bash
 # 强制重新构建并启动
-docker-compose -f docker-compose.prod.yml up -d --build web docs storybook
+docker-compose -f docker-compose.prod.yml up -d --build web storybook
 
 # 或只更新特定应用
 docker-compose -f docker-compose.prod.yml up -d --build web

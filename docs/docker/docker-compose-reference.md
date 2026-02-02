@@ -31,7 +31,6 @@
 | 应用 | 说明 |
 |------|------|
 | web | Web 应用，通过 nginx-proxy 访问 |
-| docs | 文档应用 |
 | storybook | Storybook 组件展示 |
 | nginx-proxy | 统一入口，端口 8888 (HTTP)、8443 (HTTPS) |
 

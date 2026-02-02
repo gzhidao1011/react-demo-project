@@ -67,7 +67,7 @@ docker-compose build user-service order-service api-gateway
 docker-compose build web
 
 # Or build specific app
-docker-compose build docs storybook
+docker-compose build storybook
 ```
 
 Frontend apps use multi-stage builds - Docker handles the build process.
@@ -156,8 +156,6 @@ build-frontend-apps:
     app:
       - name: web
         dockerfile: ./apps/web/Dockerfile
-      - name: docs
-        dockerfile: ./apps/docs/Dockerfile
       - name: storybook
         dockerfile: ./apps/storybook/Dockerfile
 ```
@@ -224,13 +222,11 @@ Configure hosts file (Windows):
 ```text
 # C:\Windows\System32\drivers\etc\hosts
 127.0.0.1 web.example.com
-127.0.0.1 docs.example.com
 127.0.0.1 storybook.example.com
 ```
 
 Access URLs:
 - `http://web.example.com:8888`
-- `http://docs.example.com:8888`
 - `http://storybook.example.com:8888`
 
 ### Adding New Domain
