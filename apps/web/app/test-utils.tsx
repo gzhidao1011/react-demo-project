@@ -1,7 +1,8 @@
 import type { Messages } from "@repo/i18n";
 import { I18nProvider, useLocale } from "@repo/i18n";
-import { act, type RenderOptions, render, waitFor } from "@testing-library/react";
+import { type RenderOptions, type RenderResult, render, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
+import { expect } from "vitest";
 import zh from "../locales/zh.json";
 
 /** 测试用 loadMessages：返回 zh 翻译 */
@@ -17,7 +18,7 @@ function I18nReady({ children }: { children: React.ReactNode }) {
 }
 
 /** 使用 I18nProvider 包装的 render，供需要 useLocale 的组件使用 */
-async function renderWithI18n(ui: ReactElement, options?: Omit<RenderOptions, "wrapper">) {
+async function renderWithI18n(ui: ReactElement, options?: Omit<RenderOptions, "wrapper">): Promise<RenderResult> {
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <I18nProvider loadMessages={loadMessagesForTest} defaultLocale="zh">
