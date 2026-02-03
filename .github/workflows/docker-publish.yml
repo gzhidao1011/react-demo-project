@@ -113,8 +113,8 @@ jobs:
             context: ./services
             dockerfile: ./services/auth-service/Dockerfile
           - name: order-service
-            # order-service 的 Dockerfile 只需单模块 context（COPY target/*.jar）
-            context: ./services/order-service
+            # order-service 的 Dockerfile 需要 ./services 作为 context（多模块 Maven 项目，需要访问 api-common）
+            context: ./services
             dockerfile: ./services/order-service/Dockerfile
           - name: api-gateway
             context: ./services

@@ -38,14 +38,17 @@ ARG APP_NAME=web
 WORKDIR /app
 # 启用 pnpm（构建需要）
 RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
-# 先复制 pruned 的源代码和配置文件（包含 .npmrc、pnpm-lock.yaml、pnpm-workspace.yaml 等）
+# 先复制 pruned 的源代码和配置文件（包含 .npmrc、pnpm-workspace.yaml 等）
 COPY --from=pruner /app/out/full/ .
+# 复制 pnpm-lock.yaml（turbo prune 会生成到 out/pnpm-lock.yaml，需要显式复制）
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 # 复制依赖
 COPY --from=installer /app/node_modules ./node_modules
 # 重新安装以建立 workspace 包的链接
 # 这对于 pnpm workspace 环境很重要，确保 workspace 包正确链接到 node_modules
-# 使用 --frozen-lockfile 确保版本一致，pnpm 会快速重新链接已有的包
-RUN pnpm install --frozen-lockfile
+# 使用 --prefer-offline 优先使用已安装的包，避免重新下载，只重新链接 workspace 包
+# 使用 --frozen-lockfile 确保版本一致
+RUN pnpm install --frozen-lockfile --prefer-offline
 # 验证文件结构（调试用，可以注释掉）
 RUN ls -la /app/apps/${APP_NAME}/app/ || echo "Warning: app directory not found"
 # 构建应用（使用 Turborepo，使用完整的包名）
