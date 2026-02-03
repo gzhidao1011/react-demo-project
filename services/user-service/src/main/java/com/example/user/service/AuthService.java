@@ -300,7 +300,7 @@ public class AuthService {
 
     /**
      * 修改密码
-     * 需当前密码验证，修改成功后旧 Refresh Token 仍有效（用户可继续使用当前会话）
+     * 需当前密码验证。修改成功后撤销该用户所有 Refresh Token，需使用新密码重新登录（符合主流安全实践）。
      *
      * @param userId 用户 ID（从 JWT 获取）
      * @param request 修改密码请求（当前密码、新密码）
@@ -328,6 +328,9 @@ public class AuthService {
         String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
         userMapper.updatePassword(user.getId(), encodedNewPassword, now);
+
+        // 4. 撤销该用户所有 Refresh Token，强制所有设备使用新密码重新登录（主流安全做法）
+        tokenRotationService.revokeAllByUserId(user.getId().toString());
     }
 
     /**

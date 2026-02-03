@@ -52,7 +52,7 @@ export function LocaleSwitcher({ showLabel = false, className = "" }: LocaleSwit
           <ChevronDownIcon className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[140px]">
+      <DropdownMenuContent align="end" className="w-[190px]">
         {SUPPORTED_LOCALES.map(({ code, label }) => (
           <DropdownMenuItem
             key={code}

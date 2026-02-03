@@ -22,7 +22,7 @@ export interface UserLocaleResponse {
 export async function updateUserLocale(locale: string) {
   const response: AxiosResponse<ApiResponseBase<UserLocaleResponse>> = await apiService.patch<
     ApiResponseBase<UserLocaleResponse>
-  >("/api/user/locale", { locale });
+  >("/user/locale", { locale });
   return handleApiResponse(response, "更新语言偏好失败");
 }
 
@@ -37,6 +37,6 @@ export async function updateUserLocale(locale: string) {
  */
 export async function getUserLocale() {
   const response: AxiosResponse<ApiResponseBase<UserLocaleResponse>> =
-    await apiService.get<ApiResponseBase<UserLocaleResponse>>("/api/user/locale");
+    await apiService.get<ApiResponseBase<UserLocaleResponse>>("/user/locale");
   return handleApiResponse(response, "获取语言偏好失败");
 }

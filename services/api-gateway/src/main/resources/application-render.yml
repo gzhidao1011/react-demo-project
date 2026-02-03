@@ -18,6 +18,16 @@ spring:
           uri: lb://user-service  # lb 表示负载均衡，user-service 是服务名
           predicates:
             - Path=/api/users/**
+        # 认证相关路由
+        - id: auth-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**
+        # 用户个人相关路由（locale 等）
+        - id: user-profile-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
         
         # 订单服务路由
         - id: order-service

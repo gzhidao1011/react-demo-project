@@ -24,8 +24,10 @@ vi.mock("@repo/propel", () => ({
   },
 }));
 
+const mockNavigate = vi.fn();
 vi.mock("react-router", () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
+  useNavigate: () => mockNavigate,
 }));
 
 import { toast } from "@repo/propel";
@@ -68,7 +70,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("应该显示成功 toast（提交成功后）", async () => {
+  it("应该显示成功 toast 并跳转登录页（提交成功后）", async () => {
     const user = userEvent.setup();
     mockAuthChangePassword.mockResolvedValue(undefined);
     await renderWithI18n(<SettingsPage />);
@@ -79,9 +81,10 @@ describe("SettingsPage", () => {
     await user.click(screen.getByRole("button", { name: /修改密码/ }));
 
     await waitFor(() => {
-      expect(mockToastSuccess).toHaveBeenCalledWith("密码修改成功！", {
-        duration: 2000,
+      expect(mockToastSuccess).toHaveBeenCalledWith("密码已修改，请使用新密码重新登录", {
+        duration: 3000,
       });
+      expect(mockNavigate).toHaveBeenCalledWith("/sign-in", { replace: true });
     });
   });
 

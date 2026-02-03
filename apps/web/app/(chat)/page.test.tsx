@@ -26,10 +26,10 @@ const {
     regenerate: mockRegenerate,
     clearError: vi.fn(),
   }));
-  const mockCreateConversation = vi.fn(() => "conv_new_123");
-  const mockDeleteConversation = vi.fn();
+  const mockCreateConversation = vi.fn(() => Promise.resolve("conv_new_123"));
+  const mockDeleteConversation = vi.fn(() => Promise.resolve());
   const mockSetActiveId = vi.fn();
-  const mockUpdateConversationTitle = vi.fn();
+  const mockUpdateConversationTitle = vi.fn(() => Promise.resolve());
   const mockNavigate = vi.fn();
   return {
     mockRegenerate,
@@ -59,6 +59,8 @@ vi.mock("./hooks/use-conversations", () => ({
   useConversations: vi.fn(() => ({
     conversations: [{ id: "conv_1", title: "会话1", createdAt: 1000 }],
     activeId: "conv_1",
+    listLoading: false,
+    listError: null,
     createConversation: mockCreateConversation,
     deleteConversation: mockDeleteConversation,
     setActiveId: mockSetActiveId,
@@ -70,6 +72,7 @@ vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
+    Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
     useNavigate: () => mockNavigate,
     useParams: vi.fn(() => ({})),
   };
@@ -162,15 +165,17 @@ describe("ChatPage", () => {
 
     it("点击新建对话应创建会话并跳转", async () => {
       const user = userEvent.setup({ delay: null });
-      mockCreateConversation.mockReturnValue("conv_new_123");
+      mockCreateConversation.mockResolvedValue("conv_new_123");
       await renderWithI18n(<ChatPage />);
 
       // 点击展开按钮打开侧边栏，再点击新建对话
       await user.click(screen.getByRole("button", { name: /打开侧边栏|Open sidebar/i }));
       await user.click(screen.getByRole("button", { name: /新建对话|New chat/i }));
 
-      expect(mockCreateConversation).toHaveBeenCalledTimes(1);
-      expect(mockNavigate).toHaveBeenCalledWith("/chat/conv_new_123", { replace: true });
+      await vi.waitFor(() => {
+        expect(mockCreateConversation).toHaveBeenCalledTimes(1);
+        expect(mockNavigate).toHaveBeenCalledWith("/chat/conv_new_123", { replace: true });
+      });
     });
 
     it("点击快捷提示词应填入输入框", async () => {

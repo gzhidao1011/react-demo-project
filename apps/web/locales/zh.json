@@ -8,7 +8,8 @@
       "title": "构建下一代",
       "titleHighlight": "应用系统",
       "subtitle": "强大的开发平台，让您专注于业务创新。提供完整的解决方案，从开发到部署，一站式服务。",
-      "cta": "立即开始"
+      "cta": "立即开始",
+      "startChat": "开始聊天"
     },
     "features": {
       "title": "为什么选择我们",
@@ -126,6 +127,7 @@
     "confirmNewPassword": "确认新密码",
     "changePassword": "修改密码",
     "changePasswordSuccess": "密码修改成功！",
+    "changePasswordSuccessSignIn": "密码已修改，请使用新密码重新登录",
     "changePasswordFailed": "修改密码失败，请重试",
     "saving": "保存中...",
     "backToChat": "返回对话"
@@ -149,13 +151,17 @@
     "deleteConfirmTitle": "删除对话？",
     "deleteConfirmDesc": "此操作不可撤销，对话及所有消息将被永久删除。",
     "delete": "删除",
+    "settings": "设置",
     "logout": "退出登录",
     "logoutConfirmTitle": "确认退出登录？",
     "logoutConfirmDesc": "退出后需要重新登录才能继续使用。",
     "closeSidebar": "关闭侧边栏",
     "editConversationTitle": "编辑对话标题",
+    "rename": "重命名",
+    "renameLabel": "重命名",
     "renameConversation": "重命名 {title}",
     "deleteConversation": "删除 {title}",
+    "conversationActions": "{title} 的操作",
     "welcomeTitle": "今天有什么可以帮您的？",
     "attachImages": "附加图片",
     "voiceComingSoon": "语音输入（即将推出）",

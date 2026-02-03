@@ -8,7 +8,8 @@
       "title": "Build the next generation",
       "titleHighlight": "application system",
       "subtitle": "A powerful development platform that lets you focus on business innovation. Complete solutions from development to deployment, all in one place.",
-      "cta": "Get Started"
+      "cta": "Get Started",
+      "startChat": "Start Chat"
     },
     "features": {
       "title": "Why Choose Us",
@@ -126,6 +127,7 @@
     "confirmNewPassword": "Confirm new password",
     "changePassword": "Change password",
     "changePasswordSuccess": "Password changed successfully!",
+    "changePasswordSuccessSignIn": "Password changed. Please sign in with your new password.",
     "changePasswordFailed": "Failed to change password. Please try again.",
     "saving": "Saving...",
     "backToChat": "Back to chat"
@@ -149,13 +151,17 @@
     "deleteConfirmTitle": "Delete conversation?",
     "deleteConfirmDesc": "This action cannot be undone. The conversation and all its messages will be permanently removed.",
     "delete": "Delete",
+    "settings": "Settings",
     "logout": "Sign out",
     "logoutConfirmTitle": "Confirm sign out?",
     "logoutConfirmDesc": "You will need to sign in again to continue.",
     "closeSidebar": "Close sidebar",
     "editConversationTitle": "Edit conversation title",
+    "rename": "Rename",
+    "renameLabel": "Rename",
     "renameConversation": "Rename {title}",
     "deleteConversation": "Delete {title}",
+    "conversationActions": "Actions for {title}",
     "welcomeTitle": "What can I help you with today?",
     "attachImages": "Attach images",
     "voiceComingSoon": "Voice input (coming soon)",

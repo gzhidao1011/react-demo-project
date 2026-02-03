@@ -26,18 +26,30 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const conversationId = params.id ?? null;
 
-  const { conversations, activeId, createConversation, deleteConversation, setActiveId, updateConversationTitle } =
-    useConversations();
+  const {
+    conversations,
+    activeId,
+    listLoading,
+    listError,
+    createConversation,
+    deleteConversation,
+    setActiveId,
+    updateConversationTitle,
+  } = useConversations();
 
   const { messages: initialMessages, loading: messagesLoading } = useConversationMessages(conversationId);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleNewChat = useCallback(() => {
-    const id = createConversation();
-    navigate(`/chat/${id}`, { replace: true });
-    setSidebarOpen(false);
-  }, [createConversation, navigate]);
+  const handleNewChat = useCallback(async () => {
+    try {
+      const id = await createConversation();
+      navigate(`/chat/${id}`, { replace: true });
+      setSidebarOpen(false);
+    } catch {
+      toast.error(t("chat.errorGeneric"));
+    }
+  }, [createConversation, navigate, t]);
 
   const handleSelectConversation = useCallback(
     (id: string) => {
@@ -49,13 +61,17 @@ export default function ChatPage() {
   );
 
   const handleDeleteConversation = useCallback(
-    (id: string) => {
-      deleteConversation(id);
-      if (activeId === id) {
-        navigate("/chat", { replace: true });
+    async (id: string) => {
+      try {
+        await deleteConversation(id);
+        if (activeId === id) {
+          navigate("/chat", { replace: true });
+        }
+      } catch {
+        toast.error(t("chat.errorGeneric"));
       }
     },
-    [activeId, deleteConversation, navigate],
+    [activeId, deleteConversation, navigate, t],
   );
 
   const handleSidebarOpenChange = useCallback((open: boolean) => {
@@ -74,13 +90,18 @@ export default function ChatPage() {
     }
   }, [navigate, t]);
 
+  // 打开 /chat 无 id 时：先等列表加载，有会话则跳转第一个，否则新建
   useEffect(() => {
-    if (!conversationId) {
-      const id = createConversation();
-      navigate(`/chat/${id}`, { replace: true });
+    if (conversationId) return;
+    if (listLoading) return;
+    if (conversations.length > 0) {
+      navigate(`/chat/${conversations[0].id}`, { replace: true });
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅当 conversationId 为空时执行一次
-  }, [conversationId]);
+    createConversation()
+      .then((id) => navigate(`/chat/${id}`, { replace: true }))
+      .catch(() => toast.error(t("chat.errorGeneric")));
+  }, [conversationId, listLoading, conversations, createConversation, navigate, t]);
 
   return (
     <>
@@ -96,6 +117,8 @@ export default function ChatPage() {
           <ChatSidebar
             conversations={conversations}
             activeId={conversationId}
+            listLoading={listLoading}
+            listError={listError}
             onNewChat={handleNewChat}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={handleDeleteConversation}
@@ -110,7 +133,10 @@ export default function ChatPage() {
             </div>
             <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               {!conversationId ? (
-                <LoadingState message={t("chat.loadingCreating")} ariaLabel={t("chat.loading")} />
+                <LoadingState
+                  message={listLoading ? t("chat.loading") : t("chat.loadingCreating")}
+                  ariaLabel={t("chat.loading")}
+                />
               ) : messagesLoading ? (
                 <LoadingState message={t("chat.loadingHistory")} ariaLabel={t("chat.loading")} />
               ) : (

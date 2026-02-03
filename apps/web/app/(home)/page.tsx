@@ -1,12 +1,26 @@
-import { ArrowRightIcon, Bars3Icon, CheckCircleIcon, DocumentTextIcon, HomeIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowRightIcon,
+  Bars3Icon,
+  ChatBubbleLeftRightIcon,
+  CheckCircleIcon,
+  DocumentTextIcon,
+  HomeIcon,
+} from "@heroicons/react/24/outline";
 import { LocaleSwitcher, useLocale } from "@repo/i18n";
 import { ToggleMode } from "@repo/propel";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui";
+import { isAuthenticated } from "@repo/utils";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { t } = useLocale();
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setAuthenticated(isAuthenticated());
+  }, []);
 
   // 导航菜单项
   const menuItems = [
@@ -72,17 +86,26 @@ export default function HomePage() {
             </button>
           </nav>
 
-          {/* 右侧登录入口 */}
+          {/* 右侧入口：未登录显示登录/注册，已登录显示开始聊天 */}
           <div className="flex items-center gap-3">
             <LocaleSwitcher />
             <ToggleMode iconSize="h-5 w-5" />
-            <Button variant="ghost" size="default" onClick={() => navigate("/sign-in")} className="hidden sm:flex">
-              {t("auth.login")}
-            </Button>
-            <Button variant="default" size="default" onClick={() => navigate("/sign-up")}>
-              {t("auth.signUp")}
-              <ArrowRightIcon className="ml-1.5 h-4 w-4" />
-            </Button>
+            {authenticated ? (
+              <Button variant="default" size="default" onClick={() => navigate("/chat")}>
+                {t("home.hero.startChat")}
+                <ChatBubbleLeftRightIcon className="ml-1.5 h-4 w-4" />
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="default" onClick={() => navigate("/sign-in")} className="hidden sm:flex">
+                  {t("auth.login")}
+                </Button>
+                <Button variant="default" size="default" onClick={() => navigate("/sign-up")}>
+                  {t("auth.signUp")}
+                  <ArrowRightIcon className="ml-1.5 h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -104,10 +127,17 @@ export default function HomePage() {
                 {t("home.hero.subtitle")}
               </p>
               <div className="mt-10 flex items-center justify-center gap-4">
-                <Button size="lg" onClick={() => navigate("/sign-up")} className="h-12 px-8 text-base">
-                  {t("home.hero.cta")}
-                  <ArrowRightIcon className="ml-2 h-5 w-5" />
-                </Button>
+                {authenticated ? (
+                  <Button size="lg" onClick={() => navigate("/chat")} className="h-12 px-8 text-base">
+                    {t("home.hero.startChat")}
+                    <ChatBubbleLeftRightIcon className="ml-2 h-5 w-5" />
+                  </Button>
+                ) : (
+                  <Button size="lg" onClick={() => navigate("/sign-up")} className="h-12 px-8 text-base">
+                    {t("home.hero.cta")}
+                    <ArrowRightIcon className="ml-2 h-5 w-5" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>

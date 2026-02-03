@@ -28,6 +28,11 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/api/auth/**
+        # 用户个人相关路由（locale 等）
+        - id: user-profile-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
         
         # Chat 服务路由（SSE 流式响应需更长超时）
         - id: chat-service

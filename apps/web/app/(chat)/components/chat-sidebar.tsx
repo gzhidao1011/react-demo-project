@@ -1,5 +1,7 @@
 import {
   ArrowRightStartOnRectangleIcon,
+  Cog6ToothIcon,
+  EllipsisVerticalIcon,
   MagnifyingGlassIcon,
   PencilSquareIcon,
   PlusIcon,
@@ -18,6 +20,10 @@ import {
   AlertDialogTitle,
   Button,
   cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Input,
   SidebarContent,
   SidebarFooter,
@@ -30,13 +36,18 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@repo/ui";
-import type { KeyboardEvent, MouseEvent } from "react";
+import type { KeyboardEvent } from "react";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
+import { Link } from "react-router";
 import type { Conversation } from "../lib/chat.types";
 
 interface ChatSidebarProps {
   conversations: Conversation[];
   activeId: string | null;
+  /** 会话列表是否正在从后端加载 */
+  listLoading?: boolean;
+  /** 会话列表加载失败时的错误 */
+  listError?: Error | null;
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string) => void;
@@ -52,6 +63,8 @@ interface ChatSidebarProps {
 export const ChatSidebar = memo(function ChatSidebar({
   conversations,
   activeId,
+  listLoading = false,
+  listError = null,
   onNewChat,
   onSelectConversation,
   onDeleteConversation,
@@ -124,19 +137,6 @@ export const ChatSidebar = memo(function ChatSidebar({
     onNewChat();
     closeSidebar();
   }, [onNewChat, closeSidebar]);
-
-  const handleRenameClick = useCallback(
-    (e: MouseEvent, conv: Conversation) => {
-      e.stopPropagation();
-      startEdit(conv);
-    },
-    [startEdit],
-  );
-
-  const handleDeleteClick = useCallback((e: MouseEvent, id: string) => {
-    e.stopPropagation();
-    setDeleteConfirmId(id);
-  }, []);
 
   const handleAlertOpenChange = useCallback((open: boolean) => {
     if (!open) setDeleteConfirmId(null);
@@ -213,7 +213,20 @@ export const ChatSidebar = memo(function ChatSidebar({
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredConversations.length === 0 ? (
+              {listLoading ? (
+                <li className="px-3 py-4">
+                  <p className="text-center text-sm text-muted-foreground" aria-busy="true">
+                    {t("chat.loading")}
+                  </p>
+                  <div className="mx-auto mt-2 h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </li>
+              ) : listError ? (
+                <li className="px-3 py-4">
+                  <p className="text-center text-sm text-destructive" role="alert">
+                    {listError.message || t("chat.errorGeneric")}
+                  </p>
+                </li>
+              ) : filteredConversations.length === 0 ? (
                 <li className="px-3 py-4">
                   <p className="text-center text-sm text-muted-foreground">
                     {conversations.length === 0 ? (
@@ -232,7 +245,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                   <SidebarMenuItem key={conv.id}>
                     <div
                       className={cn(
-                        "group flex items-center gap-2 rounded-lg px-2 py-1.5",
+                        "group/row flex items-center gap-2 rounded-lg px-2 py-1.5",
                         activeId === conv.id && "bg-sidebar-accent",
                       )}
                     >
@@ -256,28 +269,43 @@ export const ChatSidebar = memo(function ChatSidebar({
                           >
                             {conv.title}
                           </SidebarMenuButton>
-                          {onRenameConversation && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={(e) => handleRenameClick(e, conv)}
-                              aria-label={t("chat.renameConversation", { title: conv.title })}
-                              className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-primary group-hover:opacity-100 shrink-0"
-                            >
-                              <PencilSquareIcon className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={(e) => handleDeleteClick(e, conv.id)}
-                            aria-label={t("chat.deleteConversation", { title: conv.title })}
-                            className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 shrink-0"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label={t("chat.conversationActions", { title: conv.title })}
+                                className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/row:opacity-100 shrink-0"
+                              >
+                                <EllipsisVerticalIcon className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {onRenameConversation && (
+                                <DropdownMenuItem
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    startEdit(conv);
+                                  }}
+                                >
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                  <span>{t("chat.renameLabel")}</span>
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  setDeleteConfirmId(conv.id);
+                                }}
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                                <span>{t("chat.delete")}</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </>
                       )}
                     </div>
@@ -288,9 +316,20 @@ export const ChatSidebar = memo(function ChatSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      {onLogout && (
-        <SidebarFooter>
-          <SidebarMenu>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <Link
+              to="/settings"
+              onClick={closeSidebar}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2"
+              aria-label={t("chat.settings")}
+            >
+              <Cog6ToothIcon className="h-5 w-5 shrink-0" />
+              <span>{t("chat.settings")}</span>
+            </Link>
+          </SidebarMenuItem>
+          {onLogout && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 onClick={handleLogoutClick}
@@ -301,9 +340,9 @@ export const ChatSidebar = memo(function ChatSidebar({
                 <span>{t("chat.logout")}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      )}
+          )}
+        </SidebarMenu>
+      </SidebarFooter>
       <AlertDialog open={!!deleteConfirmId} onOpenChange={handleAlertOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>

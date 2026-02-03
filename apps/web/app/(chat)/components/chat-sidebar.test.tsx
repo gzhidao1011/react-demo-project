@@ -1,11 +1,17 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { Sidebar, SidebarProvider } from "@repo/ui";
 import { renderWithI18n } from "../../test-utils";
 import type { Conversation } from "../lib/chat.types";
 import { ChatSidebar } from "./chat-sidebar";
+
+// 测试中无 Router 上下文，mock Link 避免 "Cannot destructure property 'basename' of ... as it is null"
+vi.mock("react-router", () => ({
+  Link: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
+}));
 
 const mockConversations: Conversation[] = [
   { id: "conv_1", title: "会话1", createdAt: 1000 },
@@ -80,8 +86,9 @@ describe("ChatSidebar", () => {
       const onDeleteConversation = vi.fn();
       await renderWithSidebar(<ChatSidebar {...defaultProps} onDeleteConversation={onDeleteConversation} />);
 
-      const deleteButtons = screen.getAllByRole("button", { name: /删除/i });
-      await user.click(deleteButtons[0]);
+      // 删除在下拉菜单内：先打开「会话1 的操作」下拉，再点删除菜单项，最后确认对话框
+      await user.click(screen.getByRole("button", { name: /会话1 的操作/ }));
+      await user.click(screen.getByRole("menuitem", { name: /删除/i }));
       await user.click(screen.getByRole("button", { name: /^删除$/ }));
 
       expect(onDeleteConversation).toHaveBeenCalledWith("conv_1");
@@ -93,14 +100,17 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       await renderWithSidebar(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名/i });
-      expect(editButtons.length).toBeGreaterThanOrEqual(1);
+      // 重命名在下拉菜单内：打开「会话1 的操作」后应出现「重命名」菜单项
+      await userEvent.setup({ delay: null }).click(screen.getByRole("button", { name: /会话1 的操作/ }));
+      expect(screen.getByRole("menuitem", { name: /重命名/i })).toBeInTheDocument();
     });
 
     it("无 onRenameConversation 时不应显示编辑按钮", async () => {
+      const user = userEvent.setup({ delay: null });
       await renderWithSidebar(<ChatSidebar {...defaultProps} />);
 
-      expect(screen.queryByRole("button", { name: /重命名/i })).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: /会话1 的操作/ }));
+      expect(screen.queryByRole("menuitem", { name: /重命名/i })).not.toBeInTheDocument();
     });
 
     it("点击编辑应进入编辑模式并显示输入框", async () => {
@@ -108,8 +118,8 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       await renderWithSidebar(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名/i });
-      await user.click(editButtons[0]);
+      await user.click(screen.getByRole("button", { name: /会话1 的操作/ }));
+      await user.click(screen.getByRole("menuitem", { name: /重命名/i }));
 
       const input = screen.getByDisplayValue("会话1");
       expect(input).toBeInTheDocument();
@@ -120,8 +130,8 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       await renderWithSidebar(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名/i });
-      await user.click(editButtons[0]);
+      await user.click(screen.getByRole("button", { name: /会话1 的操作/ }));
+      await user.click(screen.getByRole("menuitem", { name: /重命名/i }));
 
       const input = screen.getByDisplayValue("会话1");
       await user.clear(input);
@@ -136,8 +146,8 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       await renderWithSidebar(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名/i });
-      await user.click(editButtons[0]);
+      await user.click(screen.getByRole("button", { name: /会话1 的操作/ }));
+      await user.click(screen.getByRole("menuitem", { name: /重命名/i }));
 
       const input = screen.getByDisplayValue("会话1");
       await user.type(input, "修改内容");
@@ -152,8 +162,8 @@ describe("ChatSidebar", () => {
       const onRenameConversation = vi.fn();
       await renderWithSidebar(<ChatSidebar {...defaultProps} onRenameConversation={onRenameConversation} />);
 
-      const editButtons = screen.getAllByRole("button", { name: /重命名/i });
-      await user.click(editButtons[0]);
+      await user.click(screen.getByRole("button", { name: /会话1 的操作/ }));
+      await user.click(screen.getByRole("menuitem", { name: /重命名/i }));
 
       const input = screen.getByDisplayValue("会话1");
       await user.clear(input);

@@ -6,10 +6,10 @@ import type { ChangePasswordFormData } from "@repo/schemas";
 import { changePasswordSchema } from "@repo/schemas";
 import { authChangePassword } from "@repo/services";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from "@repo/ui";
-import { handleServerError } from "@repo/utils";
+import { clearTokens, handleServerError } from "@repo/utils";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 /**
  * 账户设置页
@@ -17,6 +17,7 @@ import { Link } from "react-router";
  */
 export default function SettingsPage() {
   const { t } = useLocale();
+  const navigate = useNavigate();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -44,7 +45,9 @@ export default function SettingsPage() {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
-      toast.success(t("settings.changePasswordSuccess"), { duration: 2000 });
+      clearTokens();
+      toast.success(t("settings.changePasswordSuccessSignIn"), { duration: 3000 });
+      navigate("/sign-in", { replace: true });
     } catch (error) {
       const result = handleServerError(error, setError, t("settings.changePasswordFailed"));
       if (result.shouldShowToast && result.toastMessage) {

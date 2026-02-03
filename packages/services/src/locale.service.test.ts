@@ -34,7 +34,7 @@ describe("locale.service", () => {
       await updateUserLocale("en");
 
       // Assert
-      expect(apiService.patch).toHaveBeenCalledWith("/api/user/locale", { locale: "en" });
+      expect(apiService.patch).toHaveBeenCalledWith("/user/locale", { locale: "en" });
     });
 
     it("应该返回成功响应", async () => {
@@ -82,7 +82,7 @@ describe("locale.service", () => {
       await getUserLocale();
 
       // Assert
-      expect(apiService.get).toHaveBeenCalledWith("/api/user/locale");
+      expect(apiService.get).toHaveBeenCalledWith("/user/locale");
     });
 
     it("应该返回 locale 字符串", async () => {
