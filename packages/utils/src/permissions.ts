@@ -1,4 +1,4 @@
-import type { UserInfo } from "@repo/services";
+import type { UserInfo } from "@repo/types";
 import { useMemo } from "react";
 import { getAccessToken } from "./auth";
 

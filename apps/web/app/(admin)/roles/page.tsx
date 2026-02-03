@@ -1,4 +1,4 @@
-import { ArrowPathIcon, MagnifyingGlassIcon, PencilSquareIcon, PlusIcon, TrashIcon } from "@heroicons/react/16/solid";
+import { ArrowPathIcon, PencilSquareIcon, PlusIcon, TrashIcon } from "@heroicons/react/16/solid";
 import { useLocale } from "@repo/i18n";
 import { toast } from "@repo/propel";
 import { deleteRole, getRolePage, type RoleDetailDto, restoreRole } from "@repo/services";
@@ -17,10 +17,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  Input,
   Skeleton,
 } from "@repo/ui";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 /**

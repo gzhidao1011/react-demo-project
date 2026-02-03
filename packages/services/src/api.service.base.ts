@@ -326,8 +326,8 @@ export abstract class APIServiceBase {
    * @param config - Additional axios configuration
    * @returns Axios response promise
    */
-  put(url: string, data = {}, config: AxiosRequestConfig = {}) {
-    return this.axiosInstance.put(url, data, config);
+  put<T = unknown>(url: string, data = {}, config: AxiosRequestConfig = {}) {
+    return this.axiosInstance.put<T>(url, data, config);
   }
 
   /**
@@ -348,8 +348,8 @@ export abstract class APIServiceBase {
    * @param config - Additional axios configuration
    * @returns Axios response promise
    */
-  delete(url: string, data?: unknown, config: AxiosRequestConfig = {}) {
-    return this.axiosInstance.delete(url, { data, ...config });
+  delete<T = unknown>(url: string, data?: unknown, config: AxiosRequestConfig = {}) {
+    return this.axiosInstance.delete<T>(url, { data, ...config });
   }
 
   /**

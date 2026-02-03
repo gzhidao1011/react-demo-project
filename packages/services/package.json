@@ -32,6 +32,7 @@
     "@vitest/coverage-v8": "^3.2.4"
   },
   "dependencies": {
+    "@repo/types": "workspace:*",
     "@repo/utils": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
