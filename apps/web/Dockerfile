@@ -64,9 +64,10 @@ RUN test -d /app/node_modules/.pnpm/react-router* || (echo "Error: react-router 
 ENV NODE_ENV=production
 # 添加详细日志和错误处理
 # 使用 Turborepo 构建，并将输出保存到日志文件以便调试
-RUN pnpm turbo run build --filter=@repo/${APP_NAME} --verbose 2>&1 | tee /tmp/build.log || (echo "Build failed, showing build log:" && cat /tmp/build.log && echo "Checking build output..." && ls -la /app/apps/${APP_NAME}/build 2>/dev/null || echo "Build directory not found" && exit 1)
-# 验证构建产物
-RUN test -d /app/apps/${APP_NAME}/build/client || (echo "Error: build/client directory not found" && exit 1)
+# 注意：使用 --verbosity 而不是 --verbose
+RUN set -o pipefail; pnpm turbo run build --filter=@repo/${APP_NAME} --verbosity=2 2>&1 | tee /tmp/build.log || (echo "=== Build failed, showing build log ===" && cat /tmp/build.log && echo "=== Checking build output ===" && ls -la /app/apps/${APP_NAME}/build 2>/dev/null || echo "Build directory not found" && exit 1)
+# 验证构建产物（如果构建失败，显示构建日志）
+RUN test -d /app/apps/${APP_NAME}/build/client || (echo "=== Error: build/client directory not found ===" && echo "=== Build log ===" && cat /tmp/build.log 2>/dev/null || echo "No build log available" && exit 1)
 RUN test -f /app/apps/${APP_NAME}/build/client/index.html || (echo "Error: build/client/index.html not found" && exit 1)
 
 # 阶段4：Nginx 生产镜像
