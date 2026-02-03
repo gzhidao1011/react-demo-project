@@ -6,6 +6,9 @@
 FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 WORKDIR /build
 
+# 配置 Maven 使用阿里云镜像（加速依赖下载）
+COPY .m2/settings.xml /root/.m2/settings.xml
+
 COPY pom.xml .
 COPY api-common/pom.xml ./api-common/
 COPY auth-service/pom.xml ./auth-service/

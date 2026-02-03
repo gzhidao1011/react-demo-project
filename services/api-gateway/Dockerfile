@@ -12,6 +12,9 @@
 FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 WORKDIR /build
 
+# 配置 Maven 使用阿里云镜像（加速依赖下载）
+COPY .m2/settings.xml /root/.m2/settings.xml
+
 # 步骤1：复制父 pom.xml 和所有模块的 pom.xml（利用 Docker 缓存层）
 # 如果依赖没变化，这层会被缓存，大幅提升构建速度
 COPY pom.xml .
