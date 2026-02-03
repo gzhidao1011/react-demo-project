@@ -12,14 +12,9 @@ export const meta: Route.MetaFunction = () => [
 ];
 
 /**
- * 缓存策略（OWASP）：重置页设置 Cache-Control: no-store
+ * 注意：在 SPA 模式（ssr: false）下，不能使用 headers 导出
+ * 缓存策略通过 meta 标签中的 robots 和 referrer 策略来实现
  */
-export function headers(_args: Route.HeadersArgs) {
-  return {
-    "Cache-Control": "no-store",
-  };
-}
-
 export default function ResetPasswordLayout() {
   return <Outlet />;
 }

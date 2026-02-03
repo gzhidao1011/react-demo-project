@@ -16,6 +16,7 @@ WORKDIR /build
 # 如果依赖没变化，这层会被缓存，大幅提升构建速度
 COPY pom.xml .
 COPY api-common/pom.xml ./api-common/
+COPY auth-service/pom.xml ./auth-service/
 COPY user-service/pom.xml ./user-service/
 COPY order-service/pom.xml ./order-service/
 COPY chat-service/pom.xml ./chat-service/

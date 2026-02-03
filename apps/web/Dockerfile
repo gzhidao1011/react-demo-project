@@ -51,9 +51,23 @@ COPY --from=installer /app/node_modules ./node_modules
 RUN pnpm install --frozen-lockfile --prefer-offline
 # 验证文件结构（调试用，可以注释掉）
 RUN ls -la /app/apps/${APP_NAME}/app/ || echo "Warning: app directory not found"
+# 验证依赖安装
+RUN pnpm list --depth=0 | head -20 || echo "Warning: pnpm list failed"
+# 验证 React Router 相关依赖
+RUN ls -la /app/node_modules/.pnpm/@react-router* 2>/dev/null || echo "Warning: React Router dependencies not found"
+# 验证关键依赖是否存在
+RUN test -d /app/node_modules/.pnpm/@react-router+dev* || (echo "Error: @react-router/dev not found" && exit 1)
+RUN test -d /app/node_modules/.pnpm/react-router* || (echo "Error: react-router not found" && exit 1)
 # 构建应用（使用 Turborepo，使用完整的包名）
 # 注意：工作目录是 /app，React Router 会在 apps/web/app/ 目录下查找 root.tsx
-RUN pnpm turbo run build --filter=@repo/${APP_NAME}
+# 设置 NODE_ENV 为 production 以确保正确的构建环境
+ENV NODE_ENV=production
+# 添加详细日志和错误处理
+# 使用 Turborepo 构建，并将输出保存到日志文件以便调试
+RUN pnpm turbo run build --filter=@repo/${APP_NAME} --verbose 2>&1 | tee /tmp/build.log || (echo "Build failed, showing build log:" && cat /tmp/build.log && echo "Checking build output..." && ls -la /app/apps/${APP_NAME}/build 2>/dev/null || echo "Build directory not found" && exit 1)
+# 验证构建产物
+RUN test -d /app/apps/${APP_NAME}/build/client || (echo "Error: build/client directory not found" && exit 1)
+RUN test -f /app/apps/${APP_NAME}/build/client/index.html || (echo "Error: build/client/index.html not found" && exit 1)
 
 # 阶段4：Nginx 生产镜像
 FROM nginx:alpine
