@@ -4,6 +4,7 @@ import com.example.api.common.ResultCode;
 import com.example.api.exception.BusinessException;
 import com.example.auth.client.UserServiceInternalClient;
 import com.example.auth.client.dto.*;
+import com.example.auth.saga.RegistrationSaga;
 import com.example.api.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ class AuthServiceTest {
     @Mock
     private RateLimitService rateLimitService;
 
+    @Mock
+    private RegistrationSaga registrationSaga;
+
     @InjectMocks
     private AuthService authService;
 
@@ -77,11 +81,12 @@ class AuthServiceTest {
 
         when(passwordPolicyService.validatePassword(anyString()))
                 .thenReturn(new PasswordPolicyService.PasswordValidationResult(true, null, List.of()));
-        when(userClient.createUser(any(InternalCreateUserRequest.class)))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONFLICT));
+        when(registrationSaga.execute(any(RegisterRequest.class)))
+                .thenThrow(new BusinessException(ResultCode.EMAIL_ALREADY_EXISTS));
 
         BusinessException ex = assertThrows(BusinessException.class, () -> authService.register(request));
         assertEquals(ResultCode.EMAIL_ALREADY_EXISTS.getCode(), ex.getCode());
+        verify(registrationSaga).execute(request);
     }
 
     @Test
@@ -92,18 +97,18 @@ class AuthServiceTest {
 
         when(passwordPolicyService.validatePassword(anyString()))
                 .thenReturn(new PasswordPolicyService.PasswordValidationResult(true, null, List.of()));
-        InternalCreateUserResponse created = new InternalCreateUserResponse(100L);
-        when(userClient.createUser(any(InternalCreateUserRequest.class))).thenReturn(created);
-        doNothing().when(userClient).sendEmailVerification(eq(100L), eq("new@example.com"));
+        RegisterResponse expectedResponse = RegisterResponse.builder()
+                .message("注册成功，请查收验证邮件")
+                .email("new@example.com")
+                .build();
+        when(registrationSaga.execute(any(RegisterRequest.class))).thenReturn(expectedResponse);
 
         RegisterResponse response = authService.register(request);
 
         assertNotNull(response);
         assertEquals("注册成功，请查收验证邮件", response.getMessage());
         assertEquals("new@example.com", response.getEmail());
-        verify(userClient).createUser(argThat(req ->
-                "new@example.com".equals(req.getEmail()) && "Password123!".equals(req.getPassword())));
-        verify(userClient).sendEmailVerification(100L, "new@example.com");
+        verify(registrationSaga).execute(request);
     }
 
     @Test
