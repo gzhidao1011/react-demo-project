@@ -37,6 +37,11 @@ public class UserEntity {
     private LocalDateTime updatedAt;
 
     /**
+     * 软删除时间（NULL 表示未删除）
+     */
+    private LocalDateTime deletedAt;
+
+    /**
      * 转换为 DTO（不包含密码字段）
      *
      * @return User DTO 对象

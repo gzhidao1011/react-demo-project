@@ -2,6 +2,7 @@ package com.example.user.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,12 +20,15 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final InternalApiSecretFilter internalApiSecretFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, InternalApiSecretFilter internalApiSecretFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.internalApiSecretFilter = internalApiSecretFilter;
     }
     
     /**
@@ -57,16 +61,13 @@ public class SecurityConfig {
                     response.getWriter().write("{\"code\":401,\"message\":\"未授权，请登录\"}");
                 }))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    AntPathRequestMatcher.antMatcher("/api/auth/me"),
-                    AntPathRequestMatcher.antMatcher("/api/auth/change-password"),
-                    AntPathRequestMatcher.antMatcher("/api/auth/change-email")
-                ).authenticated() // 当前用户、修改密码、修改邮箱需 JWT 认证
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/auth/**")).permitAll() // 其他认证接口公开访问
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/internal/**")).permitAll() // 内部 API 由 InternalApiSecretFilter 校验
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll() // 健康检查公开访问
-                .anyRequest().authenticated() // 其他接口需要认证
+                .anyRequest().authenticated() // 其他接口需 JWT 认证（/api/users/**、/api/user/** 等，JWT 由 auth-service 签发）
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            // 均以内置 filter 为参考，避免「does not have a registered order」；后添加的在前执行
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(internalApiSecretFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

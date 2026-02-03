@@ -150,6 +150,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
@@ -170,6 +175,18 @@
     <build>
         <finalName>${project.artifactId}</finalName>
         <plugins>
+            <!-- Flyway：本地出现 V7 校验和不一致时可执行 mvn flyway:repair -pl user-service -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>9.22.3</version>
+                <configuration>
+                    <url>jdbc:mysql://localhost:3306/user_db?useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;characterEncoding=UTF-8&amp;allowPublicKeyRetrieval=true</url>
+                    <user>root</user>
+                    <password>root123</password>
+                    <locations>filesystem:src/main/resources/db/migration</locations>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -227,7 +244,6 @@
                                     <includes>
                                         <include>com.example.user.service.JwtService</include>
                                         <include>com.example.user.service.PasswordPolicyService</include>
-                                        <include>com.example.user.service.TokenRotationService</include>
                                     </includes>
                                     <limits>
                                         <limit>

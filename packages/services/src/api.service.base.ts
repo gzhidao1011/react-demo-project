@@ -62,6 +62,24 @@ export function handleApiResponse<T>(
 }
 
 /**
+ * 公开认证路径：这些请求不附加 Authorization 头（只对受保护接口带 Token）
+ */
+const PATHS_NO_AUTH_HEADER = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
+  "/auth/logout",
+  "/auth/verify-email",
+  "/auth/resend-verification",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+];
+
+function isPublicAuthPath(url: string | undefined): boolean {
+  return !!url && PATHS_NO_AUTH_HEADER.some((path) => url.includes(path));
+}
+
+/**
  * Abstract base class for making HTTP requests using axios
  * @abstract
  */
@@ -91,20 +109,10 @@ export abstract class APIServiceBase {
    * 设置请求和响应拦截器
    */
   private setupInterceptors() {
-    // 请求拦截器
+    // 请求拦截器：只对受保护接口带 Token，公开认证路径不附加 Authorization
     this.axiosInstance.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
-        // 白名单路径不需要 Token
-        const whiteList = [
-          "/auth/login",
-          "/auth/register",
-          "/auth/refresh",
-          "/auth/verify-email",
-          "/auth/resend-verification",
-          "/auth/forgot-password",
-          "/auth/reset-password",
-        ];
-        if (config.url && whiteList.some((path) => config.url?.includes(path))) {
+        if (isPublicAuthPath(config.url)) {
           return config;
         }
 
@@ -169,9 +177,8 @@ export abstract class APIServiceBase {
 
         // 处理 401 错误（Token 过期或无效）
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-          // 白名单路径不处理 401
-          const whiteList = ["/auth/login", "/auth/register", "/auth/refresh"];
-          if (originalRequest.url && whiteList.some((path) => originalRequest.url?.includes(path))) {
+          // 公开认证路径不重试、不刷新 Token
+          if (isPublicAuthPath(originalRequest.url)) {
             return Promise.reject(error);
           }
 

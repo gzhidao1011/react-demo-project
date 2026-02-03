@@ -25,7 +25,7 @@ services:
     image: mysql:8.0
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
@@ -37,7 +37,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,7 +58,7 @@ services:
       - MYSQL_SERVICE_PORT=3306
       - MYSQL_SERVICE_DB_NAME=nacos
       - MYSQL_SERVICE_USER=root
-      - MYSQL_SERVICE_PASSWORD=root123
+      - MYSQL_SERVICE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123}
       - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=10000&socketTimeout=30000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
       - NACOS_AUTH_ENABLE=false
       - JVM_XMS=256m
@@ -123,6 +123,8 @@ services:
       dockerfile: user-service/Dockerfile
     image: microservices/user-service:latest
     container_name: user-service
+    env_file:
+      - ./services/.env  # 加载 Admin 初始化配置（ADMIN_INIT_*）
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - NACOS_SERVER_ADDR=nacos:8848
@@ -130,12 +132,18 @@ services:
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=user_db
       - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=root123
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - DOCKER_HOST_IP=user-service
       - JAVA_OPTS=-Xms256m -Xmx512m
+      # Admin 账号初始化配置（从 .env 文件加载）
+      - ADMIN_INIT_ENABLED=${ADMIN_INIT_ENABLED:-true}
+      - ADMIN_INIT_EMAIL=${ADMIN_INIT_EMAIL:-}
+      - ADMIN_INIT_PASSWORD=${ADMIN_INIT_PASSWORD:-}
+      - ADMIN_INIT_NAME=${ADMIN_INIT_NAME:-Administrator}
+      - ADMIN_INIT_PHONE=${ADMIN_INIT_PHONE:-}
     ports:
       - "8001:8001"
       - "20880:20880"
@@ -150,11 +158,40 @@ services:
       - microservices-network
     restart: unless-stopped
 
-  # 订单服务（单模块，需先 mvn package 生成 jar）
+  # 认证服务（注册、登录、JWT 签发与刷新，调用 user-service 内部 API）
+  auth-service:
+    build:
+      context: ./services
+      dockerfile: auth-service/Dockerfile
+    image: microservices/auth-service:latest
+    container_name: auth-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_SERVER_ADDR=nacos:8848
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-change-me-internal-secret}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    ports:
+      - "8002:8002"
+    depends_on:
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # 订单服务（多阶段构建，支持 Docker 内自动编译）
   order-service:
     build:
-      context: ./services/order-service
-      dockerfile: Dockerfile
+      context: ./services
+      dockerfile: order-service/Dockerfile
     image: microservices/order-service:latest
     container_name: order-service
     environment:
@@ -164,11 +201,11 @@ services:
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=order_db
       - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=root123
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123}
       - DOCKER_HOST_IP=order-service
       - JAVA_OPTS=-Xms256m -Xmx512m
     ports:
-      - "8002:8002"
+      - "8004:8002"
       - "20881:20881"
     depends_on:
       mysql:
@@ -197,7 +234,7 @@ services:
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=chat_db
       - MYSQL_USERNAME=root
-      - MYSQL_PASSWORD=root123
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123}
       - DOCKER_HOST_IP=chat-service
       - LLM_PROVIDER=${LLM_PROVIDER:-deepseek}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -237,6 +274,8 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
+      auth-service:
+        condition: service_started
       user-service:
         condition: service_started
       order-service:

@@ -1,121 +1,93 @@
 package com.example.user.controller;
 
+import com.example.api.common.PagedResult;
 import com.example.api.common.Result;
-import com.example.api.common.ResultCode;
-import com.example.api.exception.BusinessException;
-import com.example.api.model.User;
-import com.example.api.service.UserService;
-import com.example.user.entity.UserEntity;
-import com.example.user.mapper.UserMapper;
+import com.example.user.controller.dto.CreateUserRequest;
+import com.example.user.controller.dto.UpdateUserRequest;
+import com.example.user.controller.dto.UserDetailDto;
+import com.example.user.service.UserManagementService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
- * 用户控制器
- * 提供用户 REST API
+ * 用户管理 API（与设计文档 2.4 一致）
+ * 分页、软删除、恢复；需 ADMIN 角色
  */
 @RestController
 @RequestMapping("/api/users")
+@PreAuthorize("hasRole('ADMIN')")
 public class UserController {
-    
-    @Autowired
-    private UserService userService;
 
-    @Autowired
-    private UserMapper userMapper;
+    private final UserManagementService userManagementService;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    
+    public UserController(UserManagementService userManagementService) {
+        this.userManagementService = userManagementService;
+    }
+
     /**
-     * 获取所有用户
+     * 分页查询用户（可选筛选 email/name/role/deleted，排序见 1.3）
      */
     @GetMapping
-    public Result<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        return Result.success(users);
+    public Result<PagedResult<UserDetailDto>> getUsers(
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "email", required = false) String email,
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "role", required = false) String role,
+            @RequestParam(name = "deleted", required = false) Boolean deleted,
+            @RequestParam(name = "sort", required = false) String sort) {
+        PagedResult<UserDetailDto> paged = userManagementService.getUsersPage(page, size, email, name, role, deleted, sort);
+        return Result.success(paged);
     }
-    
+
     /**
-     * 根据 ID 获取用户
+     * 根据 ID 获取用户详情（含角色列表）
      */
     @GetMapping("/{id}")
-    public Result<User> getUserById(@PathVariable("id") Long id) {
-        User user = userService.getUserById(id);
-        if (user == null) {
-            throw new BusinessException(ResultCode.USER_NOT_FOUND);
-        }
-        return Result.success(user);
+    public Result<UserDetailDto> getUserById(@PathVariable("id") Long id) {
+        UserDetailDto dto = userManagementService.getUserById(id);
+        return Result.success(dto);
     }
-    
+
     /**
-     * 创建用户
+     * 创建用户（可指定初始角色）；成功返回 201 + Location
      */
     @PostMapping
-    public Result<User> createUser(@Valid @RequestBody User user) {
-        if (userMapper.existsByEmail(user.getEmail())) {
-            throw new BusinessException(ResultCode.EMAIL_ALREADY_EXISTS, "邮箱已存在: " + user.getEmail());
-        }
-
-        var now = java.time.LocalDateTime.now();
-        UserEntity entity = new UserEntity();
-        entity.setName(user.getName());
-        entity.setEmail(user.getEmail());
-        entity.setPhone(user.getPhone());
-        entity.setPassword(passwordEncoder.encode("ChangeMe123!")); // 默认密码，建议用户修改
-        entity.setCreatedAt(now);
-        entity.setUpdatedAt(now);
-
-        userMapper.insert(entity);
-        return Result.success("用户创建成功", convertToDto(entity));
+    public ResponseEntity<Result<UserDetailDto>> createUser(@Valid @RequestBody CreateUserRequest request) {
+        UserDetailDto created = userManagementService.createUser(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .header("Location", "/api/users/" + created.getId())
+                .body(Result.success(created));
     }
-    
+
     /**
-     * 更新用户
+     * 更新用户与/或分配角色
      */
     @PutMapping("/{id}")
-    public Result<User> updateUser(@PathVariable("id") Long id, @Valid @RequestBody User user) {
-        UserEntity entity = userMapper.findById(id);
-        if (entity == null) {
-            throw new BusinessException(ResultCode.USER_NOT_FOUND);
-        }
-        if (!entity.getEmail().equals(user.getEmail()) && userMapper.existsByEmail(user.getEmail())) {
-            throw new BusinessException(ResultCode.EMAIL_ALREADY_EXISTS, "邮箱已存在: " + user.getEmail());
-        }
-
-        entity.setName(user.getName());
-        entity.setEmail(user.getEmail());
-        entity.setPhone(user.getPhone());
-        entity.setUpdatedAt(java.time.LocalDateTime.now());
-        userMapper.update(entity);
-        return Result.success("用户更新成功", convertToDto(entity));
+    public Result<UserDetailDto> updateUser(@PathVariable("id") Long id, @Valid @RequestBody UpdateUserRequest request) {
+        UserDetailDto dto = userManagementService.updateUser(id, request);
+        return Result.success(dto);
     }
-    
+
     /**
-     * 删除用户
+     * 软删除用户；成功返回 204 No Content
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteUser(@PathVariable("id") Long id) {
-        if (!userMapper.existsById(id)) {
-            throw new BusinessException(ResultCode.USER_NOT_FOUND);
-        }
-        userMapper.deleteById(id);
-        return Result.success();
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable("id") Long id) {
+        userManagementService.softDeleteUser(id);
     }
-    
+
     /**
-     * 将实体类转换为 DTO
+     * 恢复软删除用户
      */
-    private User convertToDto(UserEntity entity) {
-        User user = new User();
-        user.setId(entity.getId());
-        user.setName(entity.getName());
-        user.setEmail(entity.getEmail());
-        user.setPhone(entity.getPhone());
-        return user;
+    @PatchMapping("/{id}/restore")
+    public Result<Void> restoreUser(@PathVariable("id") Long id) {
+        userManagementService.restoreUser(id);
+        return Result.success();
     }
 }

@@ -1,9 +1,9 @@
 package com.example.user.controller;
 
 import com.example.api.model.LocaleUpdateRequest;
-import com.example.api.model.LoginResponse;
-import com.example.api.model.RegisterRequest;
-import com.example.api.model.VerifyEmailRequest;
+import com.example.user.entity.UserEntity;
+import com.example.user.mapper.UserRoleMapper;
+import com.example.user.service.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
@@ -25,10 +26,12 @@ import org.testcontainers.utility.DockerImageName;
 
 import jakarta.servlet.http.Cookie;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -95,6 +98,15 @@ class LocaleControllerTest {
     @Autowired
     private com.example.user.mapper.UserMapper userMapper;
 
+    @Autowired
+    private UserRoleMapper userRoleMapper;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private String accessToken;
 
     @BeforeEach
@@ -112,38 +124,29 @@ class LocaleControllerTest {
         } catch (Exception ignored) {
         }
         com.example.user.service.TestTokenStore.clear();
-        accessToken = obtainAccessToken();
+        accessToken = createVerifiedUserAndIssueToken();
     }
 
-    private String obtainAccessToken() throws Exception {
-        RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setEmail("locale-test@example.com");
-        registerRequest.setPassword("Password123!");
-
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isOk());
-
-        String token = com.example.user.service.TestTokenStore.getToken("locale-test@example.com");
-        if (token == null) {
-            throw new IllegalStateException("测试环境应能获取验证 token");
-        }
-
-        VerifyEmailRequest verifyRequest = new VerifyEmailRequest();
-        verifyRequest.setToken(token);
-        String verifyResponse = mockMvc.perform(post("/api/auth/verify-email")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(verifyRequest)))
-                .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        LoginResponse loginResponse = objectMapper.readValue(
-                objectMapper.readTree(verifyResponse).get("data").toString(),
-                LoginResponse.class);
-        return loginResponse.getAccessToken();
+    /**
+     * 在 user-service 中直接创建已验证用户并用本服务 JwtService 签发 token，
+     * 避免依赖已迁移至 auth-service 的 /api/auth/register 与 /api/auth/verify-email。
+     */
+    private String createVerifiedUserAndIssueToken() {
+        LocalDateTime now = LocalDateTime.now();
+        UserEntity user = new UserEntity();
+        user.setName("Locale Test");
+        user.setEmail("locale-test@example.com");
+        user.setPassword(passwordEncoder.encode("Password123!"));
+        user.setEmailVerified(true);
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+        user.setDeletedAt(null);
+        userMapper.insert(user);
+        userRoleMapper.insert(user.getId(), 2L, now);
+        return jwtService.generateAccessToken(
+                String.valueOf(user.getId()),
+                user.getEmail(),
+                List.of("USER"));
     }
 
     @Test

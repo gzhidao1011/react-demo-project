@@ -109,6 +109,20 @@ rate-limit:
     max-attempts-per-ip: 10       # 每 IP 每小时最多 10 次（防暴力枚举 token）
     ip-window-seconds: 3600
 
+# 内部 API 密钥（供 auth-service 调用 /internal/** 时携带 X-Internal-Secret）
+internal:
+  api:
+    secret: ${INTERNAL_API_SECRET:change-me-internal-secret}
+
+# Admin 账号初始化配置（符合国外主流做法：通过环境变量配置）
+admin:
+  initialization:
+    enabled: ${ADMIN_INIT_ENABLED:true}  # 是否启用自动初始化（生产环境建议设为 false）
+    email: ${ADMIN_INIT_EMAIL:}  # Admin 账号邮箱（必填，如果启用初始化）
+    password: ${ADMIN_INIT_PASSWORD:}  # Admin 账号密码（必填，如果启用初始化）
+    name: ${ADMIN_INIT_NAME:Administrator}  # Admin 账号姓名（可选，默认：Administrator）
+    phone: ${ADMIN_INIT_PHONE:}  # Admin 账号手机号（可选）
+
 # MyBatis 配置
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml

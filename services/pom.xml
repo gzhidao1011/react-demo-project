@@ -25,6 +25,7 @@
     <!-- 子模块列表 -->
     <modules>
         <module>api-common</module>
+        <module>auth-service</module>
         <module>user-service</module>
         <module>order-service</module>
         <module>chat-service</module>

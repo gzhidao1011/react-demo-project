@@ -3,10 +3,12 @@ package com.example.user.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import com.example.user.config.InternalApiSecretFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.Arrays;
@@ -49,6 +51,9 @@ import static org.junit.jupiter.api.Assertions.*;
     "dubbo.registry.address=N/A"
 })
 class JwtServiceTest {
+
+    @MockBean
+    private InternalApiSecretFilter internalApiSecretFilter;
 
     @Autowired(required = false)
     private JwtService jwtService;

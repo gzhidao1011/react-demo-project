@@ -105,10 +105,13 @@ jobs:
     strategy:
       matrix:
         service:
-          # api-gateway 和 user-service 的 Dockerfile 需要 ./services 作为 context（多模块 Maven 项目）
+          # api-gateway、user-service、auth-service 的 Dockerfile 需要 ./services 作为 context（多模块 Maven 项目）
           - name: user-service
             context: ./services
             dockerfile: ./services/user-service/Dockerfile
+          - name: auth-service
+            context: ./services
+            dockerfile: ./services/auth-service/Dockerfile
           - name: order-service
             # order-service 的 Dockerfile 只需单模块 context（COPY target/*.jar）
             context: ./services/order-service
@@ -278,6 +281,7 @@ jobs:
           echo "| Service | Image |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| user-service | \`${{ secrets.DOCKERHUB_USERNAME }}/user-service\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| auth-service | \`${{ secrets.DOCKERHUB_USERNAME }}/auth-service\` |" >> $GITHUB_STEP_SUMMARY
           echo "| order-service | \`${{ secrets.DOCKERHUB_USERNAME }}/order-service\` |" >> $GITHUB_STEP_SUMMARY
           echo "| api-gateway | \`${{ secrets.DOCKERHUB_USERNAME }}/api-gateway\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

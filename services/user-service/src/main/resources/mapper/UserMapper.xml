@@ -13,37 +13,81 @@
         <result property="emailVerifiedAt" column="email_verified_at"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
     </resultMap>
 
+    <sql id="UserColumns">id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at, deleted_at</sql>
+
     <select id="findById" resultMap="UserResultMap">
-        SELECT id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at
-        FROM users
-        WHERE id = #{id}
+        SELECT <include refid="UserColumns"/> FROM users WHERE id = #{id}
+    </select>
+
+    <select id="findByIdExcludingDeleted" resultMap="UserResultMap">
+        SELECT <include refid="UserColumns"/> FROM users WHERE id = #{id} AND deleted_at IS NULL
     </select>
 
     <select id="findByEmail" resultMap="UserResultMap">
-        SELECT id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at
-        FROM users
-        WHERE email = #{email}
+        SELECT <include refid="UserColumns"/> FROM users WHERE email = #{email} AND deleted_at IS NULL
+    </select>
+
+    <select id="findByEmailWithDeleted" resultMap="UserResultMap">
+        SELECT <include refid="UserColumns"/> FROM users WHERE email = #{email}
+        <if test="excludeDeleted">AND deleted_at IS NULL</if>
     </select>
 
     <select id="findByPhone" resultMap="UserResultMap">
-        SELECT id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at
-        FROM users
-        WHERE phone = #{phone}
+        SELECT <include refid="UserColumns"/> FROM users WHERE phone = #{phone}
     </select>
 
     <select id="findAll" resultMap="UserResultMap">
-        SELECT id, name, email, phone, password, email_verified, email_verified_at, created_at, updated_at
-        FROM users
+        SELECT <include refid="UserColumns"/> FROM users
+        <if test="!includeDeleted">WHERE deleted_at IS NULL</if>
+    </select>
+
+    <select id="findPage" resultMap="UserResultMap">
+        SELECT u.id, u.name, u.email, u.phone, u.password, u.email_verified, u.email_verified_at, u.created_at, u.updated_at, u.deleted_at
+        FROM users u
+        <if test="roleCode != null and roleCode != ''">
+            INNER JOIN user_roles ur ON u.id = ur.user_id
+            INNER JOIN roles r ON ur.role_id = r.id AND r.code = #{roleCode} AND r.deleted_at IS NULL
+        </if>
+        <where>
+            <if test="email != null and email != ''">AND u.email LIKE CONCAT('%', #{email}, '%')</if>
+            <if test="name != null and name != ''">AND u.name LIKE CONCAT('%', #{name}, '%')</if>
+            <if test="includeDeleted == null or !includeDeleted">AND u.deleted_at IS NULL</if>
+        </where>
+        <choose>
+            <when test="orderBy != null and orderBy != ''">ORDER BY ${orderBy}</when>
+            <otherwise>ORDER BY u.created_at DESC</otherwise>
+        </choose>
+        LIMIT #{size} OFFSET #{offset}
     </select>
 
     <select id="count" resultType="long">
         SELECT COUNT(*) FROM users
+        <if test="!includeDeleted">WHERE deleted_at IS NULL</if>
+    </select>
+
+    <select id="countPage" resultType="long">
+        SELECT COUNT(DISTINCT u.id) FROM users u
+        <if test="roleCode != null and roleCode != ''">
+            INNER JOIN user_roles ur ON u.id = ur.user_id
+            INNER JOIN roles r ON ur.role_id = r.id AND r.code = #{roleCode} AND r.deleted_at IS NULL
+        </if>
+        <where>
+            <if test="email != null and email != ''">AND u.email LIKE CONCAT('%', #{email}, '%')</if>
+            <if test="name != null and name != ''">AND u.name LIKE CONCAT('%', #{name}, '%')</if>
+            <if test="includeDeleted == null or !includeDeleted">AND u.deleted_at IS NULL</if>
+        </where>
     </select>
 
     <select id="existsByEmail" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM users WHERE email = #{email} AND deleted_at IS NULL
+    </select>
+
+    <select id="existsByEmailWithDeleted" resultType="boolean">
         SELECT COUNT(*) > 0 FROM users WHERE email = #{email}
+        <if test="excludeDeleted">AND deleted_at IS NULL</if>
     </select>
 
     <select id="existsByPhone" resultType="boolean">
@@ -55,8 +99,8 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO users (name, email, phone, password, email_verified, created_at, updated_at)
-        VALUES (#{name}, #{email}, #{phone}, #{password}, #{emailVerified}, #{createdAt}, #{updatedAt})
+        INSERT INTO users (name, email, phone, password, email_verified, created_at, updated_at, deleted_at)
+        VALUES (#{name}, #{email}, #{phone}, #{password}, #{emailVerified}, #{createdAt}, #{updatedAt}, #{deletedAt})
     </insert>
 
     <update id="update">
@@ -64,6 +108,14 @@
         SET name = #{name}, email = #{email}, phone = #{phone}, email_verified = #{emailVerified},
             email_verified_at = #{emailVerifiedAt}, updated_at = #{updatedAt}
         WHERE id = #{id}
+    </update>
+
+    <update id="softDeleteById">
+        UPDATE users SET deleted_at = #{deletedAt}, updated_at = #{deletedAt} WHERE id = #{id}
+    </update>
+
+    <update id="restoreById">
+        UPDATE users SET deleted_at = NULL, updated_at = NOW() WHERE id = #{id}
     </update>
 
     <update id="updatePassword">

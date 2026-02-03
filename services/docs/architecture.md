@@ -10,6 +10,8 @@
 - [6. API 接口](#6-api-接口)
 - [7. 启动指南](#7-启动指南)
 - [8. 项目结构](#8-项目结构)
+- [9. 流量控制（Sentinel）](#9-流量控制sentinel)
+- [10. 分布式事务（Saga Pattern）](#10-分布式事务saga-pattern)
 
 ---
 
@@ -609,3 +611,76 @@ rules.add(new GatewayFlowRule("order-service")
         .setIntervalSec(1)
         .setBurst(10));
 ```
+
+---
+
+## 10. 分布式事务（Saga Pattern）
+
+### 10.1 概述
+
+项目使用 **Saga Pattern（编排式）** 管理微服务架构中的分布式事务，确保跨服务操作的数据一致性。
+
+**实现位置**：`auth-service/src/main/java/com/example/auth/saga/`
+
+### 10.2 核心组件
+
+| 组件 | 说明 | 文件 |
+|------|------|------|
+| **SagaContext** | Saga 上下文，存储执行状态和数据 | `SagaContext.java` |
+| **SagaStep** | Saga 步骤，定义执行和补偿逻辑 | `SagaStep.java` |
+| **SagaOrchestrator** | Saga 编排器，管理执行和补偿 | `SagaOrchestrator.java` |
+| **RegistrationSaga** | 注册流程 Saga 实现 | `RegistrationSaga.java` |
+
+### 10.3 注册流程 Saga
+
+**Saga 步骤**：
+
+1. **创建用户**（`createUser`）
+   - 操作：调用 `userClient.createUser()`
+   - 补偿：调用 `userClient.deleteUser()`
+
+2. **发送邮箱验证邮件**（`sendEmailVerification`）
+   - 操作：调用 `userClient.sendEmailVerification()`
+   - 补偿：无需补偿（邮件发送是幂等的）
+
+**执行流程**：
+
+```
+用户注册请求
+  ↓
+Step 1: 创建用户
+  ├─ 成功 → 继续
+  └─ 失败 → 抛出异常
+  ↓
+Step 2: 发送验证邮件
+  ├─ 成功 → 返回成功
+  └─ 失败 → 执行补偿（删除用户）→ 抛出异常
+```
+
+### 10.4 优势
+
+- ✅ **数据一致性**：注册失败时自动回滚，不会留下脏数据
+- ✅ **可扩展性**：易于添加新的 Saga 步骤或新的 Saga
+- ✅ **可观测性**：Saga ID 用于追踪整个流程
+- ✅ **错误处理**：自动补偿机制，补偿失败时记录告警
+
+### 10.5 使用示例
+
+```java
+@Service
+public class AuthService {
+    private final RegistrationSaga registrationSaga;
+    
+    public RegisterResponse register(RegisterRequest request) {
+        // 密码策略验证
+        validatePassword(request.getPassword());
+        
+        // 使用 Saga Pattern 执行注册流程
+        return registrationSaga.execute(request);
+    }
+}
+```
+
+### 10.6 详细文档
+
+更多详细信息请参考：[Saga Pattern 实现文档](./saga-pattern.md)

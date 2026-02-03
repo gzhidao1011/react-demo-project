@@ -6,10 +6,13 @@ import {
   DocumentTextIcon,
   HomeIcon,
 } from "@heroicons/react/24/outline";
+import { ShieldCheckIcon } from "@heroicons/react/24/solid";
 import { LocaleSwitcher, useLocale } from "@repo/i18n";
 import { ToggleMode } from "@repo/propel";
+import type { UserInfo } from "@repo/services";
+import { authGetCurrentUser } from "@repo/services";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui";
-import { isAuthenticated } from "@repo/utils";
+import { isAuthenticated, usePermissions } from "@repo/utils";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -17,9 +20,28 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { t } = useLocale();
   const [authenticated, setAuthenticated] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { isAdmin } = usePermissions(userInfo);
 
   useEffect(() => {
-    setAuthenticated(isAuthenticated());
+    const checkAuth = async () => {
+      const isAuth = isAuthenticated();
+      setAuthenticated(isAuth);
+
+      if (isAuth) {
+        try {
+          // 获取当前用户信息以检查权限
+          const response = await authGetCurrentUser();
+          setUserInfo(response.data!);
+        } catch (error) {
+          console.error("获取用户信息失败:", error);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   // 导航菜单项
@@ -86,15 +108,28 @@ export default function HomePage() {
             </button>
           </nav>
 
-          {/* 右侧入口：未登录显示登录/注册，已登录显示开始聊天 */}
+          {/* 右侧入口：未登录显示登录/注册，已登录显示开始聊天和管理后台 */}
           <div className="flex items-center gap-3">
             <LocaleSwitcher />
             <ToggleMode iconSize="h-5 w-5" />
             {authenticated ? (
-              <Button variant="default" size="default" onClick={() => navigate("/chat")}>
-                {t("home.hero.startChat")}
-                <ChatBubbleLeftRightIcon className="ml-1.5 h-4 w-4" />
-              </Button>
+              <>
+                {!loading && isAdmin() && (
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={() => navigate("/admin")}
+                    className="hidden sm:flex"
+                  >
+                    <ShieldCheckIcon className="mr-1.5 h-4 w-4" />
+                    {t("admin.title")}
+                  </Button>
+                )}
+                <Button variant="default" size="default" onClick={() => navigate("/chat")}>
+                  {t("home.hero.startChat")}
+                  <ChatBubbleLeftRightIcon className="ml-1.5 h-4 w-4" />
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="ghost" size="default" onClick={() => navigate("/sign-in")} className="hidden sm:flex">

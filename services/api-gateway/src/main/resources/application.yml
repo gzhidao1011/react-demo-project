@@ -1,6 +1,11 @@
 server:
   port: 8080  # 网关端口
 
+# 默认使用 Nacos 服务发现（lb://），需先启动 Nacos(localhost:8848) 及各服务并完成注册。
+# 503 "Unable to find instance for auth-service" 时：说明未用 Nacos 或 auth-service 未注册。
+# 本地无 Nacos 时请用 profile=local 启动网关（见 application-local.yml）：
+#   cd services && mvn spring-boot:run -pl api-gateway -Dspring-boot.run.profiles=local
+# 并先启动 auth-service(8002)、user-service(8001)。
 # 默认禁用 Docker Compose，需先 make up 启动基础设施
 # 使用 make gateway-compose 或 -Dspring-boot.run.profiles=docker-compose 可自动拉起
 spring:
@@ -29,9 +34,9 @@ spring:
           predicates:
             - Path=/api/orders/**
           # 不使用 StripPrefix，直接转发完整路径 /api/orders/** 到服务
-        # ✅ 认证相关路由
+        # ✅ 认证相关路由（拆分后指向 auth-service）
         - id: auth-service
-          uri: lb://user-service
+          uri: lb://auth-service
           predicates:
             - Path=/api/auth/**
         # 用户个人相关路由（locale 等，注意 /api/user 单数，与 /api/users 区分）
@@ -39,6 +44,16 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/api/user/**
+        # 角色管理路由
+        - id: role-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/roles/**
+        # 权限管理路由
+        - id: permission-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/permissions/**
         # Chat 服务路由（SSE 流式响应需更长超时）
         - id: chat-service
           uri: lb://chat-service

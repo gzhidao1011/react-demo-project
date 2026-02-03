@@ -7,6 +7,7 @@ import {
   authForgotPassword,
   authGetCurrentUser,
   authLogin,
+  authLogout,
   authRefresh,
   authRegister,
   authResetPassword,
@@ -23,9 +24,16 @@ vi.mock("./api.service", () => ({
   },
 }));
 
+// Mock @repo/utils getRefreshToken
+const mockGetRefreshToken = vi.fn();
+vi.mock("@repo/utils", () => ({
+  getRefreshToken: (...args: unknown[]) => mockGetRefreshToken(...args),
+}));
+
 describe("auth.service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetRefreshToken.mockReturnValue("stored-refresh-token");
   });
 
   describe("LoginResponse 接口", () => {
@@ -192,9 +200,9 @@ describe("auth.service", () => {
       // Act
       const result = await authRefresh(refreshToken);
 
-      // Assert
+      // Assert - 后端要求 snake_case refresh_token
       expect(apiService.post).toHaveBeenCalledWith("/auth/refresh", {
-        refreshToken,
+        refresh_token: refreshToken,
       });
       expect(result.data?.accessToken).toBe("new-access-token");
     });
@@ -223,6 +231,32 @@ describe("auth.service", () => {
       expect(result.data).not.toBeNull();
       expect(result.data?.accessToken).toBe("new-access-token");
       expect(result.data?.refreshToken).toBe("new-refresh-token");
+    });
+  });
+
+  describe("authLogout", () => {
+    it("有 refresh token 时应调用登出 API 并传递 refresh_token", async () => {
+      mockGetRefreshToken.mockReturnValue("my-refresh-token");
+      const mockResponse: AxiosResponse<ApiResponseBase<void>> = {
+        data: { code: 0, message: "success", data: null },
+      } as AxiosResponse<ApiResponseBase<void>>;
+      vi.mocked(apiService.post).mockResolvedValue(mockResponse);
+
+      await authLogout();
+
+      expect(mockGetRefreshToken).toHaveBeenCalled();
+      expect(apiService.post).toHaveBeenCalledWith("/auth/logout", {
+        refresh_token: "my-refresh-token",
+      });
+    });
+
+    it("无 refresh token 时不应调用登出 API", async () => {
+      mockGetRefreshToken.mockReturnValue(null);
+
+      await authLogout();
+
+      expect(mockGetRefreshToken).toHaveBeenCalled();
+      expect(apiService.post).not.toHaveBeenCalled();
     });
   });
 

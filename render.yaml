@@ -166,6 +166,32 @@ services:
       - key: DOCKER_HOST_IP
         value: user-service.onrender.com
   
+  # 认证服务（注册、登录、JWT 签发与刷新，调用 user-service 内部 API）
+  - type: web
+    name: auth-service
+    env: docker
+    dockerfilePath: ./services/auth-service/Dockerfile
+    dockerContext: ./services
+    plan: starter
+    buildCommand: cd ../.. && mvn clean package -DskipTests -pl auth-service -am
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: PORT
+        value: "8002"
+      - key: NACOS_SERVER_ADDR
+        value: nacos.onrender.com:8848
+      - key: REDIS_HOST
+        value: redis.onrender.com
+      - key: REDIS_PORT
+        value: "6379"
+      - key: USER_SERVICE_INTERNAL_BASE_URL
+        value: https://user-service.onrender.com
+      - key: INTERNAL_API_SECRET
+        generateValue: true
+      - key: DOCKER_HOST_IP
+        value: auth-service.onrender.com
+  
   # 订单服务
   - type: web
     name: order-service

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.user.mapper.AuditLogMapper">
+
+    <resultMap id="AuditLogResultMap" type="com.example.user.entity.AuditLogEntity">
+        <id property="id" column="id"/>
+        <result property="actorId" column="actor_id"/>
+        <result property="actorEmail" column="actor_email"/>
+        <result property="action" column="action"/>
+        <result property="resourceType" column="resource_type"/>
+        <result property="resourceId" column="resource_id"/>
+        <result property="oldValue" column="old_value"/>
+        <result property="newValue" column="new_value"/>
+        <result property="ipAddress" column="ip_address"/>
+        <result property="userAgent" column="user_agent"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO audit_logs (actor_id, actor_email, action, resource_type, resource_id, old_value, new_value, ip_address, user_agent, created_at)
+        VALUES (#{actorId}, #{actorEmail}, #{action}, #{resourceType}, #{resourceId}, #{oldValue}, #{newValue}, #{ipAddress}, #{userAgent}, #{createdAt})
+    </insert>
+
+    <select id="findPage" resultMap="AuditLogResultMap">
+        SELECT id, actor_id, actor_email, action, resource_type, resource_id, old_value, new_value, ip_address, user_agent, created_at
+        FROM audit_logs
+        <where>
+            <if test="actorId != null">AND actor_id = #{actorId}</if>
+            <if test="resourceType != null and resourceType != ''">AND resource_type = #{resourceType}</if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM audit_logs
+        <where>
+            <if test="actorId != null">AND actor_id = #{actorId}</if>
+            <if test="resourceType != null and resourceType != ''">AND resource_type = #{resourceType}</if>
+        </where>
+    </select>
+</mapper>

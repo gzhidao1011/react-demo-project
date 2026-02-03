@@ -1,0 +1,56 @@
+# Docker 环境配置
+server:
+  port: 8002
+
+spring:
+  application:
+    name: auth-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:nacos:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        ip: ${DOCKER_HOST_IP:auth-service}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 1
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+jwt:
+  algorithm: RS256
+  private-key-path: classpath:keys/private.pem
+  public-key-path: classpath:keys/public.pem
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:1800}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800}
+  issuer: ${JWT_ISSUER:https://auth.example.com}
+  audience: ${JWT_AUDIENCE:api.example.com}
+
+user-service:
+  internal:
+    base-url: http://user-service  # Docker 网络内通过服务名访问
+    secret: ${INTERNAL_API_SECRET:change-me-internal-secret}
+
+logging:
+  level:
+    root: INFO
+    com.example: INFO

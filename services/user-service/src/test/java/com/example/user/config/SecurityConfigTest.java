@@ -40,6 +40,10 @@ class SecurityConfigTest {
     @MockBean
     private JwtAuthFilter jwtAuthFilter;
 
+    /** Mock InternalApiSecretFilter，SecurityConfig 依赖它但本测试不验证内部 API */
+    @MockBean
+    private InternalApiSecretFilter internalApiSecretFilter;
+
     @Autowired(required = false)
     private PasswordEncoder passwordEncoder;
 

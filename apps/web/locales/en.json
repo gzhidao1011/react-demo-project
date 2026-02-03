@@ -221,5 +221,188 @@
     "whatsNext": "What's next?",
     "docs": "React Router Docs",
     "discord": "Join Discord"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "Admin Panel",
+    "backToHome": "Back to Home",
+    "loading": "Loading...",
+    "navigation": "Navigation",
+    "management": "Management",
+    "breadcrumb": "Breadcrumb navigation",
+    "users": {
+      "title": "User Management",
+      "subtitle": "Manage user accounts and permissions",
+      "list": {
+        "title": "User List",
+        "total": "{total} users in total",
+        "searchPlaceholder": "Search by email or name...",
+        "showDeleted": "Show deleted",
+        "showNormal": "Show normal users",
+        "empty": "No users yet",
+        "emptyDeleted": "No deleted users",
+        "createFirst": "Create first user",
+        "columns": {
+          "id": "ID",
+          "email": "Email",
+          "name": "Name",
+          "phone": "Phone",
+          "roles": "Roles",
+          "status": "Status",
+          "createdAt": "Created At",
+          "actions": "Actions"
+        },
+        "status": {
+          "verified": "Verified",
+          "unverified": "Unverified",
+          "deleted": "Deleted"
+        },
+        "actions": {
+          "edit": "Edit",
+          "delete": "Delete",
+          "restore": "Restore"
+        },
+        "pagination": {
+          "showing": "Showing {start} - {end} of {total}",
+          "previous": "Previous",
+          "next": "Next"
+        }
+      },
+      "new": {
+        "title": "New User",
+        "subtitle": "Create a new user account",
+        "form": {
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "password": "Password",
+          "roles": "Roles",
+          "namePlaceholder": "Enter name",
+          "emailPlaceholder": "Enter email address",
+          "phonePlaceholder": "Enter phone number (optional)",
+          "passwordPlaceholder": "Enter password (at least 6 characters)",
+          "noRoles": "No roles available",
+          "creating": "Creating...",
+          "create": "Create User"
+        },
+        "success": "User created successfully!"
+      },
+      "edit": {
+        "title": "Edit User",
+        "subtitle": "Edit user information: {email}",
+        "form": {
+          "saving": "Saving...",
+          "save": "Save Changes"
+        },
+        "success": "User updated successfully!"
+      },
+      "delete": {
+        "title": "Confirm Delete",
+        "description": "Are you sure you want to delete user \"{name}\" ({email})? This will soft delete the user and can be restored.",
+        "confirm": "Delete",
+        "success": "Deleted successfully"
+      },
+      "restore": {
+        "title": "Confirm Restore",
+        "description": "Are you sure you want to restore user \"{name}\" ({email})?",
+        "confirm": "Restore",
+        "success": "Restored successfully"
+      }
+    },
+    "roles": {
+      "title": "Role Management",
+      "subtitle": "Manage roles and permission assignments",
+      "list": {
+        "title": "Role List",
+        "total": "{total} roles in total",
+        "showDeleted": "Show deleted",
+        "showNormal": "Show normal roles",
+        "empty": "No roles yet",
+        "emptyDeleted": "No deleted roles",
+        "createFirst": "Create first role",
+        "columns": {
+          "id": "ID",
+          "code": "Code",
+          "name": "Name",
+          "description": "Description",
+          "permissionCount": "Permissions",
+          "createdAt": "Created At",
+          "actions": "Actions"
+        },
+        "actions": {
+          "edit": "Edit",
+          "delete": "Delete",
+          "restore": "Restore"
+        },
+        "pagination": {
+          "showing": "Showing {start} - {end} of {total}",
+          "previous": "Previous",
+          "next": "Next"
+        }
+      },
+      "new": {
+        "title": "New Role",
+        "subtitle": "Create a new role",
+        "form": {
+          "name": "Role Name",
+          "code": "Role Code",
+          "description": "Description",
+          "permissions": "Permissions",
+          "namePlaceholder": "e.g., Administrator",
+          "codePlaceholder": "e.g., ADMIN (uppercase letters and underscores)",
+          "descriptionPlaceholder": "Role description (optional)",
+          "noPermissions": "No permissions available",
+          "creating": "Creating...",
+          "create": "Create Role"
+        },
+        "success": "Role created successfully!"
+      },
+      "edit": {
+        "title": "Edit Role",
+        "subtitle": "Edit role information: {name}",
+        "form": {
+          "saving": "Saving...",
+          "save": "Save Changes"
+        },
+        "success": "Role updated successfully!"
+      },
+      "delete": {
+        "title": "Confirm Delete",
+        "description": "Are you sure you want to delete role \"{name}\" ({code})? This will soft delete the role and can be restored.",
+        "confirm": "Delete",
+        "success": "Deleted successfully"
+      },
+      "restore": {
+        "title": "Confirm Restore",
+        "description": "Are you sure you want to restore role \"{name}\" ({code})?",
+        "confirm": "Restore",
+        "success": "Restored successfully"
+      }
+    },
+    "permissions": {
+      "title": "Permission Management",
+      "subtitle": "View and manage system permissions",
+      "list": {
+        "title": "Permission List",
+        "total": "{total} permissions in total",
+        "empty": "No permissions",
+        "groupedByResource": "Grouped by resource"
+      }
+    },
+    "errors": {
+      "loadUsersFailed": "Failed to load user list. Please try again.",
+      "loadRolesFailed": "Failed to load role list. Please try again.",
+      "loadPermissionsFailed": "Failed to load permission list. Please try again.",
+      "loadUserFailed": "Failed to load user data",
+      "loadRoleFailed": "Failed to load role data",
+      "createUserFailed": "Failed to create user. Please check your network connection.",
+      "updateUserFailed": "Failed to update user. Please check your network connection.",
+      "deleteUserFailed": "Failed to delete user. Please try again.",
+      "restoreUserFailed": "Failed to restore user. Please try again.",
+      "createRoleFailed": "Failed to create role. Please check your network connection.",
+      "updateRoleFailed": "Failed to update role. Please check your network connection.",
+      "deleteRoleFailed": "Failed to delete role. Please try again.",
+      "restoreRoleFailed": "Failed to restore role. Please try again."
+    }
   }
 }

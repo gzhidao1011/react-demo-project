@@ -221,5 +221,188 @@
     "whatsNext": "接下来做什么？",
     "docs": "React Router 文档",
     "discord": "加入 Discord"
+  },
+  "admin": {
+    "title": "管理后台",
+    "subtitle": "Admin Panel",
+    "backToHome": "返回首页",
+    "loading": "加载中...",
+    "navigation": "导航",
+    "management": "管理",
+    "breadcrumb": "面包屑导航",
+    "users": {
+      "title": "用户管理",
+      "subtitle": "管理用户账户和权限",
+      "list": {
+        "title": "用户列表",
+        "total": "共 {total} 个用户",
+        "searchPlaceholder": "搜索邮箱或姓名...",
+        "showDeleted": "显示已删除",
+        "showNormal": "显示正常用户",
+        "empty": "暂无用户",
+        "emptyDeleted": "暂无已删除的用户",
+        "createFirst": "创建第一个用户",
+        "columns": {
+          "id": "ID",
+          "email": "邮箱",
+          "name": "姓名",
+          "phone": "手机",
+          "roles": "角色",
+          "status": "状态",
+          "createdAt": "创建时间",
+          "actions": "操作"
+        },
+        "status": {
+          "verified": "已验证",
+          "unverified": "未验证",
+          "deleted": "已删除"
+        },
+        "actions": {
+          "edit": "编辑",
+          "delete": "删除",
+          "restore": "恢复"
+        },
+        "pagination": {
+          "showing": "显示第 {start} - {end} 条，共 {total} 条",
+          "previous": "上一页",
+          "next": "下一页"
+        }
+      },
+      "new": {
+        "title": "新建用户",
+        "subtitle": "创建新的用户账户",
+        "form": {
+          "name": "姓名",
+          "email": "邮箱",
+          "phone": "手机号",
+          "password": "密码",
+          "roles": "角色",
+          "namePlaceholder": "请输入姓名",
+          "emailPlaceholder": "请输入邮箱地址",
+          "phonePlaceholder": "请输入手机号（可选）",
+          "passwordPlaceholder": "请输入密码（至少 6 个字符）",
+          "noRoles": "暂无可用角色",
+          "creating": "创建中...",
+          "create": "创建用户"
+        },
+        "success": "创建用户成功！"
+      },
+      "edit": {
+        "title": "编辑用户",
+        "subtitle": "编辑用户信息：{email}",
+        "form": {
+          "saving": "保存中...",
+          "save": "保存更改"
+        },
+        "success": "更新用户成功！"
+      },
+      "delete": {
+        "title": "确认删除",
+        "description": "确定要删除用户 \"{name}\" ({email}) 吗？此操作将软删除用户，可以恢复。",
+        "confirm": "删除",
+        "success": "删除成功"
+      },
+      "restore": {
+        "title": "确认恢复",
+        "description": "确定要恢复用户 \"{name}\" ({email}) 吗？",
+        "confirm": "恢复",
+        "success": "恢复成功"
+      }
+    },
+    "roles": {
+      "title": "角色管理",
+      "subtitle": "管理角色和权限分配",
+      "list": {
+        "title": "角色列表",
+        "total": "共 {total} 个角色",
+        "showDeleted": "显示已删除",
+        "showNormal": "显示正常角色",
+        "empty": "暂无角色",
+        "emptyDeleted": "暂无已删除的角色",
+        "createFirst": "创建第一个角色",
+        "columns": {
+          "id": "ID",
+          "code": "编码",
+          "name": "名称",
+          "description": "描述",
+          "permissionCount": "权限数量",
+          "createdAt": "创建时间",
+          "actions": "操作"
+        },
+        "actions": {
+          "edit": "编辑",
+          "delete": "删除",
+          "restore": "恢复"
+        },
+        "pagination": {
+          "showing": "显示第 {start} - {end} 条，共 {total} 条",
+          "previous": "上一页",
+          "next": "下一页"
+        }
+      },
+      "new": {
+        "title": "新建角色",
+        "subtitle": "创建新的角色",
+        "form": {
+          "name": "角色名称",
+          "code": "角色编码",
+          "description": "描述",
+          "permissions": "权限",
+          "namePlaceholder": "例如：管理员",
+          "codePlaceholder": "例如：ADMIN（大写字母和下划线）",
+          "descriptionPlaceholder": "角色描述（可选）",
+          "noPermissions": "暂无可用权限",
+          "creating": "创建中...",
+          "create": "创建角色"
+        },
+        "success": "创建角色成功！"
+      },
+      "edit": {
+        "title": "编辑角色",
+        "subtitle": "编辑角色信息：{name}",
+        "form": {
+          "saving": "保存中...",
+          "save": "保存更改"
+        },
+        "success": "更新角色成功！"
+      },
+      "delete": {
+        "title": "确认删除",
+        "description": "确定要删除角色 \"{name}\" ({code}) 吗？此操作将软删除角色，可以恢复。",
+        "confirm": "删除",
+        "success": "删除成功"
+      },
+      "restore": {
+        "title": "确认恢复",
+        "description": "确定要恢复角色 \"{name}\" ({code}) 吗？",
+        "confirm": "恢复",
+        "success": "恢复成功"
+      }
+    },
+    "permissions": {
+      "title": "权限管理",
+      "subtitle": "查看和管理系统权限",
+      "list": {
+        "title": "权限列表",
+        "total": "共 {total} 个权限",
+        "empty": "暂无权限",
+        "groupedByResource": "按资源分组"
+      }
+    },
+    "errors": {
+      "loadUsersFailed": "加载用户列表失败，请重试",
+      "loadRolesFailed": "加载角色列表失败，请重试",
+      "loadPermissionsFailed": "加载权限列表失败，请重试",
+      "loadUserFailed": "加载用户数据失败",
+      "loadRoleFailed": "加载角色数据失败",
+      "createUserFailed": "创建用户失败，请检查网络连接",
+      "updateUserFailed": "更新用户失败，请检查网络连接",
+      "deleteUserFailed": "删除用户失败，请重试",
+      "restoreUserFailed": "恢复用户失败，请重试",
+      "createRoleFailed": "创建角色失败，请检查网络连接",
+      "updateRoleFailed": "更新角色失败，请检查网络连接",
+      "deleteRoleFailed": "删除角色失败，请重试",
+      "restoreRoleFailed": "恢复角色失败，请重试"
+    }
   }
 }

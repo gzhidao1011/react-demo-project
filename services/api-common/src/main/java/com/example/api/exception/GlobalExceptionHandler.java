@@ -54,6 +54,8 @@ public class GlobalExceptionHandler {
                 ? HttpStatus.TOO_MANY_REQUESTS
                 : e.getCode() == ResultCode.UNAUTHORIZED.getCode()
                         ? HttpStatus.UNAUTHORIZED
+                        : (e.getCode() == ResultCode.USER_NOT_FOUND.getCode() || e.getCode() == ResultCode.NOT_FOUND.getCode())
+                        ? HttpStatus.NOT_FOUND
                         : HttpStatus.BAD_REQUEST;
         return ResponseEntity.status(status).body(Result.error(e.getCode(), e.getMessage()));
     }
@@ -206,13 +208,16 @@ public class GlobalExceptionHandler {
     // ==================== 系统异常 ====================
 
     /**
-     * 处理所有未捕获的异常
+     * 处理所有未捕获的异常。
+     * Spring Security 的 AccessDeniedException 通过类名判断并返回 403，避免 api-common 强依赖 spring-security（order-service 等无 Security 的服务可正常加载本类）。
      */
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Result<Void> handleException(Exception e, HttpServletRequest request) {
+    public ResponseEntity<Result<Void>> handleException(Exception e, HttpServletRequest request) {
+        if ("org.springframework.security.access.AccessDeniedException".equals(e.getClass().getName())) {
+            log.warn("无权限访问: URI={}, Message={}", request.getRequestURI(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error(ResultCode.FORBIDDEN, ResultCode.FORBIDDEN.getMessage()));
+        }
         log.error("服务器内部错误: URI={}, Message={}", request.getRequestURI(), e.getMessage(), e);
-        // 生产环境不应暴露具体错误信息
-        return Result.error(ResultCode.INTERNAL_ERROR, "服务器内部错误，请稍后重试");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(ResultCode.INTERNAL_ERROR, "服务器内部错误，请稍后重试"));
     }
 }

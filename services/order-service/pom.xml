@@ -39,7 +39,13 @@
             <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo-spring-boot-starter</artifactId>
         </dependency>
-        
+        <!-- Dubbo 通过 Nacos 发现 HTTP 端点时需 OkHttp（否则 NoClassDefFoundError: okhttp3.Callback） -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
         <!-- Spring Boot Actuator（健康检查） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

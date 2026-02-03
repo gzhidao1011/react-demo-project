@@ -39,7 +39,6 @@ public class PasswordResetService {
     private final PasswordResetTokenMapper tokenMapper;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicyService passwordPolicyService;
-    private final TokenRotationService tokenRotationService;
 
     @Value("${resend.api-key:}")
     private String resendApiKey;
@@ -57,13 +56,11 @@ public class PasswordResetService {
             UserMapper userMapper,
             PasswordResetTokenMapper tokenMapper,
             PasswordEncoder passwordEncoder,
-            PasswordPolicyService passwordPolicyService,
-            TokenRotationService tokenRotationService) {
+            PasswordPolicyService passwordPolicyService) {
         this.userMapper = userMapper;
         this.tokenMapper = tokenMapper;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicyService = passwordPolicyService;
-        this.tokenRotationService = tokenRotationService;
     }
 
     /**
@@ -154,8 +151,7 @@ public class PasswordResetService {
         // 删除已使用的 token
         tokenMapper.deleteById(tokenEntity.getId());
 
-        // 撤销该用户所有 Refresh Token
-        tokenRotationService.revokeAllByUserId(user.getId().toString());
+        // 注意：Refresh Token 撤销由 auth-service 在重置密码流程中执行
 
         // 发送确认邮件（不含新密码）
         if (resendApiKey != null && !resendApiKey.isBlank()) {
@@ -163,6 +159,32 @@ public class PasswordResetService {
         } else {
             log.info("[开发环境] 密码已重置（RESEND_API_KEY 为空，未发送确认邮件）: {}", maskEmail(user.getEmail()));
         }
+    }
+
+    /**
+     * 校验密码重置 token 并一次性消费（供 auth-service 内部 API 调用）
+     * 校验成功后删除 token，返回 userId；auth-service 再调用 updatePassword 并 revokeAllByUserId
+     *
+     * @param token 重置 token
+     * @return 用户 ID
+     */
+    @Transactional
+    public Long validateTokenAndConsume(String token) {
+        String tokenHash = sha256(token);
+
+        PasswordResetTokenEntity tokenEntity = tokenMapper.findByTokenHash(tokenHash);
+        if (tokenEntity == null) {
+            throw new BusinessException(ResultCode.PASSWORD_RESET_TOKEN_INVALID);
+        }
+
+        if (LocalDateTime.now().isAfter(tokenEntity.getExpiresAt())) {
+            tokenMapper.deleteById(tokenEntity.getId());
+            throw new BusinessException(ResultCode.PASSWORD_RESET_TOKEN_INVALID);
+        }
+
+        Long userId = tokenEntity.getUserId();
+        tokenMapper.deleteById(tokenEntity.getId());
+        return userId;
     }
 
     private String generateSecureToken() {

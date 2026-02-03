@@ -1,0 +1,49 @@
+# 本地开发配置（无需 Nacos）
+# ----------------------------------------
+# 若出现 503 "Unable to find instance for auth-service"，必须用本 profile 启动网关：
+#   cd services && mvn spring-boot:run -pl api-gateway -Dspring-boot.run.profiles=local
+# 或设置环境变量：SPRING_PROFILES_ACTIVE=local
+# ----------------------------------------
+# 前提：先启动 auth-service(8002)、user-service(8001)，再启动网关(8080)。
+# 前端请求发往网关（或代理到 8080），/api/auth/** 由网关转发到 http://localhost:8002
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false  # 本地直连时不使用 Nacos
+    gateway:
+      routes:
+        - id: user-service
+          uri: http://localhost:8001
+          predicates:
+            - Path=/api/users/**
+        - id: order-service
+          uri: http://localhost:8004  # 若无需订单服务可忽略
+          predicates:
+            - Path=/api/orders/**
+        - id: auth-service
+          uri: http://localhost:8002  # 认证服务固定端口
+          predicates:
+            - Path=/api/auth/**
+        - id: user-profile-service
+          uri: http://localhost:8001
+          predicates:
+            - Path=/api/user/**
+        - id: role-service
+          uri: http://localhost:8001
+          predicates:
+            - Path=/api/roles/**
+        - id: permission-service
+          uri: http://localhost:8001
+          predicates:
+            - Path=/api/permissions/**
+        - id: chat-service
+          uri: http://localhost:8003
+          predicates:
+            - Path=/api/chat/**
+          metadata:
+            response-timeout: 60000
+    # Sentinel 本地可关闭或保持（若未起 Sentinel 控制台会告警但不影响路由）
+    sentinel:
+      eager: false

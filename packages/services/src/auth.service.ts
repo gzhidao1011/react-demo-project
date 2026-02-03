@@ -1,3 +1,4 @@
+import { getRefreshToken } from "@repo/utils";
 import type { AxiosResponse } from "axios";
 import { apiService } from "./api.service";
 import { type ApiResponseBase, handleApiResponse } from "./api.service.base";
@@ -138,16 +139,24 @@ export async function authLogin(data: LoginRequest) {
 export async function authRefresh(refreshToken: string) {
   const response: AxiosResponse<ApiResponseBase<LoginResponse>> = await apiService.post<ApiResponseBase<LoginResponse>>(
     "/auth/refresh",
-    {
-      refreshToken,
-    } as RefreshTokenRequest,
+    { refresh_token: refreshToken },
   );
   return handleApiResponse(response, "刷新 Token 失败");
 }
 
-export async function authLogout() {
-  const response: AxiosResponse<ApiResponseBase<void>> = await apiService.post<ApiResponseBase<void>>("/auth/logout");
-  return handleApiResponse(response, "登出失败");
+/**
+ * 登出：撤销服务端 refresh token（若有），调用方需自行清除本地 token 并跳转
+ * 后端要求请求体带 refresh_token，无 refresh token 时跳过服务端调用
+ */
+export async function authLogout(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    return;
+  }
+  const response: AxiosResponse<ApiResponseBase<void>> = await apiService.post<ApiResponseBase<void>>("/auth/logout", {
+    refresh_token: refreshToken,
+  });
+  handleApiResponse(response, "登出失败");
 }
 
 /**

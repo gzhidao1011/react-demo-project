@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.user.mapper.UserRoleMapper">
+
+    <select id="findRoleIdsByUserId" resultType="long">
+        SELECT role_id FROM user_roles WHERE user_id = #{userId}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO user_roles (user_id, role_id, created_at) VALUES (#{userId}, #{roleId}, #{createdAt})
+    </insert>
+
+    <delete id="deleteByUserId">
+        DELETE FROM user_roles WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteByUserIdAndRoleId">
+        DELETE FROM user_roles WHERE user_id = #{userId} AND role_id = #{roleId}
+    </delete>
+
+</mapper>

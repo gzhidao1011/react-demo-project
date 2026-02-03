@@ -119,6 +119,8 @@ services:
       context: ./services
       dockerfile: user-service/Dockerfile
     container_name: user-service
+    env_file:
+      - ./services/.env  # 加载 Admin 初始化配置（ADMIN_INIT_*）
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - NACOS_SERVER_ADDR=nacos:8848
@@ -132,6 +134,12 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - DOCKER_HOST_IP=user-service
       - JAVA_OPTS=-Xms256m -Xmx512m
+      # Admin 账号初始化配置（从 .env 文件加载）
+      - ADMIN_INIT_ENABLED=${ADMIN_INIT_ENABLED:-true}
+      - ADMIN_INIT_EMAIL=${ADMIN_INIT_EMAIL:-}
+      - ADMIN_INIT_PASSWORD=${ADMIN_INIT_PASSWORD:-}
+      - ADMIN_INIT_NAME=${ADMIN_INIT_NAME:-Administrator}
+      - ADMIN_INIT_PHONE=${ADMIN_INIT_PHONE:-}
     ports:
       - "8001:8001"
       - "20880:20880"
@@ -146,8 +154,39 @@ services:
       - microservices-network
     restart: unless-stopped
 
+  auth-service:
+    image: ${REGISTRY:-gzhidao1010}/auth-service:${TAG:-latest}
+    build:
+      context: ./services
+      dockerfile: auth-service/Dockerfile
+    container_name: auth-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - NACOS_SERVER_ADDR=nacos:8848
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-change-me-internal-secret}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - JAVA_OPTS=-Xms256m -Xmx512m
+    ports:
+      - "8002:8002"
+    depends_on:
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
   order-service:
     image: ${REGISTRY:-gzhidao1010}/order-service:${TAG:-latest}
+    build:
+      context: ./services
+      dockerfile: order-service/Dockerfile
     container_name: order-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -160,7 +199,7 @@ services:
       - DOCKER_HOST_IP=order-service
       - JAVA_OPTS=-Xms256m -Xmx512m
     ports:
-      - "8002:8002"
+      - "8004:8002"
       - "20881:20881"
     depends_on:
       mysql:
@@ -229,6 +268,8 @@ services:
     depends_on:
       nacos:
         condition: service_healthy
+      auth-service:
+        condition: service_started
       user-service:
         condition: service_started
       order-service:

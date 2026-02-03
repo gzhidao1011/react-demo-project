@@ -29,6 +29,18 @@ spring:
           predicates:
             - Path=/api/user/**
         
+        # 角色管理路由
+        - id: role-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/roles/**
+        
+        # 权限管理路由
+        - id: permission-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/permissions/**
+        
         # 订单服务路由
         - id: order-service
           uri: lb://order-service

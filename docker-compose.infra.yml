@@ -12,7 +12,7 @@ services:
     image: mysql:8.0
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
@@ -24,7 +24,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,7 +44,7 @@ services:
       - MYSQL_SERVICE_PORT=3306
       - MYSQL_SERVICE_DB_NAME=nacos
       - MYSQL_SERVICE_USER=root
-      - MYSQL_SERVICE_PASSWORD=root123
+      - MYSQL_SERVICE_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123}
       - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=10000&socketTimeout=30000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
       - NACOS_AUTH_ENABLE=false
       - JVM_XMS=256m

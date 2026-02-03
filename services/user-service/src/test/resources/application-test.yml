@@ -1,6 +1,5 @@
 # 测试环境配置
-# 依赖 Redis 的集成测试（AuthControllerTest、RateLimitServiceTest、TokenRotationServiceIntegrationTest）
-# 使用 Testcontainers 自动启动 Redis 容器，无需手动启动。
+# 依赖 Redis 的集成测试（如 EmailVerificationService 等）使用 Testcontainers 自动启动 Redis。
 # 运行测试需确保 Docker 已安装并运行：mvn -f services/pom.xml test -pl user-service
 spring:
   data:

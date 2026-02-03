@@ -10,6 +10,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -24,7 +26,15 @@ import java.util.stream.Collectors;
  * 从 Authorization: Bearer &lt;token&gt; 提取并验证 Token，注入 SecurityContext
  */
 @Component
-public class JwtAuthFilter extends OncePerRequestFilter {
+@Order(2)
+public class JwtAuthFilter extends OncePerRequestFilter implements Ordered {
+
+    private static final int ORDER = 2;
+
+    @Override
+    public int getOrder() {
+        return ORDER;
+    }
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";

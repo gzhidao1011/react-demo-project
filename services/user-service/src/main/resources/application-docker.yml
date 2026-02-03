@@ -99,6 +99,15 @@ password:
   require-digit: ${PASSWORD_REQUIRE_DIGIT:true}
   require-special: ${PASSWORD_REQUIRE_SPECIAL:true}
 
+# Admin 账号初始化配置（符合国外主流做法：通过环境变量配置）
+admin:
+  initialization:
+    enabled: ${ADMIN_INIT_ENABLED:true}  # 是否启用自动初始化（生产环境建议设为 false）
+    email: ${ADMIN_INIT_EMAIL:}  # Admin 账号邮箱（必填，如果启用初始化）
+    password: ${ADMIN_INIT_PASSWORD:}  # Admin 账号密码（必填，如果启用初始化）
+    name: ${ADMIN_INIT_NAME:Administrator}  # Admin 账号姓名（可选，默认：Administrator）
+    phone: ${ADMIN_INIT_PHONE:}  # Admin 账号手机号（可选）
+
 # 日志配置
 logging:
   level:

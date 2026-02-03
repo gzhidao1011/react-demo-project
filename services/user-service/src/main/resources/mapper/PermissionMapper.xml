@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.user.mapper.PermissionMapper">
+
+    <resultMap id="PermissionResultMap" type="com.example.user.entity.PermissionEntity">
+        <id property="id" column="id"/>
+        <result property="resource" column="resource"/>
+        <result property="action" column="action"/>
+        <result property="description" column="description"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="PermissionColumns">id, resource, action, description, created_at</sql>
+
+    <select id="findById" resultMap="PermissionResultMap">
+        SELECT <include refid="PermissionColumns"/> FROM permissions WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="PermissionResultMap">
+        SELECT <include refid="PermissionColumns"/> FROM permissions
+    </select>
+
+    <select id="findByResourceAndAction" resultMap="PermissionResultMap">
+        SELECT <include refid="PermissionColumns"/> FROM permissions
+        WHERE resource = #{resource} AND action = #{action}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO permissions (resource, action, description, created_at)
+        VALUES (#{resource}, #{action}, #{description}, #{createdAt})
+    </insert>
+</mapper>

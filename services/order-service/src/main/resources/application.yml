@@ -1,5 +1,5 @@
 server:
-  port: 8002
+  port: 8004  # 与 api-gateway application-local 中 order-service 一致
 
 spring:
   application:
