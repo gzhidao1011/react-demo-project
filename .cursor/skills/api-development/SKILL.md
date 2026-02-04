@@ -136,7 +136,33 @@ interface ApiResponseBase<T> {
 
 ## Error Handling
 
-### Business Error Handling
+### Using handleApiResponse (Recommended)
+
+```typescript
+import { apiService, handleApiResponse } from "@repo/services";
+import type { ApiResponseBase } from "@repo/services";
+
+export async function createUser(data: UserRequest): Promise<UserResponse> {
+  try {
+    const response = await apiService.post<ApiResponseBase<UserResponse>>(
+      "/users",
+      data
+    );
+    
+    // handleApiResponse automatically checks code and throws ServerError if failed
+    const body = handleApiResponse(response, "创建用户失败");
+    return body.data!;
+  } catch (error) {
+    // Handle ServerError (business errors) or network errors
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("网络错误，请稍后重试");
+  }
+}
+```
+
+### Manual Error Handling
 
 ```typescript
 export async function createUser(data: UserRequest): Promise<UserResponse> {
@@ -146,7 +172,7 @@ export async function createUser(data: UserRequest): Promise<UserResponse> {
       data
     );
     
-    // Check business error
+    // Check business error manually
     if (response.data.code !== 0 && response.data.code !== 200) {
       // Handle field-level errors
       if (response.data.errors && response.data.errors.length > 0) {
@@ -169,30 +195,36 @@ export async function createUser(data: UserRequest): Promise<UserResponse> {
 }
 ```
 
-### Field-Level Error Handling
+### Field-Level Error Handling (for Forms)
 
 ```typescript
-// For form integration
-export async function createUserWithFieldErrors(
-  data: UserRequest
-): Promise<{ data?: UserResponse; errors?: Array<{ field: string; message: string }> }> {
+import { handleServerError } from "@repo/utils";
+import type { UseFormSetError } from "react-hook-form";
+
+// For form integration with React Hook Form
+export async function createUserWithFormErrors(
+  data: UserRequest,
+  setError: UseFormSetError<UserRequest>
+): Promise<UserResponse | null> {
   try {
     const response = await apiService.post<ApiResponseBase<UserResponse>>(
       "/users",
       data
     );
     
-    if (response.data.code !== 0 && response.data.code !== 200) {
-      // Return errors for form handling
-      return {
-        errors: response.data.errors || [
-          { field: "root", message: response.data.message || "操作失败" }
-        ]
-      };
+    // Use handleApiResponse for business errors
+    const body = handleApiResponse(response, "创建用户失败");
+    return body.data!;
+  } catch (error) {
+    // Use handleServerError to set form errors
+    const result = handleServerError(error, setError, "创建用户失败");
+    
+    // Return null if there are field-level errors
+    if (result.type === "field") {
+      return null;
     }
     
-    return { data: response.data.data! };
-  } catch (error) {
+    // Re-throw for other error types
     throw error;
   }
 }
@@ -254,6 +286,9 @@ export async function createUser(data: CreateUserRequest): Promise<User> {
 ### List with Pagination
 
 ```typescript
+import { apiService, handleApiResponse } from "@repo/services";
+import type { ApiResponseBase } from "@repo/services";
+
 interface PaginationParams {
   page: number;
   pageSize: number;
@@ -274,17 +309,17 @@ export async function getUsers(
     params
   );
   
-  if (response.data.code !== 0 && response.data.code !== 200) {
-    throw new Error(response.data.message || "获取用户列表失败");
-  }
-  
-  return response.data.data!;
+  const body = handleApiResponse(response, "获取用户列表失败");
+  return body.data!;
 }
 ```
 
 ### File Upload
 
 ```typescript
+import { apiService, handleApiResponse } from "@repo/services";
+import type { ApiResponseBase } from "@repo/services";
+
 export async function uploadFile(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append("file", file);
@@ -299,11 +334,8 @@ export async function uploadFile(file: File): Promise<{ url: string }> {
     }
   );
   
-  if (response.data.code !== 0 && response.data.code !== 200) {
-    throw new Error(response.data.message || "上传失败");
-  }
-  
-  return response.data.data!;
+  const body = handleApiResponse(response, "上传失败");
+  return body.data!;
 }
 ```
 
@@ -312,11 +344,12 @@ export async function uploadFile(file: File): Promise<{ url: string }> {
 ### ✅ Good Practices
 
 - Use TypeScript types for all requests/responses
-- Handle business errors (check `code` field)
+- Use `handleApiResponse` for consistent error handling
 - Provide meaningful error messages
 - Use `APIServiceBase` for consistent behavior
 - Export singleton instances for services
-- Group related APIs in service classes
+- Group related APIs in service files
+- Use `handleServerError` for form integration
 
 ### ❌ Anti-Patterns
 
@@ -325,6 +358,7 @@ export async function uploadFile(file: File): Promise<{ url: string }> {
 - Don't hardcode API endpoints (use base URL)
 - Don't manually add tokens (handled automatically)
 - Don't mix error handling patterns
+- Don't forget to check `code` field or use `handleApiResponse`
 
 ## Related Rules
 

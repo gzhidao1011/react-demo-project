@@ -10,34 +10,43 @@ alwaysApply: true
 
 ## Apps 目录
 
-- [apps/sulan-web](mdc:apps/sulan-web) - Vue 3 + TypeScript 构建的前端 Web 应用程序（主要应用）
-  - 采用 FSD (Feature-Sliced Design) 架构
-  - 使用 Element Plus 作为 UI 组件库
-  - 使用 Tailwind CSS + SCSS 进行样式开发
-  - 使用 Pinia 进行状态管理
-- [apps/sulan-miniprogram](mdc:apps/sulan-miniprogram) - 微信小程序应用
+- [apps/web](mdc:apps/web) - React + TypeScript 构建的前端 Web 应用程序（主要应用）
+  - 使用 React Router v7（基于 Remix）
+  - 使用 Tailwind CSS v4 进行样式开发
+  - 使用 React Hook Form + Zod 进行表单处理
+  - 使用 Vitest + React Testing Library 进行测试
+- [apps/storybook](mdc:apps/storybook) - Storybook 应用
+  - 统一展示所有包的组件 stories
+  - 使用 Vite 构建
 
 ## Packages 目录
 
-共享包使用 `@yysl/*` 命名空间：
+共享包使用 `@repo/*` 命名空间：
 
-- [packages/map](mdc:packages/map) (`@yysl/map`) - 地图相关功能包
-  - 基于 OpenLayers 实现
-  - 提供地图组件、工具、插件等功能
-- [packages/panorama](mdc:packages/panorama) (`@yysl/panorama`) - 全景图相关功能包
-  - 提供全景图核心功能、组件、hooks 等
-- [packages/request](mdc:packages/request) (`@yysl/request`) - HTTP 请求封装库
-  - 统一处理 API 请求
-  - 提供请求拦截、错误处理等功能
-- [packages/ui](mdc:packages/ui) (`@yysl/ui`) - 共享 UI 组件库
-  - 基于 Element Plus 封装的通用组件
-- [packages/user-store](mdc:packages/user-store) (`@yysl/user-store`) - 用户状态管理包
-  - 使用 Pinia 实现
-  - 提供用户信息、权限等状态管理
-- [packages/utils](mdc:packages/utils) (`@yysl/utils`) - 共享工具函数库
-  - 提供通用工具函数、hooks 等
-- [packages/libs](mdc:packages/libs) (`@yysl/libs`) - 共享基础库
-  - 包含第三方库封装等
+- [packages/services](mdc:packages/services) (`@repo/services`) - HTTP 请求封装库
+  - 基于 `APIServiceBase` 类封装 axios
+  - 统一处理 API 请求、错误处理、token 刷新
+  - 提供认证、聊天、用户管理等 API 服务
+- [packages/ui](mdc:packages/ui) (`@repo/ui`) - 共享 UI 组件库
+  - 基于 Headless UI 和 Tailwind CSS 的基础组件
+  - 提供 Button、Card、Input 等通用组件
+- [packages/utils](mdc:packages/utils) (`@repo/utils`) - 共享工具函数库
+  - 提供通用工具函数、hooks、表单错误处理等
+- [packages/propel](mdc:packages/propel) (`@repo/propel`) - 增强/包装层组件
+  - 依赖 `@repo/ui`
+  - 提供业务层组件和增强组件
+- [packages/types](mdc:packages/types) (`@repo/types`) - 共享类型定义
+  - 提供通用的 TypeScript 类型定义
+- [packages/schemas](mdc:packages/schemas) (`@repo/schemas`) - Zod Schema 定义
+  - 提供共享的 Zod schema 定义
+- [packages/i18n](mdc:packages/i18n) (`@repo/i18n`) - 国际化支持
+  - 提供多语言支持
+- [packages/tailwind-config](mdc:packages/tailwind-config) (`@repo/tailwind-config`) - Tailwind CSS 配置
+  - 提供共享的 Tailwind CSS 主题配置
+- [packages/typescript-config](mdc:packages/typescript-config) (`@repo/typescript-config`) - TypeScript 配置
+  - 提供共享的 TypeScript 配置
+- [packages/biome-config](mdc:packages/biome-config) (`@repo/biome-config`) - Biome 配置
+  - 提供共享的代码格式化和 lint 配置
 
 ## Internal 目录
 
@@ -63,31 +72,32 @@ alwaysApply: true
 ## 包依赖关系
 
 ```
-apps/sulan-web
-  ├── @yysl/map
-  ├── @yysl/panorama
-  ├── @yysl/request
-  ├── @yysl/ui
-  ├── @yysl/user-store
-  └── @yysl/utils
+apps/web
+  ├── @repo/services
+  ├── @repo/ui
+  ├── @repo/utils
+  ├── @repo/propel
+  ├── @repo/types
+  ├── @repo/schemas
+  ├── @repo/i18n
+  └── @repo/tailwind-config
 
-@yysl/map
-  ├── @yysl/request
-  └── @yysl/ui
+apps/storybook
+  ├── @repo/ui
+  ├── @repo/propel
+  └── @repo/tailwind-config
 
-@yysl/panorama
-  ├── @yysl/request
-  ├── @yysl/user-store
-  ├── @yysl/utils
-  └── @yysl/ui
+@repo/services
+  ├── @repo/utils
+  └── @repo/types
 
-@yysl/request
-  ├── @yysl/utils
-  └── @yysl/user-store
+@repo/ui
+  └── @repo/utils
 
-@yysl/ui
-  └── @yysl/utils
+@repo/propel
+  ├── @repo/ui
+  └── @repo/utils
 
-@yysl/user-store
-  └── @yysl/utils
+@repo/utils
+  └── @repo/types
 ```
