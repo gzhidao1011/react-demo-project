@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "生成中文提交信息",
+      "type": "shell",
+      "command": "echo",
+      "args": ["请在 Cursor 聊天中输入：生成提交信息", "或使用快捷键 Ctrl+L 打开 Cursor 聊天，然后输入：生成提交信息"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}

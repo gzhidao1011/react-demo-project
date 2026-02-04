@@ -1,0 +1,10 @@
+[
+  {
+    "key": "ctrl+m",
+    "command": "workbench.action.chat.open",
+    "args": {
+      "query": "请使用 generate-commit-message 技能生成符合项目规范的中文提交信息。规范要求：类型使用英文（feat/fix/docs等），描述使用中文，祈使语气。"
+    },
+    "when": "scmRepository"
+  }
+]
