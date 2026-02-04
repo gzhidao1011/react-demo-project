@@ -198,6 +198,12 @@ public class EmailVerificationService {
 
     private void sendVerificationEmail(String to, String verificationUrl) {
         try {
+            // 验证 API Key 是否配置
+            if (resendApiKey == null || resendApiKey.isBlank()) {
+                log.error("RESEND_API_KEY 未配置，无法发送验证邮件");
+                throw new BusinessException(ResultCode.REMOTE_SERVICE_ERROR, "邮件服务未配置");
+            }
+
             Resend resend = new Resend(resendApiKey);
 
             CreateEmailOptions params = CreateEmailOptions.builder()
@@ -208,9 +214,16 @@ public class EmailVerificationService {
                     .build();
 
             resend.emails().send(params);
+            log.info("验证邮件已发送: to={}, from={}", to, resendFrom);
+        } catch (BusinessException e) {
+            // 业务异常直接抛出
+            throw e;
         } catch (Exception e) {
-            log.error("发送验证邮件失败: {}", e.getMessage());
-            throw new BusinessException(ResultCode.REMOTE_SERVICE_ERROR, "发送验证邮件失败");
+            // 记录完整的异常信息，包括堆栈跟踪
+            log.error("发送验证邮件失败: to={}, from={}, error={}, message={}", 
+                    to, resendFrom, e.getClass().getSimpleName(), e.getMessage(), e);
+            throw new BusinessException(ResultCode.REMOTE_SERVICE_ERROR, 
+                    "发送验证邮件失败: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
         }
     }
 }

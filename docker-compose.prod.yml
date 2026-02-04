@@ -134,6 +134,10 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - DOCKER_HOST_IP=user-service
       - JAVA_OPTS=-Xms256m -Xmx512m
+      # Resend 邮件配置（邮箱验证、密码重置）
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - RESEND_FROM=${RESEND_FROM:-onboarding@resend.dev}
+      - APP_FRONTEND_URL=${APP_FRONTEND_URL:-http://web.example.com:8888}
       # Admin 账号初始化配置（从 .env 文件加载）
       - ADMIN_INIT_ENABLED=${ADMIN_INIT_ENABLED:-true}
       - ADMIN_INIT_EMAIL=${ADMIN_INIT_EMAIL:-}
