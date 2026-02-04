@@ -3,7 +3,7 @@
     "key": "ctrl+m",
     "command": "workbench.action.chat.open",
     "args": {
-      "query": "请使用 generate-commit-message 技能生成符合项目规范的中文提交信息。规范要求：类型使用英文（feat/fix/docs等），描述使用中文，祈使语气。"
+      "query": "请使用 generate-commit-message 技能生成符合项目规范的中文提交信息。\n\n重要要求：\n1. 类型（type）必须使用英文：feat、fix、docs、style、refactor、test、perf、chore、ci、build\n2. 描述（subject）必须使用中文，祈使语气，现在时\n3. 示例格式：feat: 添加用户登录功能\n4. 请用中文回复，不要使用英文"
     },
     "when": "scmRepository"
   }
