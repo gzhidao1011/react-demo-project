@@ -45,10 +45,25 @@ LABEL description="API Gateway - API 网关服务"
 WORKDIR /app
 
 # 安装必要工具（仅运行时需要的）
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl wget
 
 # 从构建阶段复制 jar 文件（只复制编译产物，不包含构建工具）
 COPY --from=builder /build/api-gateway/target/api-gateway.jar app.jar
+
+# 下载 Skywalking Agent
+RUN wget -q https://archive.apache.org/dist/skywalking/9.7.0/apache-skywalking-java-agent-9.7.0.tar.gz && \
+    tar -xzf apache-skywalking-java-agent-9.7.0.tar.gz && \
+    rm apache-skywalking-java-agent-9.7.0.tar.gz
+
+# Skywalking 配置
+ENV SERVICE_NAME=api-gateway
+ENV SW_AGENT_NAMESPACE=spring-cloud
+ENV SW_AGENT_INSTANCE_NAME=api-gateway-${HOSTNAME}
+ENV SW_GRPC_LOG_SERVER_ADDRESS=skywalking-oap:11800
+ENV JAVA_OPTS="-javaagent:/app/skywalking-agent/skywalking-agent.jar \
+    -Dskywalking.agent.service_name=api-gateway \
+    -Dskywalking.collector.backend_service=skywalking-oap:11800 \
+    -Dskywalking.logging.level=info"
 
 # 暴露端口
 EXPOSE 8080
@@ -58,6 +73,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 # 启动应用
+ENTRYPOINT exec java \
+    $JAVA_OPTS \
+    -Djava.security.egd=file:/dev/./urandom \
+    -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-docker} \
+    -jar app.jar
 ENTRYPOINT ["java", "-jar", \
     "-Djava.security.egd=file:/dev/./urandom", \
     "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-docker}", \

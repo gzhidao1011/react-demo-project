@@ -32,16 +32,32 @@ LABEL description="Chat Service - Chat 微服务（SSE 流式对话）"
 
 WORKDIR /app
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl wget
 
 COPY --from=builder /build/chat-service/target/chat-service.jar app.jar
+
+# 下载 Skywalking Agent
+RUN wget -q https://archive.apache.org/dist/skywalking/9.7.0/apache-skywalking-java-agent-9.7.0.tar.gz && \
+    tar -xzf apache-skywalking-java-agent-9.7.0.tar.gz && \
+    rm apache-skywalking-java-agent-9.7.0.tar.gz
+
+# Skywalking 配置
+ENV SERVICE_NAME=chat-service
+ENV SW_AGENT_NAMESPACE=spring-cloud
+ENV SW_AGENT_INSTANCE_NAME=chat-service-${HOSTNAME}
+ENV SW_GRPC_LOG_SERVER_ADDRESS=skywalking-oap:11800
+ENV JAVA_OPTS="-javaagent:/app/skywalking-agent/skywalking-agent.jar \
+    -Dskywalking.agent.service_name=chat-service \
+    -Dskywalking.collector.backend_service=skywalking-oap:11800 \
+    -Dskywalking.logging.level=info"
 
 EXPOSE 8003
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8003/actuator/health || exit 1
 
-ENTRYPOINT ["java", "-jar", \
-    "-Djava.security.egd=file:/dev/./urandom", \
-    "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-docker}", \
-    "app.jar"]
+ENTRYPOINT exec java \
+    $JAVA_OPTS \
+    -Djava.security.egd=file:/dev/./urandom \
+    -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-docker} \
+    -jar app.jar

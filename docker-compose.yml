@@ -330,6 +330,181 @@ services:
       retries: 3
       start_period: 10s
 
+  # ==================== 可观测性服务 ====================
+  
+  # Skywalking OAP
+  skywalking-oap:
+    image: apache/skywalking-oap-server:9.7.0
+    container_name: skywalking-oap
+    restart: unless-stopped
+    environment:
+      SW_STORAGE: h2
+      SW_H2_DRIVER: org.h2.Driver
+      SW_STORAGE_H2_DRIVER_PATH: -1
+      SW_PROMETHEUS_FETCHER: default
+      SW_PROMETHEUS_FETCHER_ACTIVE: "true"
+    ports:
+      - "11800:11800"  # gRPC采集端口
+      - "12800:12800"  # HTTP查询端口
+      - "9411:9411"    # Zipkin兼容端口
+    volumes:
+      - skywalking_data:/var/skywalking
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12800/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Skywalking UI
+  skywalking-ui:
+    image: apache/skywalking-ui:9.7.0
+    container_name: skywalking-ui
+    restart: unless-stopped
+    ports:
+      - "8899:8080"
+    environment:
+      SW_OAP_ADDRESS: skywalking-oap:12800
+      SW_LOG_LEVEL: info
+    depends_on:
+      skywalking-oap:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus 监控
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Grafana 可视化
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: Admin@123456
+      GF_SECURITY_JWT_ENABLED: 'true'
+      GF_SECURITY_JWT_HEADER_NAME: 'Authorization'
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_LOG_LEVEL: info
+      GF_PROVISIONING_PATH: /etc/grafana/provisioning
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    restart: unless-stopped
+    environment:
+      cluster.name: microservices-cluster
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: curl --fail http://localhost:9200/_cluster/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.2
+    container_name: logstash
+    restart: unless-stopped
+    volumes:
+      - ./docker/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "5000:5000/tcp"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+      LOG_LEVEL: info
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: curl --fail http://localhost:9600 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    container_name: kibana
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      KIBANA_DEFAULTAPPID: discover
+      ELASTICSEARCH_USERNAME: ""
+      ELASTICSEARCH_PASSWORD: ""
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: curl --fail http://localhost:5601/api/status || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==================== 前端反向代理 ====================
+
   # Nginx 反向代理（根据域名路由）
   nginx-proxy:
     image: nginx:alpine
@@ -371,4 +546,12 @@ volumes:
   nacos-logs:
     driver: local
   redis-data:
+    driver: local
+  skywalking_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
     driver: local

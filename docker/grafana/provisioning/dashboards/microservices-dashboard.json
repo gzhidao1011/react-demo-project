@@ -1,0 +1,59 @@
+{
+  "dashboard": {
+    "title": "Microservices Overview",
+    "uid": "microservices-overview",
+    "version": 1,
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate (RPS)",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[1m])) by (job)",
+            "refId": "A"
+          }
+        ],
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Response Time P95",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_requests_duration_seconds_bucket[5m]))",
+            "refId": "A"
+          }
+        ],
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[1m])) by (job) / sum(rate(http_requests_total[1m])) by (job)",
+            "refId": "A"
+          }
+        ],
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "JVM Memory Usage",
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"}",
+            "refId": "A"
+          }
+        ],
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      }
+    ]
+  }
+}

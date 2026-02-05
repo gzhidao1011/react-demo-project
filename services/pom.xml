@@ -61,6 +61,42 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            
+            <!-- Skywalking Java Agent & Tracing SDK -->
+            <dependency>
+                <groupId>org.apache.skywalking</groupId>
+                <artifactId>apm-toolkit-trace</artifactId>
+                <version>9.7.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.skywalking</groupId>
+                <artifactId>apm-toolkit-logback-1.x</artifactId>
+                <version>9.7.0</version>
+            </dependency>
+
+            <!-- Micrometer Tracing (Spring Boot 3.x官方) -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bom</artifactId>
+                <version>1.2.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Prometheus Metrics -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>1.12.0</version>
+            </dependency>
+
+            <!-- Logback JSON编码器 -->
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>7.4</version>
+            </dependency>
+            
             <!-- Dubbo Spring Boot Starter -->
             <dependency>
                 <groupId>org.apache.dubbo</groupId>

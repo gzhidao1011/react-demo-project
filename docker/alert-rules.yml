@@ -1,0 +1,27 @@
+groups:
+  - name: microservices_alerts
+    interval: 30s
+    rules:
+      # 高错误率告警
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        annotations:
+          summary: "{{ $labels.job }} 错误率过高"
+          description: "{{ $labels.job }} 最近5分钟错误率: {{ $value | humanizePercentage }}"
+
+      # 响应时间过长
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, http_request_duration_seconds_bucket) > 1
+        for: 10m
+        annotations:
+          summary: "{{ $labels.job }} P95响应时间过长"
+          description: "P95: {{ $value | humanizeDuration }}"
+
+      # 服务不可用
+      - alert: ServiceDown
+        expr: up{job=~"auth-service|user-service|order-service|chat-service|api-gateway"} == 0
+        for: 1m
+        annotations:
+          summary: "服务 {{ $labels.job }} 不可用"
+          description: "{{ $labels.job }} 无法连接"

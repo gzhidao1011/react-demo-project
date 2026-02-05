@@ -32,7 +32,7 @@ endif
 
 help:
 	@echo "Microservices local dev commands:"
-	@echo "  make up       - Start infra (MySQL, Redis, Nacos, Sentinel)"
+	@echo "  make up       - Start infra (MySQL, Redis, Nacos, Sentinel, Elasticsearch, Logstash, Kibana)"
 	@echo "  make down     - Stop infra"
 	@echo "  make dev      - Start all microservices (必须先 make up 并等约 10 秒)"
 	@echo "  make dev-full - 先 make up，等 10 秒，再 make dev（推荐首次启动）"
@@ -51,11 +51,11 @@ help:
 
 # Start infrastructure (same as pnpm dev:infra)
 up:
-	@echo "Starting infra (MySQL, Redis, Nacos, Sentinel)..."
-	cd $(ROOT_DIR) && docker-compose up -d mysql redis nacos sentinel
+	@echo "Starting infra (MySQL, Redis, Nacos, Sentinel, Elasticsearch, Logstash, Kibana)..."
+	cd $(ROOT_DIR) && docker-compose up -d mysql redis nacos sentinel elasticsearch logstash kibana
 	@echo "Infra started, waiting for services..."
 	@$(SLEEP)
-	cd $(ROOT_DIR) && docker-compose ps mysql redis nacos sentinel
+	cd $(ROOT_DIR) && docker-compose ps mysql redis nacos sentinel elasticsearch logstash kibana
 
 # Stop infrastructure
 down:
@@ -72,23 +72,23 @@ down:
 ifeq ($(OS),Windows_NT)
 SERVICES_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 dev:
-	@echo ">>> 请确认已执行 make up 且 Nacos 已就绪（约 10 秒），否则会报 Nacos Connection refused"
+	@echo ">>> 请确认已执行 make up 且 Nacos/Elasticsearch 已就绪（约 10 秒），否则会报 Connection refused"
 	@echo ">>> 若端口 8080/8001/8002/8003/8004 被占用，请先停止正在运行的 make dev（Ctrl+C）"
 	@echo ">>> Ctrl+C 停止后若出现 BUILD FAILURE（exit code: 1），属预期，可忽略"
 	@echo "Starting all microservices (API Gateway, Auth Service, User Service, Order Service, Chat Service)..."
 	@echo "Press Ctrl+C to stop all services (same terminal, mainstream approach)"
-	@powershell -NoProfile -Command "$$d='$(SERVICES_DIR)'; $$p1=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','api-gateway'; $$p2=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','auth-service'; $$p3=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','user-service'; $$p4=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','order-service'; $$p5=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','chat-service'; $$p1,$$p2,$$p3,$$p4,$$p5 | Wait-Process"
+	@powershell -NoProfile -Command "$$d='$(SERVICES_DIR)'; $$env:SPRING_PROFILES_ACTIVE='local'; $$p1=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','api-gateway'; $$p2=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','auth-service'; $$p3=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','user-service'; $$p4=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','order-service'; $$p5=Start-Process -NoNewWindow -PassThru -WorkingDirectory $$d mvn -ArgumentList 'spring-boot:run','-pl','chat-service'; $$p1,$$p2,$$p3,$$p4,$$p5 | Wait-Process"
 else
 dev:
-	@echo ">>> 请确认已执行 make up 且 Nacos 已就绪（约 10 秒），否则会报 Nacos Connection refused"
+	@echo ">>> 请确认已执行 make up 且 Nacos/Elasticsearch 已就绪（约 10 秒），否则会报 Connection refused"
 	@echo ">>> 若端口 8080/8001/8002/8003/8004 被占用，请先停止正在运行的 make dev（Ctrl+C）"
 	@echo "Starting all microservices (API Gateway, Auth Service, User Service, Order Service, Chat Service)..."
 	@echo "Press Ctrl+C to stop all services"
-	mvn spring-boot:run -pl api-gateway & \
-	mvn spring-boot:run -pl auth-service & \
-	mvn spring-boot:run -pl user-service & \
-	mvn spring-boot:run -pl order-service & \
-	mvn spring-boot:run -pl chat-service & \
+	SPRING_PROFILES_ACTIVE=local mvn spring-boot:run -pl api-gateway & \
+	SPRING_PROFILES_ACTIVE=local mvn spring-boot:run -pl auth-service & \
+	SPRING_PROFILES_ACTIVE=local mvn spring-boot:run -pl user-service & \
+	SPRING_PROFILES_ACTIVE=local mvn spring-boot:run -pl order-service & \
+	SPRING_PROFILES_ACTIVE=local mvn spring-boot:run -pl chat-service & \
 	wait
 endif
 

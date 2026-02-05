@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Spring属性占位符 -->
+    <springProperty name="APP_NAME" source="spring.application.name" defaultValue="app"/>
+    <springProperty name="LOG_LEVEL" source="logging.level.root" defaultValue="INFO"/>
+    <springProperty name="LOG_FILE" source="logging.file.name" defaultValue="logs/${APP_NAME}.log"/>
+    
+    <!-- ===== 开发环境: 控制台输出 ===== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- ===== JSON文件输出（用于ELK采集） ===== -->
+    <appender name="FILE_JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <!-- 日志滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 按日期和大小滚动 -->
+            <fileNamePattern>logs/${APP_NAME}-%d{yyyy-MM-dd}.%i.log.json</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>        <!-- 单文件最大100MB -->
+            <maxHistory>30</maxHistory>              <!-- 最多保留30天 -->
+            <totalSizeCap>3GB</totalSizeCap>        <!-- 总大小上限3GB -->
+        </rollingPolicy>
+        <!-- JSON编码器 -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>
+                {
+                  "application": "${APP_NAME}",
+                  "environment": "${spring.profiles.active:local}",
+                  "version": "1.0.0",
+                  "hostname": "${HOSTNAME:unknown}"
+                }
+            </customFields>
+            <includeMdc>true</includeMdc>
+            <includeStructuredArguments>true</includeStructuredArguments>
+            <fieldName>@timestamp</fieldName>
+        </encoder>
+    </appender>
+    
+    <!-- ===== TCP输出到Logstash（生产环境） ===== -->
+    <appender name="LOGSTASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>logstash:5000</destination>  <!-- Logstash服务地址 -->
+        <keepAliveDuration>5 minutes</keepAliveDuration>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"application":"${APP_NAME}"}</customFields>
+            <includeContext>true</includeContext>
+            <includeMdcAndContext>true</includeMdcAndContext>
+        </encoder>
+        <!-- 连接失败处理 -->
+        <connectionDelay>10000</connectionDelay>  <!-- 重连延迟10秒 -->
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+    </appender>
+    
+    <!-- ===== 按环境启用不同日志策略 ===== -->
+    
+    <!-- 开发环境: 控制台+本地JSON -->
+    <springProfile name="local,dev">
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE_JSON"/>
+        </root>
+        
+        <!-- 安静一些噪声 -->
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.apache.dubbo" level="INFO"/>
+        <logger name="org.mybatis" level="INFO"/>
+    </springProfile>
+    
+    <!-- Docker/生产环境: JSON + TCP到Logstash -->
+    <springProfile name="docker,prod">
+        <root level="INFO">
+            <appender-ref ref="FILE_JSON"/>
+            <appender-ref ref="LOGSTASH_TCP"/>
+        </root>
+        
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.apache.dubbo" level="WARN"/>
+    </springProfile>
+</configuration>
