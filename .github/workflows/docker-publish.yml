@@ -116,6 +116,9 @@ jobs:
             # order-service 的 Dockerfile 需要 ./services 作为 context（多模块 Maven 项目，需要访问 api-common）
             context: ./services
             dockerfile: ./services/order-service/Dockerfile
+          - name: chat-service
+            context: ./services
+            dockerfile: ./services/chat-service/Dockerfile
           - name: api-gateway
             context: ./services
             dockerfile: ./services/api-gateway/Dockerfile
