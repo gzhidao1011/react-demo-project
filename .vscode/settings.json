@@ -24,5 +24,8 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "java.compile.nullAnalysis.mode": "automatic",
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "chat.tools.terminal.autoApprove": {
+    "git push": true
+  }
 }
