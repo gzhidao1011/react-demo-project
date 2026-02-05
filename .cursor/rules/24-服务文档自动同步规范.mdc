@@ -1,0 +1,237 @@
+---
+description: 服务文档自动同步规范 - 当修改服务代码时，AI 应自动同步更新对应的 README.md 文档
+globs:
+  - "services/**/*.java"
+  - "services/**/pom.xml"
+  - "services/**/Dockerfile"
+alwaysApply: true
+---
+
+# 服务文档自动同步规范
+
+本文档定义了当修改微服务代码时，AI 应如何自动同步更新对应的 README.md 文档。
+
+> **重要**：当修改 `services/*/` 目录下的代码时，AI **必须**检查并更新对应的 `services/*/docs/README.md` 文档。
+
+## 适用范围
+
+- **所有微服务**：`services/user-service`、`services/auth-service`、`services/chat-service`、`services/api-gateway` 等
+- **文档位置**：`services/{service-name}/docs/README.md`
+
+## 触发条件
+
+当以下情况发生时，AI **必须**同步更新文档：
+
+### 1. Controller 层变更
+
+- ✅ **新增 Controller**：添加新的 `@RestController` 类
+- ✅ **新增 API 端点**：在 Controller 中添加新的 `@GetMapping`、`@PostMapping`、`@PutMapping`、`@DeleteMapping` 等方法
+- ✅ **修改 API 路径**：修改 `@RequestMapping` 或方法级别的路径
+- ✅ **修改 API 参数**：修改 `@RequestParam`、`@PathVariable`、`@RequestBody` 等参数
+- ✅ **删除 API 端点**：删除 Controller 中的方法
+
+**需要更新的文档部分**：
+- **五、API 端点**：更新对应的 API 列表
+- **三、核心功能模块**：更新功能说明（如果涉及新功能）
+
+### 2. Service 层变更
+
+- ✅ **新增 Service**：添加新的 `@Service` 类
+- ✅ **新增方法**：在 Service 中添加新的公共方法
+- ✅ **修改方法签名**：修改方法参数或返回值
+- ✅ **删除方法**：删除 Service 中的方法
+
+**需要更新的文档部分**：
+- **三、核心功能模块**：更新功能说明表格
+- **二、目录结构**：如果新增了 Service 文件，更新目录结构
+
+### 3. Mapper/Entity 层变更
+
+- ✅ **新增 Mapper**：添加新的 `Mapper` 接口
+- ✅ **新增 Entity**：添加新的实体类
+- ✅ **修改数据库结构**：修改实体类字段
+
+**需要更新的文档部分**：
+- **二、目录结构**：更新 mapper 和 entity 列表
+- **三、核心功能模块**：如果涉及新功能，更新功能说明
+
+### 4. 配置变更
+
+- ✅ **新增配置类**：添加新的 `@Configuration` 类
+- ✅ **修改配置文件**：修改 `application.yml`、`pom.xml` 等
+- ✅ **新增依赖**：在 `pom.xml` 中添加新依赖
+
+**需要更新的文档部分**：
+- **四、技术栈**：更新技术栈表格（如果新增了技术）
+- **二、目录结构**：更新 config 目录结构
+- **八、启动配置**：如果修改了启动类配置
+
+### 5. 数据库迁移变更
+
+- ✅ **新增迁移脚本**：添加新的 Flyway 迁移脚本
+
+**需要更新的文档部分**：
+- **九、数据库迁移**：更新迁移脚本列表
+
+### 6. 新增功能模块
+
+- ✅ **新增完整功能**：添加新的业务功能（如新增"文件上传"功能）
+
+**需要更新的文档部分**：
+- **三、核心功能模块**：添加新功能模块说明
+- **五、API 端点**：添加新功能的 API 列表
+- **一、核心定位**：更新服务定位说明（如果涉及核心功能变更）
+
+## 更新规则
+
+### 1. API 端点更新格式
+
+**格式**：
+
+```markdown
+### 功能名称 API（`/api/path`）
+
+- `GET /api/path` - 功能说明
+- `POST /api/path` - 功能说明
+- `PUT /api/path/{id}` - 功能说明
+- `DELETE /api/path/{id}` - 功能说明
+```
+
+**示例**：
+
+```markdown
+### 用户管理 API（`/api/users`）
+
+- `GET /api/users` - 分页查询用户
+- `GET /api/users/{id}` - 获取用户详情
+- `POST /api/users` - 创建用户
+- `PUT /api/users/{id}` - 更新用户
+- `DELETE /api/users/{id}` - 软删除用户
+- `POST /api/users/{id}/restore` - 恢复用户
+```
+
+### 2. 功能模块更新格式
+
+**格式**：
+
+```markdown
+### N. 功能名称（Function Name）
+
+| 功能 | 说明 | 实现位置 |
+|------|------|----------|
+| 功能1 | 说明1 | `Service.method1()` |
+| 功能2 | 说明2 | `Service.method2()` |
+```
+
+**示例**：
+
+```markdown
+### 1. 用户管理（User Management）
+
+| 功能 | 说明 | 实现位置 |
+|------|------|----------|
+| 分页查询 | 支持按 email/name/role/deleted 筛选，排序 | `UserController.getUsers()` |
+| 用户详情 | 根据 ID 获取用户（含角色列表） | `UserController.getUserById()` |
+```
+
+### 3. 目录结构更新格式
+
+**格式**：保持与现有格式一致，使用树形结构
+
+```markdown
+├── service/                             # 业务逻辑层
+│   ├── UserManagementService.java        # 用户/角色/权限管理核心服务
+│   ├── NewService.java                  # 新服务说明
+```
+
+### 4. 技术栈更新格式
+
+**格式**：
+
+```markdown
+| 类别 | 技术/框架 | 用途 |
+|------|----------|------|
+| 新类别 | 新技术 | 用途说明 |
+```
+
+## AI 行为规范
+
+### 当检测到代码变更时，AI 应：
+
+1. **自动识别变更类型**：
+   - 分析修改的文件类型（Controller、Service、Mapper 等）
+   - 识别变更内容（新增、修改、删除）
+
+2. **定位需要更新的文档部分**：
+   - 根据变更类型，确定需要更新的文档章节
+   - 检查文档中是否已有相关内容
+
+3. **更新文档内容**：
+   - 保持文档格式一致
+   - 使用中文描述
+   - 确保信息准确（API 路径、方法名、功能说明等）
+
+4. **提示用户**：
+   - 在完成代码修改后，提示用户文档已同步更新
+   - 如果无法自动更新，提示用户手动更新文档
+
+### 示例对话
+
+**用户**：在 `UserController` 中添加一个新的 API 端点 `GET /api/users/me` 获取当前用户信息
+
+**AI 应执行**：
+1. ✅ 在 `UserController` 中添加新方法
+2. ✅ 在 `services/user-service/docs/README.md` 的"五、API 端点"部分添加：
+   ```markdown
+   - `GET /api/users/me` - 获取当前用户信息
+   ```
+3. ✅ 在"三、核心功能模块"的"用户管理"表格中添加：
+   ```markdown
+   | 获取当前用户 | 获取当前登录用户信息 | `UserController.getCurrentUser()` |
+   ```
+4. ✅ 提示用户："已添加 API 端点并同步更新了文档"
+
+## 特殊情况处理
+
+### 1. 文档不存在
+
+如果 `services/{service-name}/docs/README.md` 不存在：
+- ✅ AI 应创建文档，参考 `services/user-service/docs/README.md` 的格式
+- ✅ 包含所有必要的章节（核心定位、目录结构、功能模块、API 端点等）
+
+### 2. 文档格式不一致
+
+如果文档格式与规范不一致：
+- ✅ AI 应按照本规范更新文档格式
+- ✅ 保持内容完整性，不丢失原有信息
+
+### 3. 无法确定更新位置
+
+如果无法确定应该更新文档的哪个部分：
+- ✅ AI 应询问用户或提供建议
+- ✅ 可以同时更新多个可能相关的部分
+
+## 检查清单
+
+在完成代码修改后，AI 应检查：
+
+- [ ] 是否新增了 Controller 或 API 端点？→ 更新"五、API 端点"
+- [ ] 是否新增了 Service 或方法？→ 更新"三、核心功能模块"
+- [ ] 是否新增了 Mapper 或 Entity？→ 更新"二、目录结构"
+- [ ] 是否新增了配置或依赖？→ 更新"四、技术栈"或"八、启动配置"
+- [ ] 是否新增了数据库迁移脚本？→ 更新"九、数据库迁移"
+- [ ] 是否新增了完整功能模块？→ 更新"一、核心定位"和"三、核心功能模块"
+
+## 注意事项
+
+1. **保持文档同步**：代码和文档必须保持一致，避免文档过时
+2. **格式统一**：所有服务的文档格式应保持一致
+3. **中文描述**：所有文档内容使用中文
+4. **准确性**：确保 API 路径、方法名、功能说明等信息准确
+5. **完整性**：更新文档时，确保不遗漏相关信息
+
+## 相关文档
+
+- [服务文档模板](../services/user-service/docs/README.md) - 参考格式
+- [代码风格规范](./01-代码风格.mdc) - 代码编写规范
+- [API 结构规范](./06-API结构.mdc) - API 设计规范
