@@ -111,6 +111,82 @@ services:
       - microservices-network
     restart: unless-stopped
 
+  # ==================== Kafka 消息队列 ====================
+
+  # Zookeeper（Kafka 依赖）
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_INIT_LIMIT: 5
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  # Kafka 消息队列
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Kafka UI 管理界面
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: microservices-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
   # ==================== Java 微服务（使用远程镜像）====================
 
   user-service:
@@ -132,6 +208,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - DOCKER_HOST_IP=user-service
       - JAVA_OPTS=-Xms256m -Xmx512m
       # Resend 邮件配置（邮箱验证、密码重置）
@@ -154,6 +231,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - microservices-network
     restart: unless-stopped
@@ -170,6 +249,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-change-me-internal-secret}
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - JAVA_OPTS=-Xms256m -Xmx512m
@@ -179,6 +259,8 @@ services:
       nacos:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
       user-service:
         condition: service_started
@@ -200,6 +282,7 @@ services:
       - MYSQL_DATABASE=order_db
       - MYSQL_USERNAME=root
       - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-root123}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - DOCKER_HOST_IP=order-service
       - JAVA_OPTS=-Xms256m -Xmx512m
     ports:
@@ -209,6 +292,8 @@ services:
       mysql:
         condition: service_healthy
       nacos:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
       user-service:
         condition: service_started
@@ -368,4 +453,10 @@ volumes:
   nacos-logs:
     driver: local
   redis-data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  zookeeper_log:
+    driver: local
+  kafka_data:
     driver: local
