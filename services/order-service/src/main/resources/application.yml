@@ -24,6 +24,35 @@ spring:
     baseline-on-migrate: true
     validate-on-migrate: true
 
+  # Kafka 配置 (Phase 2 事件驱动)
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: order-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.example.*
+
+  # Temporal 配置 (Phase 3 分布式事务/工作流)
+  temporal:
+    enabled: ${TEMPORAL_ENABLED:false}
+    connection:
+      target: ${TEMPORAL_HOST:localhost:7233}
+    namespace: ${TEMPORAL_NAMESPACE:default}
+    workers:
+      - task-queue: order-saga-queue
+        workflow-classes:
+          - com.example.order.temporal.OrderSagaWorkflowImpl
+        activity-classes:
+          - com.example.order.temporal.OrderActivitiesImpl
+      - task-queue: approval-queue
+        workflow-classes:
+          - com.example.order.temporal.ApprovalWorkflowImpl
+        activity-classes:
+          - com.example.order.temporal.ApprovalActivitiesImpl
+
 # Dubbo 配置
 dubbo:
   application:
@@ -42,18 +71,6 @@ mybatis:
   type-aliases-package: com.example.order.entity
   configuration:
     map-underscore-to-camel-case: true
-
-spring:
-  # Kafka 配置 (Phase 2 事件驱动)
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: order-service-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: com.example.*
 
 # Kafka Topic 配置
 kafka:

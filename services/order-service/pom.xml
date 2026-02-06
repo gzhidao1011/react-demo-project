@@ -115,6 +115,16 @@
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
         </dependency>
+        
+        <!-- Temporal SDK (Phase 3 分布式事务/工作流) -->
+        <dependency>
+            <groupId>io.temporal</groupId>
+            <artifactId>temporal-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.temporal</groupId>
+            <artifactId>temporal-spring-boot-starter-alpha</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

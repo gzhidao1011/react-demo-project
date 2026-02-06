@@ -37,12 +37,16 @@ COPY user-service ./user-service
 RUN mvn clean package -DskipTests -B -pl user-service -am
 
 # 阶段2：运行镜像（最小化镜像大小）
-FROM eclipse-temurin:17-jdk-alpine
+FROM eclipse-temurin:17-jre-alpine
 
 LABEL maintainer="example@example.com"
 LABEL description="User Service - 用户微服务"
 
 WORKDIR /app
+
+# 安全：创建非 root 用户
+RUN addgroup -g 1001 appgroup && \
+    adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
 # 安装必要工具（仅运行时需要的）
 RUN apk add --no-cache curl wget
@@ -57,10 +61,21 @@ RUN wget -q https://archive.apache.org/dist/skywalking/9.3.0/apache-skywalking-j
     rm skywalking-agent.tar.gz || \
     echo "⚠️  Skywalking Agent download skipped (可选, 非关键)"
 
+# 修改文件所有权
+RUN chown -R appuser:appgroup /app
+
+# 切换到非 root 用户
+USER appuser
+
 # Skywalking 配置（支持可选agent）
 ENV SERVICE_NAME=user-service
 ENV SW_AGENT_NAMESPACE=spring-cloud
-ENV JAVA_OPTS="-Dskywalking.agent.service_name=user-service \
+# JVM 优化参数（适用于容器环境）
+ENV JAVA_OPTS="-XX:+UseContainerSupport \
+    -XX:MaxRAMPercentage=75.0 \
+    -XX:+UseG1GC \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -Dskywalking.agent.service_name=user-service \
     -Dskywalking.logging.level=info"
 
 # 暴露端口

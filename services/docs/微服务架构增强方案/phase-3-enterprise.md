@@ -4,10 +4,19 @@
 
 ## 阶段目标
 
-- 分布式事务 (Seata) - 保障跨服务数据一致性
-- 工作流引擎 (Activiti) - 支持复杂业务流程编排
+- 分布式事务 (Temporal Saga) - 保障跨服务数据一致性
+- 工作流引擎 (Temporal) - 支持复杂业务流程编排
 - 多租户隔离 - 支持 SaaS 模式运营
 - Kubernetes 部署 - 云原生自动扩展
+
+## 技术选型说明
+
+| 能力 | 选用技术 | 原因 |
+|------|----------|------|
+| 分布式事务 | Temporal Saga Pattern | 国际主流，Netflix/Uber/Stripe 使用，无全局锁 |
+| 工作流引擎 | Temporal Workflow | 同一技术栈，代码优先，内置可观测性 |
+| 多租户 | 数据库隔离 + 上下文传递 | 灵活性高，支持 SaaS |
+| 云原生 | Kubernetes | 行业标准 |
 
 ## 阶段收益
 
@@ -20,856 +29,1101 @@
 
 ---
 
-## Phase 3.1: 分布式事务 (Seata)
+## Phase 3.1: 分布式事务 (Temporal Saga)
 
-**目标**: 解决 Order 创建时 User 余额扣除的分布式事务问题
+**目标**: 使用 Temporal Saga Pattern 解决 Order 创建时跨服务的分布式事务问题
 
 **完成标准**:
-- [ ] Seata Server 成功部署
-- [ ] 5个服务集成 Seata Client
-- [ ] 订单创建跨服务事务测试通过
-- [ ] 事务回滚补偿机制验证
+- [ ] Temporal Server 成功部署
+- [ ] Temporal UI 可访问 (http://localhost:8088)  
+- [ ] 订单 Saga Workflow 执行成功
+- [ ] 补偿流程（库存回滚、余额返还）验证通过
 
-### Step 3.1.1: Docker Compose 添加 Seata Server
+### Step 3.1.1: Docker Compose 添加 Temporal
 
-**文件**: services/docker-compose.yml
+**文件**: docker-compose.yml
 
 ```yaml
-seata-server:
-  image: seataio/seata-server:1.8.0
-  container_name: seata-server
-  hostname: seata-server
+# Temporal 服务集群
+temporal:
+  image: temporalio/auto-setup:1.24.0
+  container_name: temporal
   ports:
-    - "8091:8091"
-    - "7091:7091"
+    - "7233:7233"  # gRPC
   environment:
-    SEATA_PORT: 8091
-    STORE_MODE: db
-    SEATA_IP: seata-server
-  volumes:
-    - ./docker/seata/resources:/seata-server/resources
+    - DB=mysql8
+    - MYSQL_USER=root
+    - MYSQL_PWD=${MYSQL_ROOT_PASSWORD:-root123}
+    - MYSQL_SEEDS=mysql
+    - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
   depends_on:
-    - mysql
-    - nacos
+    mysql:
+      condition: service_healthy
   networks:
-    - infra-network
+    - microservices-network
+
+temporal-ui:
+  image: temporalio/ui:2.26.0
+  container_name: temporal-ui
+  ports:
+    - "8088:8080"
+  environment:
+    - TEMPORAL_ADDRESS=temporal:7233
+    - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+  depends_on:
+    - temporal
+  networks:
+    - microservices-network
+
+temporal-admin-tools:
+  image: temporalio/admin-tools:1.24.0
+  container_name: temporal-admin-tools
+  environment:
+    - TEMPORAL_ADDRESS=temporal:7233
+  depends_on:
+    - temporal
+  networks:
+    - microservices-network
 ```
 
-### Step 3.1.2: Seata Server 配置文件
-
-**新建文件**: services/docker/seata/resources/application.yml
-
-```yaml
-server:
-  port: 7091
-
-spring:
-  application:
-    name: seata-server
-
-logging:
-  config: classpath:logback-spring.xml
-  file:
-    path: ${user.home}/logs/seata
-  extend:
-    logstash-appender:
-      destination: 127.0.0.1:4560
-    kafka-appender:
-      bootstrap-servers: 127.0.0.1:9092
-      topic: logback_to_logstash
-
-console:
-  user:
-    username: seata
-    password: seata
-
-seata:
-  config:
-    type: nacos
-    nacos:
-      server-addr: nacos:8848
-      namespace: seata
-      group: SEATA_GROUP
-      username: nacos
-      password: nacos
-      data-id: seataServer.properties
-  registry:
-    type: nacos
-    nacos:
-      application: seata-server
-      server-addr: nacos:8848
-      group: SEATA_GROUP
-      namespace: seata
-      cluster: default
-      username: nacos
-      password: nacos
-  store:
-    mode: db
-    db:
-      datasource: druid
-      db-type: mysql
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://mysql:3306/seata?rewriteBatchedStatements=true
-      user: root
-      password: ${MYSQL_ROOT_PASSWORD:root123456}
-      min-conn: 5
-      max-conn: 100
-      global-table: global_table
-      branch-table: branch_table
-      lock-table: lock_table
-      distributed-lock-table: distributed_lock
-      query-limit: 100
-      max-wait: 5000
-  security:
-    secretKey: SeataSecretKey0c382ef121d778043159209298fd40bf3850a017
-    tokenValidityInMilliseconds: 1800000
-```
-
-### Step 3.1.3: Seata 数据库初始化脚本
-
-**新建文件**: services/docker/mysql/init/03-seata-init.sql
-
-```sql
--- Seata Server 数据库
-CREATE DATABASE IF NOT EXISTS seata;
-USE seata;
-
--- 全局事务表
-CREATE TABLE IF NOT EXISTS `global_table` (
-  `xid` VARCHAR(128) NOT NULL,
-  `transaction_id` BIGINT,
-  `status` TINYINT NOT NULL,
-  `application_id` VARCHAR(32),
-  `transaction_service_group` VARCHAR(32),
-  `transaction_name` VARCHAR(128),
-  `timeout` INT,
-  `begin_time` BIGINT,
-  `application_data` VARCHAR(2000),
-  `gmt_create` DATETIME,
-  `gmt_modified` DATETIME,
-  PRIMARY KEY (`xid`),
-  KEY `idx_status_gmt_modified` (`status`, `gmt_modified`),
-  KEY `idx_transaction_id` (`transaction_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 分支事务表
-CREATE TABLE IF NOT EXISTS `branch_table` (
-  `branch_id` BIGINT NOT NULL,
-  `xid` VARCHAR(128) NOT NULL,
-  `transaction_id` BIGINT,
-  `resource_group_id` VARCHAR(32),
-  `resource_id` VARCHAR(256),
-  `branch_type` VARCHAR(8),
-  `status` TINYINT,
-  `client_id` VARCHAR(64),
-  `application_data` VARCHAR(2000),
-  `gmt_create` DATETIME(6),
-  `gmt_modified` DATETIME(6),
-  PRIMARY KEY (`branch_id`),
-  KEY `idx_xid` (`xid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 锁表
-CREATE TABLE IF NOT EXISTS `lock_table` (
-  `row_key` VARCHAR(128) NOT NULL,
-  `xid` VARCHAR(128),
-  `transaction_id` BIGINT,
-  `branch_id` BIGINT NOT NULL,
-  `resource_id` VARCHAR(256),
-  `table_name` VARCHAR(32),
-  `pk` VARCHAR(36),
-  `status` TINYINT NOT NULL DEFAULT '0',
-  `gmt_create` DATETIME,
-  `gmt_modified` DATETIME,
-  PRIMARY KEY (`row_key`),
-  KEY `idx_branch_id` (`branch_id`),
-  KEY `idx_xid` (`xid`),
-  KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 分布式锁表
-CREATE TABLE IF NOT EXISTS `distributed_lock` (
-  `lock_key` CHAR(20) NOT NULL,
-  `lock_value` VARCHAR(20) NOT NULL,
-  `expire` BIGINT,
-  PRIMARY KEY (`lock_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO `distributed_lock` (lock_key, lock_value, expire) VALUES ('AsyncCommitting', ' ', 0);
-INSERT INTO `distributed_lock` (lock_key, lock_value, expire) VALUES ('RetryCommitting', ' ', 0);
-INSERT INTO `distributed_lock` (lock_key, lock_value, expire) VALUES ('RetryRollbacking', ' ', 0);
-INSERT INTO `distributed_lock` (lock_key, lock_value, expire) VALUES ('TxTimeoutCheck', ' ', 0);
-
--- 业务服务 UNDO_LOG 表 (每个业务数据库都需要)
--- 在 user_service_db, order_service_db 中执行
-USE user_service_db;
-CREATE TABLE IF NOT EXISTS `undo_log` (
-  `branch_id` BIGINT NOT NULL COMMENT 'branch transaction id',
-  `xid` VARCHAR(128) NOT NULL COMMENT 'global transaction id',
-  `context` VARCHAR(128) NOT NULL COMMENT 'undo_log context,such as serialization',
-  `rollback_info` LONGBLOB NOT NULL COMMENT 'rollback info',
-  `log_status` INT NOT NULL COMMENT '0:normal status,1:defense status',
-  `log_created` DATETIME(6) NOT NULL COMMENT 'create datetime',
-  `log_modified` DATETIME(6) NOT NULL COMMENT 'modify datetime',
-  UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AT transaction mode undo table';
-
-USE order_service_db;
-CREATE TABLE IF NOT EXISTS `undo_log` (
-  `branch_id` BIGINT NOT NULL COMMENT 'branch transaction id',
-  `xid` VARCHAR(128) NOT NULL COMMENT 'global transaction id',
-  `context` VARCHAR(128) NOT NULL COMMENT 'undo_log context,such as serialization',
-  `rollback_info` LONGBLOB NOT NULL COMMENT 'rollback info',
-  `log_status` INT NOT NULL COMMENT '0:normal status,1:defense status',
-  `log_created` DATETIME(6) NOT NULL COMMENT 'create datetime',
-  `log_modified` DATETIME(6) NOT NULL COMMENT 'modify datetime',
-  UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AT transaction mode undo table';
-```
-
-### Step 3.1.4: 父 POM 添加 Seata 依赖
+### Step 3.1.2: 父 POM 添加 Temporal 依赖
 
 **文件**: services/pom.xml
 
 ```xml
-<!-- Seata 分布式事务 -->
+<!-- Temporal Java SDK -->
 <dependency>
-    <groupId>io.seata</groupId>
-    <artifactId>seata-spring-boot-starter</artifactId>
-    <version>1.8.0</version>
+    <groupId>io.temporal</groupId>
+    <artifactId>temporal-sdk</artifactId>
+    <version>1.24.0</version>
 </dependency>
 
 <dependency>
-    <groupId>com.alibaba.cloud</groupId>
-    <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
-    <exclusions>
-        <exclusion>
-            <groupId>io.seata</groupId>
-            <artifactId>seata-spring-boot-starter</artifactId>
-        </exclusion>
-    </exclusions>
+    <groupId>io.temporal</groupId>
+  <artifactId>temporal-spring-boot-starter-alpha</artifactId>
+    <version>1.24.0</version>
 </dependency>
-```
 
-### Step 3.1.5: 服务配置 Seata Client
-
-**文件**: services/order-service/src/main/resources/application.yml
-
-```yaml
-seata:
-  enabled: true
-  application-id: ${spring.application.name}
-  tx-service-group: my_tx_group
-  registry:
-    type: nacos
-    nacos:
-      application: seata-server
-      server-addr: ${spring.cloud.nacos.discovery.server-addr}
-      namespace: seata
-      group: SEATA_GROUP
-      username: nacos
-      password: nacos
-  config:
-    type: nacos
-    nacos:
-      server-addr: ${spring.cloud.nacos.discovery.server-addr}
-      namespace: seata
-      group: SEATA_GROUP
-      username: nacos
-      password: nacos
-  service:
-    vgroup-mapping:
-      my_tx_group: default
-  data-source-proxy-mode: AT
-```
-
-### Step 3.1.6: 订单服务 - 分布式事务实现
-
-**新建文件**: services/order-service/src/main/java/com/example/order/service/OrderTransactionService.java
-
-```java
-package com.example.order.service;
-
-import com.example.order.entity.Order;
-import com.example.order.repository.OrderRepository;
-import com.example.order.client.UserServiceClient;
-import io.seata.spring.annotation.GlobalTransactional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class OrderTransactionService {
-
-    private final OrderRepository orderRepository;
-    private final UserServiceClient userServiceClient;
-
-    /**
-     * 创建订单 - 分布式事务
-     * 1. 创建订单记录
-     * 2. 扣减用户余额
-     * 任一步骤失败，全局回滚
-     */
-    @GlobalTransactional(name = "create-order-tx", rollbackFor = Exception.class)
-    public Order createOrderWithTransaction(Long userId, BigDecimal amount, String productName) {
-        log.info("开始创建订单, userId={}, amount={}", userId, amount);
-
-        // Step 1: 创建订单
-        Order order = new Order();
-        order.setUserId(userId);
-        order.setAmount(amount);
-        order.setProductName(productName);
-        order.setStatus("PENDING");
-        orderRepository.save(order);
-        log.info("订单创建成功, orderId={}", order.getId());
-
-        // Step 2: 扣减用户余额 (远程调用)
-        boolean deductSuccess = userServiceClient.deductBalance(userId, amount);
-        if (!deductSuccess) {
-            throw new RuntimeException("余额扣减失败，触发全局回滚");
-        }
-        log.info("余额扣减成功, userId={}, amount={}", userId, amount);
-
-        // Step 3: 更新订单状态
-        order.setStatus("CONFIRMED");
-        orderRepository.save(order);
-
-        return order;
-    }
-}
-```
-
-**新建文件**: services/order-service/src/main/java/com/example/order/client/UserServiceClient.java
-
-```java
-package com.example.order.client;
-
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import java.math.BigDecimal;
-
-@FeignClient(name = "user-service", path = "/api/users")
-public interface UserServiceClient {
-
-    @PostMapping("/balance/deduct")
-    boolean deductBalance(@RequestParam("userId") Long userId,
-                         @RequestParam("amount") BigDecimal amount);
-}
-```
-
-### Step 3.1.7: 用户服务 - 余额扣减接口
-
-**新建文件**: services/user-service/src/main/java/com/example/user/controller/BalanceController.java
-
-```java
-package com.example.user.controller;
-
-import com.example.user.service.BalanceService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
-
-@RestController
-@RequestMapping("/api/users/balance")
-@RequiredArgsConstructor
-public class BalanceController {
-
-    private final BalanceService balanceService;
-
-    @PostMapping("/deduct")
-    public boolean deductBalance(@RequestParam Long userId,
-                                @RequestParam BigDecimal amount) {
-        return balanceService.deductBalance(userId, amount);
-    }
-
-    @PostMapping("/add")
-    public boolean addBalance(@RequestParam Long userId,
-                             @RequestParam BigDecimal amount) {
-        return balanceService.addBalance(userId, amount);
-    }
-}
-```
-
-**新建文件**: services/user-service/src/main/java/com/example/user/service/BalanceService.java
-
-```java
-package com.example.user.service;
-
-import com.example.user.entity.UserBalance;
-import com.example.user.repository.UserBalanceRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class BalanceService {
-
-    private final UserBalanceRepository userBalanceRepository;
-
-    @Transactional
-    public boolean deductBalance(Long userId, BigDecimal amount) {
-        log.info("扣减余额, userId={}, amount={}", userId, amount);
-
-        UserBalance balance = userBalanceRepository.findByUserId(userId)
-            .orElseThrow(() -> new RuntimeException("用户余额记录不存在"));
-
-        if (balance.getBalance().compareTo(amount) < 0) {
-            log.warn("余额不足, current={}, required={}", balance.getBalance(), amount);
-            return false;
-        }
-
-        balance.setBalance(balance.getBalance().subtract(amount));
-        userBalanceRepository.save(balance);
-
-        log.info("余额扣减成功, newBalance={}", balance.getBalance());
-        return true;
-    }
-
-    @Transactional
-    public boolean addBalance(Long userId, BigDecimal amount) {
-        UserBalance balance = userBalanceRepository.findByUserId(userId)
-            .orElseGet(() -> {
-                UserBalance newBalance = new UserBalance();
-                newBalance.setUserId(userId);
-                newBalance.setBalance(BigDecimal.ZERO);
-                return newBalance;
-            });
-
-        balance.setBalance(balance.getBalance().add(amount));
-        userBalanceRepository.save(balance);
-        return true;
-    }
-}
-```
-
-### Step 3.1.8: 验证分布式事务
-
-```bash
-# 启动 Seata Server
-docker-compose up -d seata-server
-
-# 查看 Seata 控制台
-open http://localhost:7091
-
-# 创建订单测试
-curl -X POST http://localhost:8080/api/orders/create \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
-  -d '{
-    "userId": 1,
-    "amount": 100.00,
-    "productName": "测试商品"
-  }'
-
-# 验证事务回滚（余额不足场景）
-curl -X POST http://localhost:8080/api/orders/create \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
-  -d '{
-    "userId": 1,
-    "amount": 999999.00,
-    "productName": "超额商品"
-  }'
-```
-
----
-
-## Phase 3.2: 工作流引擎 (Activiti)
-
-**目标**: 订单审批/权限申请等工作流
-
-**完成标准**:
-- [ ] Activiti 7 成功集成
-- [ ] 订单审批流程定义完成
-- [ ] 流程实例管理 API 可用
-- [ ] 任务分派与追踪功能正常
-
-### Step 3.2.1: 父 POM 添加 Activiti 依赖
-
-**文件**: services/pom.xml
-
-```xml
-<!-- Activiti 工作流引擎 -->
+<!-- Jackson for Temporal serialization -->
 <dependency>
-    <groupId>org.activiti</groupId>
-    <artifactId>activiti-spring-boot-starter</artifactId>
-    <version>7.1.0.M6</version>
-</dependency>
-
-<dependency>
-    <groupId>org.activiti</groupId>
-    <artifactId>activiti-spring-security</artifactId>
-    <version>7.1.0.M6</version>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
 </dependency>
 ```
 
-### Step 3.2.2: Order Service 集成 Activiti
+### Step 3.1.3: Temporal 配置
 
 **文件**: services/order-service/src/main/resources/application.yml
 
 ```yaml
 spring:
-  activiti:
-    database-schema-update: true
-    history-level: full
-    check-process-definitions: true
-    process-definition-location-prefix: classpath:/processes/
-    process-definition-location-suffixes:
-      - "**.bpmn"
-      - "**.bpmn20.xml"
+  temporal:
+    enabled: ${TEMPORAL_ENABLED:false}
+    connection:
+      target: ${TEMPORAL_HOST:localhost:7233}
+    namespace: ${TEMPORAL_NAMESPACE:default}
+    workers:
+      - task-queue: order-saga-queue
+        workflow-classes:
+          - com.example.order.temporal.OrderSagaWorkflowImpl
+        activity-classes:
+          - com.example.order.temporal.OrderActivitiesImpl
+      - task-queue: approval-queue
+        workflow-classes:
+          - com.example.order.temporal.ApprovalWorkflowImpl
+        activity-classes:
+          - com.example.order.temporal.ApprovalActivitiesImpl
 ```
 
-### Step 3.2.3: 订单审批流程定义 (BPMN)
+### Step 3.1.4: 定义 Saga Workflow 接口
 
-**新建文件**: services/order-service/src/main/resources/processes/order-approval.bpmn20.xml
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns:activiti="http://activiti.org/bpmn"
-             targetNamespace="http://www.activiti.org/processdef">
-
-  <process id="orderApproval" name="订单审批流程" isExecutable="true">
-    
-    <!-- 开始事件 -->
-    <startEvent id="startEvent" name="订单提交"/>
-    
-    <!-- 订单金额判断 -->
-    <exclusiveGateway id="amountGateway" name="金额判断"/>
-    
-    <!-- 小额订单自动审批 -->
-    <serviceTask id="autoApproveTask" name="自动审批"
-                 activiti:delegateExpression="${autoApprovalDelegate}"/>
-    
-    <!-- 普通订单 - 主管审批 -->
-    <userTask id="supervisorApproval" name="主管审批"
-              activiti:candidateGroups="supervisor">
-      <documentation>订单金额: ${amount}, 需要主管审批</documentation>
-    </userTask>
-    
-    <!-- 大额订单 - 经理审批 -->
-    <userTask id="managerApproval" name="经理审批"
-              activiti:candidateGroups="manager">
-      <documentation>大额订单: ${amount}, 需要经理审批</documentation>
-    </userTask>
-    
-    <!-- 审批结果判断 -->
-    <exclusiveGateway id="approvalGateway" name="审批结果"/>
-    
-    <!-- 审批通过处理 -->
-    <serviceTask id="approvedTask" name="审批通过"
-                 activiti:delegateExpression="${orderApprovedDelegate}"/>
-    
-    <!-- 审批拒绝处理 -->
-    <serviceTask id="rejectedTask" name="审批拒绝"
-                 activiti:delegateExpression="${orderRejectedDelegate}"/>
-    
-    <!-- 结束事件 -->
-    <endEvent id="endEvent" name="流程结束"/>
-    
-    <!-- 流程连线 -->
-    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="amountGateway"/>
-    
-    <sequenceFlow id="flow2" sourceRef="amountGateway" targetRef="autoApproveTask">
-      <conditionExpression xsi:type="tFormalExpression">
-        ${amount &lt; 100}
-      </conditionExpression>
-    </sequenceFlow>
-    
-    <sequenceFlow id="flow3" sourceRef="amountGateway" targetRef="supervisorApproval">
-      <conditionExpression xsi:type="tFormalExpression">
-        ${amount &gt;= 100 &amp;&amp; amount &lt; 10000}
-      </conditionExpression>
-    </sequenceFlow>
-    
-    <sequenceFlow id="flow4" sourceRef="amountGateway" targetRef="managerApproval">
-      <conditionExpression xsi:type="tFormalExpression">
-        ${amount &gt;= 10000}
-      </conditionExpression>
-    </sequenceFlow>
-    
-    <sequenceFlow id="flow5" sourceRef="autoApproveTask" targetRef="approvedTask"/>
-    
-    <sequenceFlow id="flow6" sourceRef="supervisorApproval" targetRef="approvalGateway"/>
-    <sequenceFlow id="flow7" sourceRef="managerApproval" targetRef="approvalGateway"/>
-    
-    <sequenceFlow id="flow8" sourceRef="approvalGateway" targetRef="approvedTask">
-      <conditionExpression xsi:type="tFormalExpression">${approved}</conditionExpression>
-    </sequenceFlow>
-    
-    <sequenceFlow id="flow9" sourceRef="approvalGateway" targetRef="rejectedTask">
-      <conditionExpression xsi:type="tFormalExpression">${!approved}</conditionExpression>
-    </sequenceFlow>
-    
-    <sequenceFlow id="flow10" sourceRef="approvedTask" targetRef="endEvent"/>
-    <sequenceFlow id="flow11" sourceRef="rejectedTask" targetRef="endEvent"/>
-    
-  </process>
-</definitions>
-```
-
-### Step 3.2.4: 工作流服务实现
-
-**新建文件**: services/order-service/src/main/java/com/example/order/workflow/WorkflowService.java
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/OrderSagaWorkflow.java
 
 ```java
-package com.example.order.workflow;
+package com.example.order.temporal;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.activiti.engine.RuntimeService;
-import org.activiti.engine.TaskService;
-import org.activiti.engine.runtime.ProcessInstance;
-import org.activiti.engine.task.Task;
-import org.springframework.stereotype.Service;
+import com.example.order.temporal.model.OrderSagaInput;
+import com.example.order.temporal.model.OrderSagaResult;
+import io.temporal.workflow.WorkflowInterface;
+import io.temporal.workflow.WorkflowMethod;
 
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+/**
+ * 订单 Saga Workflow 接口
+ * 使用 Saga 模式编排订单创建的分布式事务
+ */
+@WorkflowInterface
+public interface OrderSagaWorkflow {
 
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class WorkflowService {
-
-    private final RuntimeService runtimeService;
-    private final TaskService taskService;
-
-    /**
-     * 启动订单审批流程
-     */
-    public String startOrderApproval(Long orderId, BigDecimal amount, Long userId) {
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("orderId", orderId);
-        variables.put("amount", amount);
-        variables.put("userId", userId);
-        variables.put("approved", false);
-
-        ProcessInstance instance = runtimeService.startProcessInstanceByKey(
-            "orderApproval",
-            String.valueOf(orderId),
-            variables
-        );
-
-        log.info("启动订单审批流程, processId={}, orderId={}", 
-                 instance.getProcessInstanceId(), orderId);
-        return instance.getProcessInstanceId();
-    }
-
-    /**
-     * 获取待办任务
-     */
-    public List<TaskDTO> getMyTasks(String username, List<String> groups) {
-        List<Task> tasks = taskService.createTaskQuery()
-            .taskCandidateOrAssigned(username)
-            .taskCandidateGroupIn(groups)
-            .list();
-
-        return tasks.stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * 完成任务
-     */
-    public void completeTask(String taskId, boolean approved, String comment) {
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("approved", approved);
-        variables.put("comment", comment);
-
-        taskService.complete(taskId, variables);
-        log.info("任务完成, taskId={}, approved={}", taskId, approved);
-    }
-
-    /**
-     * 认领任务
-     */
-    public void claimTask(String taskId, String userId) {
-        taskService.claim(taskId, userId);
-        log.info("任务认领, taskId={}, userId={}", taskId, userId);
-    }
-
-    private TaskDTO convertToDTO(Task task) {
-        TaskDTO dto = new TaskDTO();
-        dto.setTaskId(task.getId());
-        dto.setTaskName(task.getName());
-        dto.setProcessInstanceId(task.getProcessInstanceId());
-        dto.setCreateTime(task.getCreateTime());
-        dto.setAssignee(task.getAssignee());
-        return dto;
-    }
+    @WorkflowMethod
+    OrderSagaResult createOrder(OrderSagaInput input);
 }
 ```
 
-**新建文件**: services/order-service/src/main/java/com/example/order/workflow/TaskDTO.java
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/model/OrderSagaInput.java
 
 ```java
-package com.example.order.workflow;
+package com.example.order.temporal.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import java.util.Date;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 
 @Data
-public class TaskDTO {
-    private String taskId;
-    private String taskName;
-    private String processInstanceId;
-    private Date createTime;
-    private String assignee;
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class OrderSagaInput {
+    private Long userId;
+    private Long productId;
+    private Integer quantity;
+    private BigDecimal totalAmount;
+    private String tenantId;
+}
+```
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/model/OrderSagaResult.java
+
+```java
+package com.example.order.temporal.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class OrderSagaResult {
     private Long orderId;
-    private String orderStatus;
+    private String status;
+    private String message;
+    private boolean success;
 }
 ```
 
-### Step 3.2.5: 工作流委托处理器
+### Step 3.1.5: 定义 Activities 接口
 
-**新建文件**: services/order-service/src/main/java/com/example/order/workflow/delegate/AutoApprovalDelegate.java
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/OrderActivities.java
 
 ```java
-package com.example.order.workflow.delegate;
+package com.example.order.temporal;
 
-import com.example.order.service.OrderService;
-import lombok.RequiredArgsConstructor;
+import io.temporal.activity.ActivityInterface;
+import io.temporal.activity.ActivityMethod;
+
+import java.math.BigDecimal;
+
+/**
+ * 订单 Saga 的 Activities 接口
+ * 每个 Activity 是一个可补偿的操作
+ */
+@ActivityInterface
+public interface OrderActivities {
+
+    // ========== 正向操作 ==========
+
+    @ActivityMethod
+    Long createOrder(Long userId, Long productId, Integer quantity, BigDecimal amount, String tenantId);
+
+    @ActivityMethod
+    boolean reserveInventory(Long productId, Integer quantity, String tenantId);
+
+    @ActivityMethod
+    boolean deductBalance(Long userId, BigDecimal amount, String tenantId);
+
+    @ActivityMethod
+    void confirmOrder(Long orderId);
+
+    // ========== 补偿操作 ==========
+
+    @ActivityMethod
+    void cancelOrder(Long orderId);
+
+    @ActivityMethod
+    void releaseInventory(Long productId, Integer quantity, String tenantId);
+
+    @ActivityMethod
+    void refundBalance(Long userId, BigDecimal amount, String tenantId);
+}
+```
+
+### Step 3.1.6: Saga Workflow 实现 (核心)
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/OrderSagaWorkflowImpl.java
+
+```java
+package com.example.order.temporal;
+
+import com.example.order.temporal.model.OrderSagaInput;
+import com.example.order.temporal.model.OrderSagaResult;
+import io.temporal.activity.ActivityOptions;
+import io.temporal.common.RetryOptions;
+import io.temporal.failure.ActivityFailure;
+import io.temporal.workflow.Saga;
+import io.temporal.workflow.Workflow;
 import lombok.extern.slf4j.Slf4j;
-import org.activiti.engine.delegate.DelegateExecution;
-import org.activiti.engine.delegate.JavaDelegate;
-import org.springframework.stereotype.Component;
 
-@Component("autoApprovalDelegate")
+import java.time.Duration;
+
+/**
+ * 订单 Saga Workflow 实现
+ * 
+ * 执行流程:
+ * 1. 创建订单 (待支付状态)
+ * 2. 预留库存
+ * 3. 扣减余额  
+ * 4. 确认订单
+ * 
+ * 任何步骤失败都会触发已完成步骤的补偿
+ */
 @Slf4j
-@RequiredArgsConstructor
-public class AutoApprovalDelegate implements JavaDelegate {
+public class OrderSagaWorkflowImpl implements OrderSagaWorkflow {
 
-    private final OrderService orderService;
+    // Activity 配置：重试3次，每次间隔1秒
+    private final ActivityOptions activityOptions = ActivityOptions.newBuilder()
+        .setStartToCloseTimeout(Duration.ofSeconds(30))
+        .setRetryOptions(RetryOptions.newBuilder()
+            .setMaximumAttempts(3)
+            .setInitialInterval(Duration.ofSeconds(1))
+            .build())
+        .build();
+
+    private final OrderActivities activities = 
+        Workflow.newActivityStub(OrderActivities.class, activityOptions);
 
     @Override
-    public void execute(DelegateExecution execution) {
-        Long orderId = (Long) execution.getVariable("orderId");
-        log.info("自动审批通过, orderId={}", orderId);
-        execution.setVariable("approved", true);
+    public OrderSagaResult createOrder(OrderSagaInput input) {
+        // Saga 配置：支持并行补偿
+        Saga.Options sagaOptions = new Saga.Options.Builder()
+            .setParallelCompensation(true)
+            .build();
+        Saga saga = new Saga(sagaOptions);
+
+        try {
+            // Step 1: 创建订单
+            Long orderId = activities.createOrder(
+                input.getUserId(),
+                input.getProductId(), 
+                input.getQuantity(),
+                input.getTotalAmount(),
+                input.getTenantId()
+            );
+            // 注册补偿：取消订单
+            saga.addCompensation(activities::cancelOrder, orderId);
+
+            // Step 2: 预留库存
+            boolean inventoryReserved = activities.reserveInventory(
+                input.getProductId(),
+                input.getQuantity(),
+                input.getTenantId()
+            );
+            if (!inventoryReserved) {
+                throw new RuntimeException("库存不足");
+            }
+            // 注册补偿：释放库存
+            saga.addCompensation(
+                activities::releaseInventory,
+                input.getProductId(),
+                input.getQuantity(),
+                input.getTenantId()
+            );
+
+            // Step 3: 扣减用户余额
+            boolean balanceDeducted = activities.deductBalance(
+                input.getUserId(),
+                input.getTotalAmount(),
+                input.getTenantId()
+            );
+            if (!balanceDeducted) {
+                throw new RuntimeException("余额不足");
+            }
+            // 注册补偿：退还余额
+            saga.addCompensation(
+                activities::refundBalance,
+                input.getUserId(),
+                input.getTotalAmount(),
+                input.getTenantId()
+            );
+
+            // Step 4: 确认订单
+            activities.confirmOrder(orderId);
+
+            return OrderSagaResult.builder()
+                .orderId(orderId)
+                .status("COMPLETED")
+                .message("订单创建成功")
+                .success(true)
+                .build();
+
+        } catch (ActivityFailure e) {
+            // 执行所有补偿操作
+            saga.compensate();
+            
+            return OrderSagaResult.builder()
+                .status("COMPENSATED")
+                .message("订单创建失败: " + e.getCause().getMessage())
+                .success(false)
+                .build();
+        } catch (Exception e) {
+            saga.compensate();
+            
+            return OrderSagaResult.builder()
+                .status("COMPENSATED")
+                .message("订单创建失败: " + e.getMessage())
+                .success(false)
+                .build();
+        }
     }
 }
 ```
 
-**新建文件**: services/order-service/src/main/java/com/example/order/workflow/delegate/OrderApprovedDelegate.java
+### Step 3.1.7: Activities 实现
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/OrderActivitiesImpl.java
 
 ```java
-package com.example.order.workflow.delegate;
+package com.example.order.temporal;
 
-import com.example.order.service.OrderService;
+import com.example.order.entity.OrderEntity;
+import com.example.order.mapper.OrderMapper;
+import io.temporal.spring.boot.ActivityImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.activiti.engine.delegate.DelegateExecution;
-import org.activiti.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 
-@Component("orderApprovedDelegate")
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 @Slf4j
+@Component
 @RequiredArgsConstructor
-public class OrderApprovedDelegate implements JavaDelegate {
+@ActivityImpl(taskQueues = "order-saga-queue")
+public class OrderActivitiesImpl implements OrderActivities {
 
-    private final OrderService orderService;
+  private final OrderMapper orderMapper;
 
-    @Override
-    public void execute(DelegateExecution execution) {
-        Long orderId = (Long) execution.getVariable("orderId");
-        log.info("订单审批通过, orderId={}", orderId);
-        orderService.updateOrderStatus(orderId, "APPROVED");
+  @Override
+  public Long createOrder(Long userId, Long productId, Integer quantity, 
+               BigDecimal amount, String tenantId) {
+    if (amount == null) {
+      throw new IllegalArgumentException("amount is required");
     }
+    if (quantity == null || quantity <= 0) {
+      throw new IllegalArgumentException("quantity must be positive");
+    }
+    var now = LocalDateTime.now();
+        
+    OrderEntity order = new OrderEntity();
+    order.setUserId(userId);
+    order.setProductName("Product-" + productId);
+    order.setPrice(amount.divide(BigDecimal.valueOf(quantity), 2, java.math.RoundingMode.HALF_UP));
+    order.setQuantity(quantity);
+    order.setStatus("PENDING");
+    order.setCreatedAt(now);
+    order.setUpdatedAt(now);
+        
+    orderMapper.insert(order);
+    log.info("订单创建成功: orderId={}, userId={}, tenantId={}", order.getId(), userId, tenantId);
+        
+    return order.getId();
+  }
+
+  @Override
+  public boolean reserveInventory(Long productId, Integer quantity, String tenantId) {
+    log.info("库存预留: productId={}, quantity={}, tenantId={}", productId, quantity, tenantId);
+    return true;
+  }
+
+  @Override
+  public boolean deductBalance(Long userId, BigDecimal amount, String tenantId) {
+    log.info("余额扣减: userId={}, amount={}, tenantId={}", userId, amount, tenantId);
+    return true;
+  }
+
+  @Override
+  public void confirmOrder(Long orderId) {
+    OrderEntity order = orderMapper.findById(orderId);
+    if (order != null) {
+      order.setStatus("CONFIRMED");
+      order.setUpdatedAt(LocalDateTime.now());
+      orderMapper.update(order);
+      log.info("订单确认成功: orderId={}", orderId);
+    }
+  }
+
+  // ========== 补偿操作 ==========
+
+  @Override
+  public void cancelOrder(Long orderId) {
+    OrderEntity order = orderMapper.findById(orderId);
+    if (order != null) {
+      order.setStatus("CANCELLED");
+      order.setUpdatedAt(LocalDateTime.now());
+      orderMapper.update(order);
+      log.info("订单取消(补偿): orderId={}", orderId);
+    }
+  }
+
+  @Override
+  public void releaseInventory(Long productId, Integer quantity, String tenantId) {
+    log.info("库存释放(补偿): productId={}, quantity={}, tenantId={}", productId, quantity, tenantId);
+  }
+
+  @Override
+  public void refundBalance(Long userId, BigDecimal amount, String tenantId) {
+    log.info("余额退还(补偿): userId={}, amount={}, tenantId={}", userId, amount, tenantId);
+  }
 }
 ```
 
-**新建文件**: services/order-service/src/main/java/com/example/order/workflow/delegate/OrderRejectedDelegate.java
+### Step 3.1.8: 订单 Controller 集成 Temporal
 
-```java
-package com.example.order.workflow.delegate;
-
-import com.example.order.service.OrderService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.activiti.engine.delegate.DelegateExecution;
-import org.activiti.engine.delegate.JavaDelegate;
-import org.springframework.stereotype.Component;
-
-@Component("orderRejectedDelegate")
-@Slf4j
-@RequiredArgsConstructor
-public class OrderRejectedDelegate implements JavaDelegate {
-
-    private final OrderService orderService;
-
-    @Override
-    public void execute(DelegateExecution execution) {
-        Long orderId = (Long) execution.getVariable("orderId");
-        String comment = (String) execution.getVariable("comment");
-        log.info("订单审批拒绝, orderId={}, reason={}", orderId, comment);
-        orderService.updateOrderStatus(orderId, "REJECTED");
-    }
-}
-```
-
-### Step 3.2.6: 工作流 REST API
-
-**新建文件**: services/order-service/src/main/java/com/example/order/controller/WorkflowController.java
+**新增文件**: services/order-service/src/main/java/com/example/order/controller/OrderSagaController.java
 
 ```java
 package com.example.order.controller;
 
-import com.example.order.workflow.TaskDTO;
-import com.example.order.workflow.WorkflowService;
-import lombok.RequiredArgsConstructor;
+import com.example.api.common.Result;
+import com.example.api.common.ResultCode;
+import com.example.order.temporal.OrderSagaWorkflow;
+import com.example.order.temporal.model.OrderSagaInput;
+import com.example.order.temporal.model.OrderSagaResult;
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowOptions;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/workflow")
-@RequiredArgsConstructor
-public class WorkflowController {
+@RequestMapping("/api/orders/saga")
+@Slf4j
+@ConditionalOnBean(WorkflowClient.class)
+public class OrderSagaController {
 
-    private final WorkflowService workflowService;
+  @Autowired
+  private WorkflowClient workflowClient;
 
-    @GetMapping("/tasks")
-    public ResponseEntity<List<TaskDTO>> getMyTasks(
-            @RequestParam String username,
-            @RequestParam List<String> groups) {
-        return ResponseEntity.ok(workflowService.getMyTasks(username, groups));
+  @PostMapping
+  public ResponseEntity<Result<OrderSagaResult>> createOrderWithSaga(
+      @RequestParam Long userId,
+      @RequestParam Long productId,
+      @RequestParam Integer quantity,
+      @RequestParam BigDecimal totalAmount,
+      @RequestHeader(value = "X-Tenant-ID", required = false, defaultValue = "default") String tenantId) {
+
+    OrderSagaInput input = OrderSagaInput.builder()
+      .userId(userId)
+      .productId(productId)
+      .quantity(quantity)
+      .totalAmount(totalAmount)
+      .tenantId(tenantId)
+      .build();
+
+    WorkflowOptions options = WorkflowOptions.newBuilder()
+      .setTaskQueue("order-saga-queue")
+      .setWorkflowId("order-saga-" + UUID.randomUUID())
+      .setWorkflowExecutionTimeout(Duration.ofMinutes(5))
+      .build();
+
+    OrderSagaWorkflow workflow = workflowClient.newWorkflowStub(
+      OrderSagaWorkflow.class, options);
+
+    OrderSagaResult result = workflow.createOrder(input);
+
+    if (result.isSuccess()) {
+      return ResponseEntity.ok(Result.success("订单创建成功", result));
+    }
+    return ResponseEntity.badRequest().body(Result.error(ResultCode.BAD_REQUEST, result.getMessage()));
+  }
+}
+```
+
+### Step 3.1.9: Temporal 配置类
+
+**新建文件**: services/order-service/src/main/java/com/example/order/config/TemporalConfig.java
+
+```java
+package com.example.order.config;
+
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowClientOptions;
+import io.temporal.serviceclient.WorkflowServiceStubs;
+import io.temporal.serviceclient.WorkflowServiceStubsOptions;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@ConditionalOnProperty(name = "spring.temporal.enabled", havingValue = "true", matchIfMissing = false)
+public class TemporalConfig {
+
+    @Value("${spring.temporal.connection.target:localhost:7233}")
+    private String temporalHost;
+
+    @Bean
+    public WorkflowServiceStubs workflowServiceStubs() {
+        return WorkflowServiceStubs.newServiceStubs(
+            WorkflowServiceStubsOptions.newBuilder()
+                .setTarget(temporalHost)
+                .build()
+        );
     }
 
-    @PostMapping("/tasks/{taskId}/claim")
-    public ResponseEntity<Void> claimTask(
-            @PathVariable String taskId,
-            @RequestParam String userId) {
-        workflowService.claimTask(taskId, userId);
-        return ResponseEntity.ok().build();
-    }
+    @Value("${spring.temporal.namespace:default}")
+    private String namespace;
 
-    @PostMapping("/tasks/{taskId}/complete")
-    public ResponseEntity<Void> completeTask(
-            @PathVariable String taskId,
-            @RequestParam boolean approved,
-            @RequestParam(required = false) String comment) {
-        workflowService.completeTask(taskId, approved, comment);
-        return ResponseEntity.ok().build();
+    @Bean
+    public WorkflowClient workflowClient(WorkflowServiceStubs serviceStubs) {
+      return WorkflowClient.newInstance(
+        serviceStubs,
+        WorkflowClientOptions.newBuilder()
+          .setNamespace(namespace)
+          .build()
+      );
     }
 }
+```
+
+### Step 3.1.10: 验证 Temporal Saga
+
+```bash
+# 1. 启动 Temporal
+docker-compose up -d temporal temporal-ui
+
+# 2. 访问 Temporal UI
+open http://localhost:8088
+
+# 3. 测试创建订单
+curl -X POST "http://localhost:8080/api/orders/saga?userId=1&productId=1&quantity=2&totalAmount=100.00" \
+  -H "X-Tenant-ID: tenant1"
+
+# 4. 在 Temporal UI 中查看 Workflow 执行历史
+# - 可以看到每个 Activity 的执行状态
+# - 如果失败，可以看到补偿操作的执行
+
+# 5. 测试失败场景（库存不足）
+# 设置产品库存为 0，然后创建订单，观察补偿流程
+```
+
+---
+
+## Phase 3.2: 工作流引擎 (Temporal)
+
+**目标**: 使用 Temporal Workflow 实现订单审批/权限申请等工作流
+
+**完成标准**:
+- [ ] Temporal Workflow 审批流程定义完成
+- [ ] 多级审批链路支持
+- [ ] Signal 机制支持人工审批
+- [ ] 任务状态查询 API 可用
+
+### Step 3.2.1: 审批 Workflow 接口定义
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/ApprovalWorkflow.java
+
+```java
+package com.example.order.temporal;
+
+import com.example.order.temporal.model.ApprovalDecision;
+import com.example.order.temporal.model.ApprovalRequest;
+import com.example.order.temporal.model.ApprovalResult;
+import io.temporal.workflow.QueryMethod;
+import io.temporal.workflow.SignalMethod;
+import io.temporal.workflow.WorkflowInterface;
+import io.temporal.workflow.WorkflowMethod;
+
+/**
+ * 订单审批 Workflow 接口
+ * 支持多级审批链路，使用 Signal 接收人工审批决策
+ */
+@WorkflowInterface
+public interface ApprovalWorkflow {
+
+    @WorkflowMethod
+    ApprovalResult submitForApproval(ApprovalRequest request);
+
+    /**
+     * Signal: 审批人提交决策
+     */
+    @SignalMethod
+    void submitDecision(ApprovalDecision decision);
+
+    /**
+     * Query: 查询当前审批状态
+     */
+    @QueryMethod
+    String getApprovalStatus();
+
+    /**
+     * Query: 查询当前待审批人
+     */
+    @QueryMethod
+    String getCurrentApprover();
+}
+```
+
+### Step 3.2.2: 审批 Model 类
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/model/ApprovalRequest.java
+
+```java
+package com.example.order.temporal.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ApprovalRequest {
+    private Long orderId;
+    private Long userId;
+    private BigDecimal amount;
+    private String tenantId;
+    private String requestReason;
+}
+```
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/model/ApprovalDecision.java
+
+```java
+package com.example.order.temporal.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ApprovalDecision {
+    private String approverId;
+    private boolean approved;
+    private String comment;
+}
+```
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/model/ApprovalResult.java
+
+```java
+package com.example.order.temporal.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ApprovalResult {
+    private Long orderId;
+    private String status; // APPROVED, REJECTED, TIMEOUT
+    private String approvedBy;
+    private String comment;
+}
+```
+
+### Step 3.2.3: 审批 Activities 定义
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/ApprovalActivities.java
+
+```java
+package com.example.order.temporal;
+
+import io.temporal.activity.ActivityInterface;
+import io.temporal.activity.ActivityMethod;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@ActivityInterface
+public interface ApprovalActivities {
+
+    /**
+     * 确定审批链路
+     * 根据金额大小返回需要审批的人员列表
+     */
+    @ActivityMethod
+    List<String> determineApprovalChain(BigDecimal amount, String tenantId);
+
+    /**
+     * 发送审批通知
+     */
+    @ActivityMethod
+    void sendApprovalNotification(Long orderId, String approverId, BigDecimal amount);
+
+    /**
+     * 更新订单审批状态
+     */
+    @ActivityMethod
+    void updateOrderApprovalStatus(Long orderId, String status, String approvedBy);
+}
+```
+
+### Step 3.2.4: 审批 Workflow 实现
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/ApprovalWorkflowImpl.java
+
+```java
+package com.example.order.temporal;
+
+import com.example.order.temporal.model.ApprovalDecision;
+import com.example.order.temporal.model.ApprovalRequest;
+import com.example.order.temporal.model.ApprovalResult;
+import io.temporal.activity.ActivityOptions;
+import io.temporal.workflow.Workflow;
+import org.slf4j.Logger;
+
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.List;
+
+/**
+ * 审批 Workflow 实现
+ * 
+ * 审批规则:
+ * - 金额 < 100: 自动审批
+ * - 100 <= 金额 < 1000: 主管审批  
+ * - 金额 >= 1000: 主管 + 经理二级审批
+ */
+public class ApprovalWorkflowImpl implements ApprovalWorkflow {
+
+  private static final Logger log = Workflow.getLogger(ApprovalWorkflowImpl.class);
+
+    private static final BigDecimal AUTO_APPROVE_THRESHOLD = new BigDecimal("100");
+
+    private final ActivityOptions activityOptions = ActivityOptions.newBuilder()
+        .setStartToCloseTimeout(Duration.ofSeconds(30))
+        .build();
+
+    private final ApprovalActivities activities = 
+        Workflow.newActivityStub(ApprovalActivities.class, activityOptions);
+
+    // Workflow 状态
+    private String status = "PENDING";
+    private String currentApprover = null;
+    private ApprovalDecision latestDecision = null;
+    private int currentApprovalIndex = 0;
+    private List<String> approvalChain;
+
+    @Override
+    public ApprovalResult submitForApproval(ApprovalRequest request) {
+        // 小额自动审批
+        if (request.getAmount().compareTo(AUTO_APPROVE_THRESHOLD) < 0) {
+          log.info("小额订单自动审批 - orderId={}", request.getOrderId());
+          activities.updateOrderApprovalStatus(request.getOrderId(), "APPROVED", "SYSTEM");
+            return ApprovalResult.builder()
+                .orderId(request.getOrderId())
+                .status("APPROVED")
+                .approvedBy("SYSTEM")
+                .comment("小额订单自动审批")
+                .build();
+        }
+
+        // 确定审批链路
+        approvalChain = activities.determineApprovalChain(request.getAmount(), request.getTenantId());
+        log.info("审批链路确定 - chain={}", approvalChain);
+        
+        // 逐级审批
+        for (currentApprovalIndex = 0; currentApprovalIndex < approvalChain.size(); currentApprovalIndex++) {
+            currentApprover = approvalChain.get(currentApprovalIndex);
+            status = "WAITING_" + currentApprover;
+            
+            log.info("等待审批 - orderId={}, approver={}", request.getOrderId(), currentApprover);
+            // 发送审批通知
+            activities.sendApprovalNotification(request.getOrderId(), currentApprover, request.getAmount());
+            
+            // 等待审批决策（超时24小时）
+            boolean received = Workflow.await(Duration.ofHours(24), () -> latestDecision != null);
+            
+            if (!received) {
+                log.warn("审批超时 - orderId={}, approver={}", request.getOrderId(), currentApprover);
+                // 超时处理
+                status = "TIMEOUT";
+                activities.updateOrderApprovalStatus(request.getOrderId(), "TIMEOUT", currentApprover);
+                return ApprovalResult.builder()
+                    .orderId(request.getOrderId())
+                    .status("TIMEOUT")
+                    .approvedBy(currentApprover)
+                    .comment("审批超时")
+                    .build();
+            }
+            
+            if (!latestDecision.isApproved()) {
+                log.info("审批被拒绝 - orderId={}, approver={}", request.getOrderId(), currentApprover);
+                // 拒绝
+                status = "REJECTED";
+                activities.updateOrderApprovalStatus(request.getOrderId(), "REJECTED", currentApprover);
+                return ApprovalResult.builder()
+                    .orderId(request.getOrderId())
+                    .status("REJECTED")
+                    .approvedBy(latestDecision.getApproverId())
+                    .comment(latestDecision.getComment())
+                    .build();
+            }
+            
+            log.info("审批通过 - orderId={}, approver={}", request.getOrderId(), currentApprover);
+            // 清空决策，准备下一级
+            latestDecision = null;
+        }
+
+        log.info("所有审批通过 - orderId={}", request.getOrderId());
+        // 所有审批通过
+        status = "APPROVED";
+        activities.updateOrderApprovalStatus(request.getOrderId(), "APPROVED", currentApprover);
+        return ApprovalResult.builder()
+            .orderId(request.getOrderId())
+            .status("APPROVED")
+            .approvedBy(currentApprover)
+            .comment("审批通过")
+            .build();
+    }
+
+    @Override
+    public void submitDecision(ApprovalDecision decision) {
+      log.info("收到审批决策 - approverId={}, approved={}", decision.getApproverId(), decision.isApproved());
+      this.latestDecision = decision;
+    }
+
+    @Override
+    public String getApprovalStatus() {
+        return status;
+    }
+
+    @Override
+    public String getCurrentApprover() {
+        return currentApprover;
+    }
+}
+```
+
+### Step 3.2.5: 审批 Activities 实现
+
+**新建文件**: services/order-service/src/main/java/com/example/order/temporal/ApprovalActivitiesImpl.java
+
+```java
+package com.example.order.temporal;
+
+import com.example.order.entity.OrderEntity;
+import com.example.order.mapper.OrderMapper;
+import io.temporal.spring.boot.ActivityImpl;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+@ActivityImpl(taskQueues = "approval-queue")
+public class ApprovalActivitiesImpl implements ApprovalActivities {
+
+    private static final BigDecimal MANAGER_THRESHOLD = new BigDecimal("1000");
+    
+    private final OrderMapper orderMapper;
+
+    @Override
+    public List<String> determineApprovalChain(BigDecimal amount, String tenantId) {
+        List<String> chain = new ArrayList<>();
+        
+        // 所有非自动审批的订单都需要主管审批
+        chain.add("SUPERVISOR");
+        
+        // 大额订单需要经理审批
+        if (amount.compareTo(MANAGER_THRESHOLD) >= 0) {
+            chain.add("MANAGER");
+        }
+        
+        log.info("审批链路确定: amount={}, tenantId={}, chain={}", amount, tenantId, chain);
+        return chain;
+    }
+
+    @Override
+    public void sendApprovalNotification(Long orderId, String approverId, BigDecimal amount) {
+        // 实际应用中可以发送邮件、短信、站内信等
+        log.info("发送审批通知: orderId={}, approverId={}, amount={}", orderId, approverId, amount);
+        // notificationService.send(approverId, "有新的订单待审批", "订单ID: " + orderId);
+    }
+
+    @Override
+    public void updateOrderApprovalStatus(Long orderId, String status, String approvedBy) {
+        OrderEntity order = orderMapper.findById(orderId);
+        if (order != null) {
+          order.setStatus("APPROVAL_" + status);
+          order.setUpdatedAt(LocalDateTime.now());
+          orderMapper.update(order);
+          log.info("订单审批状态更新: orderId={}, status={}, approvedBy={}", orderId, status, approvedBy);
+        }
+    }
+}
+```
+
+### Step 3.2.6: 审批 Controller
+
+**新建文件**: services/order-service/src/main/java/com/example/order/controller/ApprovalController.java
+
+```java
+package com.example.order.controller;
+
+import com.example.api.common.Result;
+import com.example.order.temporal.ApprovalWorkflow;
+import com.example.order.temporal.model.ApprovalDecision;
+import com.example.order.temporal.model.ApprovalRequest;
+import com.example.order.temporal.model.ApprovalResult;
+import io.temporal.client.WorkflowClient;
+import io.temporal.client.WorkflowOptions;
+import io.temporal.client.WorkflowStub;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
+import java.util.Map;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/approvals")
+@Slf4j
+@ConditionalOnBean(WorkflowClient.class)
+public class ApprovalController {
+
+  @Autowired
+  private WorkflowClient workflowClient;
+
+    /**
+     * 提交审批
+     */
+    @PostMapping("/submit")
+    public ResponseEntity<Result<Map<String, String>>> submitApproval(@RequestBody ApprovalRequest request) {
+        String workflowId = "approval-" + request.getOrderId() + "-" + UUID.randomUUID();
+        
+        WorkflowOptions options = WorkflowOptions.newBuilder()
+            .setTaskQueue("approval-queue")
+            .setWorkflowId(workflowId)
+            .setWorkflowExecutionTimeout(Duration.ofDays(7))  // 审批最长7天
+            .build();
+
+        ApprovalWorkflow workflow = workflowClient.newWorkflowStub(ApprovalWorkflow.class, options);
+        
+        // 异步启动 Workflow
+        WorkflowClient.start(workflow::submitForApproval, request);
+        
+        return ResponseEntity.ok(Result.success(Map.of(
+          "workflowId", workflowId,
+          "message", "审批已提交"
+        )));
+    }
+
+    /**
+     * 审批人提交决策
+     */
+    @PostMapping("/{workflowId}/decide")
+    public ResponseEntity<Result<String>> submitDecision(
+            @PathVariable String workflowId,
+            @RequestBody ApprovalDecision decision) {
+        
+        ApprovalWorkflow workflow = workflowClient.newWorkflowStub(ApprovalWorkflow.class, workflowId);
+        workflow.submitDecision(decision);
+        
+        return ResponseEntity.ok(Result.success("决策已提交"));
+    }
+
+    /**
+     * 查询审批状态
+     */
+    @GetMapping("/{workflowId}/status")
+    public ResponseEntity<Result<Map<String, String>>> getApprovalStatus(@PathVariable String workflowId) {
+        ApprovalWorkflow workflow = workflowClient.newWorkflowStub(ApprovalWorkflow.class, workflowId);
+        
+        String status = workflow.getApprovalStatus();
+        String currentApprover = workflow.getCurrentApprover();
+        
+        return ResponseEntity.ok(Result.success(Map.of(
+          "status", status,
+          "currentApprover", currentApprover != null ? currentApprover : "N/A"
+        )));
+    }
+
+    /**
+     * 获取审批结果
+     */
+    @GetMapping("/{workflowId}/result")
+    public ResponseEntity<Result<ApprovalResult>> getApprovalResult(@PathVariable String workflowId) {
+        WorkflowStub workflowStub = workflowClient.newUntypedWorkflowStub(workflowId);
+        
+        // 等待 Workflow 完成并获取结果
+        ApprovalResult result = workflowStub.getResult(ApprovalResult.class);
+        
+        return ResponseEntity.ok(Result.success(result));
+    }
+}
+```
+
+### Step 3.2.7: 验证审批 Workflow
+
+```bash
+# 1. 测试自动审批（金额 < 100）
+curl -X POST http://localhost:8080/api/approvals/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderId": 1,
+    "userId": 1,
+    "amount": 50.00,
+    "tenantId": "tenant1",
+    "requestReason": "测试小额订单"
+  }'
+
+# 2. 测试主管审批（100 <= 金额 < 1000）
+curl -X POST http://localhost:8080/api/approvals/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderId": 2,
+    "userId": 1,
+    "amount": 500.00,
+    "tenantId": "tenant1",
+    "requestReason": "测试中额订单"
+  }'
+
+# 3. 查询审批状态
+curl http://localhost:8080/api/approvals/{workflowId}/status
+
+# 4. 主管提交审批
+curl -X POST http://localhost:8080/api/approvals/{workflowId}/decide \
+  -H "Content-Type: application/json" \
+  -d '{
+    "approverId": "supervisor1",
+    "approved": true,
+    "comment": "同意"
+  }'
+
+# 5. 在 Temporal UI (http://localhost:8088) 查看 Workflow 详情
 ```
 
 ---
@@ -886,10 +1140,10 @@ public class WorkflowController {
 
 ### Step 3.3.1: 租户上下文定义
 
-**新建文件**: services/api-common/src/main/java/com/example/common/tenant/TenantContext.java
+**新建文件**: services/api-common/src/main/java/com/example/api/common/tenant/TenantContext.java
 
 ```java
-package com.example.common.tenant;
+package com.example.api.common.tenant;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -920,13 +1174,21 @@ public class TenantContext {
         CURRENT_TENANT.remove();
         TENANT_INFO.remove();
     }
+
+    public static void setCurrentTenant(String tenantId) {
+      setTenantId(tenantId);
+    }
+
+    public static String getCurrentTenant() {
+      return getTenantId();
+    }
 }
 ```
 
-**新建文件**: services/api-common/src/main/java/com/example/common/tenant/TenantInfo.java
+**新建文件**: services/api-common/src/main/java/com/example/api/common/tenant/TenantInfo.java
 
 ```java
-package com.example.common.tenant;
+package com.example.api.common.tenant;
 
 import lombok.Data;
 
@@ -940,19 +1202,19 @@ public class TenantInfo {
     private ResourceQuota quota;
 
     public enum TenantStatus {
-        ACTIVE, SUSPENDED, EXPIRED
+      ACTIVE, SUSPENDED, EXPIRED
     }
 
     public enum TenantPlan {
-        FREE, BASIC, PROFESSIONAL, ENTERPRISE
+      FREE, BASIC, PROFESSIONAL, ENTERPRISE
     }
 }
 ```
 
-**新建文件**: services/api-common/src/main/java/com/example/common/tenant/ResourceQuota.java
+**新建文件**: services/api-common/src/main/java/com/example/api/common/tenant/ResourceQuota.java
 
 ```java
-package com.example.common.tenant;
+package com.example.api.common.tenant;
 
 import lombok.Data;
 
@@ -966,6 +1228,22 @@ public class ResourceQuota {
     private int currentOrders;
     private long currentStorageBytes;
     private int todayApiCalls;
+
+  public boolean canCreateUser() {
+    return currentUsers < maxUsers;
+  }
+
+  public boolean canCreateOrder() {
+    return currentOrders < maxOrders;
+  }
+
+  public boolean canMakeApiCall() {
+    return todayApiCalls < maxApiCallsPerDay;
+  }
+
+  public boolean hasStorageSpace(long requiredBytes) {
+    return currentStorageBytes + requiredBytes <= maxStorageBytes;
+  }
 }
 ```
 
@@ -976,17 +1254,17 @@ public class ResourceQuota {
 ```java
 package com.example.gateway.filter;
 
-import com.example.common.tenant.TenantContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
+@Slf4j
 public class TenantFilter implements GlobalFilter, Ordered {
 
     private static final String TENANT_HEADER = "X-Tenant-ID";
@@ -995,19 +1273,28 @@ public class TenantFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
-        // 从 Header 获取租户ID
+        String path = request.getPath().value();
+        if (isPublicPath(path)) {
+          return chain.filter(exchange);
+        }
+
         String tenantId = request.getHeaders().getFirst(TENANT_HEADER);
 
         // 也可以从子域名解析: tenant1.example.com
         String host = request.getHeaders().getFirst("Host");
-        if (tenantId == null && host != null && host.contains(".")) {
-            tenantId = host.split("\\.")[0];
+        if (tenantId == null && host != null && host.contains(".") && !host.startsWith("localhost")) {
+          String subdomain = host.split("\\.")[0];
+          if (!isReservedSubdomain(subdomain)) {
+            tenantId = subdomain;
+          }
         }
 
         if (tenantId == null || tenantId.isEmpty()) {
-            exchange.getResponse().setStatusCode(HttpStatus.BAD_REQUEST);
-            return exchange.getResponse().setComplete();
+            tenantId = "default";
+            log.debug("未提供租户ID，使用默认租户");
         }
+
+        log.debug("处理请求 - path={}, tenantId={}", path, tenantId);
 
         // 将租户ID传递到下游服务
         ServerHttpRequest mutatedRequest = request.mutate()
@@ -1021,55 +1308,49 @@ public class TenantFilter implements GlobalFilter, Ordered {
     public int getOrder() {
         return -100; // 在认证之前执行
     }
+
+    private boolean isPublicPath(String path) {
+      return path.startsWith("/actuator") ||
+           path.startsWith("/api/health") ||
+           path.startsWith("/api/info") ||
+           path.equals("/favicon.ico");
+    }
+
+    private boolean isReservedSubdomain(String subdomain) {
+      return "www".equals(subdomain) ||
+           "api".equals(subdomain) ||
+           "admin".equals(subdomain) ||
+           "app".equals(subdomain);
+    }
 }
 ```
 
 ### Step 3.3.3: 租户拦截器 (下游服务)
 
-**新建文件**: services/api-common/src/main/java/com/example/common/tenant/TenantInterceptor.java
+**新建文件**: services/api-common/src/main/java/com/example/api/common/tenant/TenantInterceptor.java
 
 ```java
-package com.example.common.tenant;
+package com.example.api.common.tenant;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class TenantInterceptor implements HandlerInterceptor {
 
     private static final String TENANT_HEADER = "X-Tenant-ID";
-    private final TenantService tenantService;
-
     @Override
     public boolean preHandle(HttpServletRequest request, 
                            HttpServletResponse response, 
                            Object handler) throws Exception {
         String tenantId = request.getHeader(TENANT_HEADER);
 
-        if (tenantId != null) {
+        if (tenantId != null && !tenantId.isEmpty()) {
             TenantContext.setTenantId(tenantId);
-
-            // 加载租户信息
-            TenantInfo tenantInfo = tenantService.getTenantInfo(tenantId);
-            if (tenantInfo == null) {
-                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                response.getWriter().write("Tenant not found");
-                return false;
-            }
-
-            if (tenantInfo.getStatus() != TenantInfo.TenantStatus.ACTIVE) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                response.getWriter().write("Tenant is not active");
-                return false;
-            }
-
-            TenantContext.setTenantInfo(tenantInfo);
             log.debug("租户上下文已设置: {}", tenantId);
         }
 
@@ -1088,10 +1369,10 @@ public class TenantInterceptor implements HandlerInterceptor {
 
 ### Step 3.3.4: 多租户数据源路由
 
-**新建文件**: services/api-common/src/main/java/com/example/common/tenant/TenantDataSourceRouter.java
+**新建文件**: services/api-common/src/main/java/com/example/api/common/tenant/TenantDataSourceRouter.java
 
 ```java
-package com.example.common.tenant;
+package com.example.api.common.tenant;
 
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
@@ -1104,10 +1385,10 @@ public class TenantDataSourceRouter extends AbstractRoutingDataSource {
 }
 ```
 
-**新建文件**: services/api-common/src/main/java/com/example/common/tenant/TenantDataSourceConfig.java
+**新建文件**: services/api-common/src/main/java/com/example/api/common/tenant/TenantDataSourceConfig.java
 
 ```java
-package com.example.common.tenant;
+package com.example.api.common.tenant;
 
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.RequiredArgsConstructor;
@@ -1135,28 +1416,38 @@ public class TenantDataSourceConfig {
         Map<Object, Object> dataSources = new HashMap<>();
 
         // 默认数据源
-        dataSources.put("default", createDataSource(
-            tenantProperties.getDefaultDatabase()));
+        if (tenantProperties.getDefaultDatabase() != null) {
+          dataSources.put("default", createDataSource(tenantProperties.getDefaultDatabase()));
+        }
 
         // 各租户数据源
-        tenantProperties.getTenants().forEach((tenantId, config) -> {
-            dataSources.put(tenantId, createDataSource(config.getDatabase()));
-            log.info("注册租户数据源: {}", tenantId);
-        });
+        if (tenantProperties.getTenants() != null) {
+          tenantProperties.getTenants().forEach((tenantId, config) -> {
+            if (config.getDatabase() != null) {
+              dataSources.put(tenantId, createDataSource(config.getDatabase()));
+              log.info("注册租户数据源: {}", tenantId);
+            }
+          });
+        }
 
         router.setTargetDataSources(dataSources);
-        router.setDefaultTargetDataSource(dataSources.get("default"));
+        if (dataSources.containsKey("default")) {
+          router.setDefaultTargetDataSource(dataSources.get("default"));
+        }
 
         return router;
     }
 
-    private DataSource createDataSource(DatabaseConfig config) {
+    private DataSource createDataSource(TenantProperties.DatabaseConfig config) {
         HikariDataSource ds = new HikariDataSource();
         ds.setJdbcUrl(config.getUrl());
         ds.setUsername(config.getUsername());
         ds.setPassword(config.getPassword());
         ds.setDriverClassName(config.getDriverClassName());
-        ds.setMaximumPoolSize(config.getMaxPoolSize());
+      ds.setMaximumPoolSize(config.getMaxPoolSize());
+      ds.setMinimumIdle(config.getMinPoolSize());
+      ds.setConnectionTimeout(config.getConnectionTimeout());
+      ds.setIdleTimeout(config.getIdleTimeout());
         return ds;
     }
 }
@@ -1164,10 +1455,10 @@ public class TenantDataSourceConfig {
 
 ### Step 3.3.5: 租户配置属性
 
-**新建文件**: services/api-common/src/main/java/com/example/common/tenant/TenantProperties.java
+**新建文件**: services/api-common/src/main/java/com/example/api/common/tenant/TenantProperties.java
 
 ```java
-package com.example.common.tenant;
+package com.example.api.common.tenant;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -1196,7 +1487,7 @@ public class TenantProperties {
     public static class TenantConfig {
         private String name;
         private DatabaseConfig database;
-        private ResourceQuota quota;
+      private QuotaConfig quota;
     }
 
     @Data
@@ -1206,6 +1497,17 @@ public class TenantProperties {
         private String password;
         private String driverClassName = "com.mysql.cj.jdbc.Driver";
         private int maxPoolSize = 10;
+      private int minPoolSize = 2;
+      private long connectionTimeout = 30000;
+      private long idleTimeout = 600000;
+    }
+
+    @Data
+    public static class QuotaConfig {
+      private int maxUsers = 100;
+      private int maxOrders = 1000;
+      private long maxStorageBytes = 1073741824L;
+      private int maxApiCallsPerDay = 10000;
     }
 }
 ```
@@ -1249,10 +1551,10 @@ multi-tenant:
 
 ### Step 3.3.7: Feign 租户上下文传递
 
-**新建文件**: services/api-common/src/main/java/com/example/common/tenant/TenantFeignInterceptor.java
+**新建文件**: services/api-common/src/main/java/com/example/api/common/tenant/TenantFeignInterceptor.java
 
 ```java
-package com.example.common.tenant;
+package com.example.api.common.tenant;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
@@ -1266,7 +1568,7 @@ public class TenantFeignInterceptor implements RequestInterceptor {
     @Override
     public void apply(RequestTemplate template) {
         String tenantId = TenantContext.getTenantId();
-        if (tenantId != null) {
+        if (tenantId != null && !tenantId.isEmpty()) {
             template.header(TENANT_HEADER, tenantId);
         }
     }
@@ -1293,24 +1595,25 @@ public class TenantFeignInterceptor implements RequestInterceptor {
 # ============================================
 # Stage 1: Build
 # ============================================
-FROM maven:3.9-eclipse-temurin-17 AS builder
+FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# 先复制 pom.xml，利用 Docker 缓存
+COPY .m2/settings.xml /root/.m2/settings.xml
 COPY pom.xml .
-COPY api-common/pom.xml api-common/
-COPY user-service/pom.xml user-service/
+COPY api-common/pom.xml ./api-common/
+COPY auth-service/pom.xml ./auth-service/
+COPY user-service/pom.xml ./user-service/
+COPY order-service/pom.xml ./order-service/
+COPY chat-service/pom.xml ./chat-service/
+COPY api-gateway/pom.xml ./api-gateway/
 
-# 下载依赖（这层会被缓存）
-RUN mvn dependency:go-offline -B
+RUN mvn dependency:go-offline -B -pl user-service -am || true
 
-# 复制源代码
-COPY api-common/src api-common/src
-COPY user-service/src user-service/src
+COPY api-common ./api-common
+COPY user-service ./user-service
 
-# 构建
-RUN mvn clean package -DskipTests -pl user-service -am
+RUN mvn clean package -DskipTests -B -pl user-service -am
 
 # ============================================
 # Stage 2: Runtime
@@ -1324,11 +1627,11 @@ RUN addgroup -g 1001 appgroup && \
     adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
 # 复制构建产物
-COPY --from=builder /app/user-service/target/user-service-*.jar app.jar
+COPY --from=builder /build/user-service/target/user-service.jar app.jar
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD wget -q --spider http://localhost:8081/actuator/health || exit 1
+  CMD wget -q --spider http://localhost:8001/actuator/health || exit 1
 
 # 切换到非 root 用户
 USER appuser
@@ -1763,20 +2066,21 @@ watch kubectl -n microservices get pods
 
 ## 验收检查清单
 
-### Phase 3.1: Seata 分布式事务
-- [ ] Seata Server 运行正常
-- [ ] Seata 控制台可访问 (http://localhost:7091)
-- [ ] 订单创建事务成功提交
-- [ ] 余额不足时事务正确回滚
-- [ ] UNDO_LOG 表记录正常
+### Phase 3.1: Temporal 分布式事务 (Saga Pattern)
+- [ ] Temporal Server 运行正常
+- [ ] Temporal UI 可访问 (http://localhost:8088)
+- [ ] 订单 Saga Workflow 正常执行
+- [ ] 库存不足时补偿流程正确执行
+- [ ] 余额不足时全部补偿正常
+- [ ] Workflow 执行历史可在 UI 中查看
 
-### Phase 3.2: Activiti 工作流
-- [ ] Activiti 数据库表创建成功
-- [ ] 订单审批流程部署成功
+### Phase 3.2: Temporal 审批工作流
+- [ ] 审批 Workflow 部署成功
 - [ ] 小额订单自动审批
-- [ ] 普通订单主管审批
+- [ ] 普通订单主管审批 (Signal 机制)
 - [ ] 大额订单经理审批
-- [ ] 审批拒绝流程正常
+- [ ] 审批超时处理正常
+- [ ] 状态查询 API 可用
 
 ### Phase 3.3: 多租户隔离
 - [ ] 租户上下文正确传递

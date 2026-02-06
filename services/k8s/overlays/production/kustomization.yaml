@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: microservices
+
+resources:
+  - ../../base
+  - ../../services/user-service
+  - ../../services/order-service
+  - ../../services/auth-service
+  - ../../services/chat-service
+  - ../../ingress
+
+commonLabels:
+  environment: production
+
+# 生产环境镜像版本
+images:
+  - name: microservices/user-service
+    newTag: v1.0.0
+  - name: microservices/order-service
+    newTag: v1.0.0
+  - name: microservices/auth-service
+    newTag: v1.0.0
+  - name: microservices/chat-service
+    newTag: v1.0.0
+
+# 生产环境副本数补丁
+patchesStrategicMerge:
+  - replica-patch.yaml
+  - resource-patch.yaml

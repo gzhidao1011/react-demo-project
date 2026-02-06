@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: microservices
+  labels:
+    name: microservices
+    # istio-injection: enabled  # 如果使用 Istio 服务网格

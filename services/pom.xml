@@ -119,6 +119,18 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            
+            <!-- Temporal Java SDK (Phase 3 分布式事务/工作流) -->
+            <dependency>
+                <groupId>io.temporal</groupId>
+                <artifactId>temporal-sdk</artifactId>
+                <version>1.24.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.temporal</groupId>
+                <artifactId>temporal-spring-boot-starter-alpha</artifactId>
+                <version>1.24.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
