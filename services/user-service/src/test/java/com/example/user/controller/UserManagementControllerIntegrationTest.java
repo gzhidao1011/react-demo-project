@@ -43,6 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
     "spring.cloud.nacos.discovery.enabled=false",
     "spring.cloud.nacos.config.enabled=false",
+    "spring.kafka.enabled=false",
+    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration",
     "dubbo.application.name=test",
     "dubbo.registry.address=N/A",
     "dubbo.protocol.port=-1",

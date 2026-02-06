@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Admin 账号初始化服务
@@ -38,7 +39,7 @@ public class AdminInitializationService {
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
-    private final UserEventPublisher userEventPublisher;
+    private final Optional<UserEventPublisher> userEventPublisher;
 
     /**
      * 应用启动时初始化 admin 账号
@@ -93,7 +94,7 @@ public class AdminInitializationService {
             userRoleMapper.insert(adminUser.getId(), adminRole.getId(), now);
             
             // 发布用户创建事件 (Phase 2 事件驱动)
-            userEventPublisher.publishUserCreated(adminUser.getId(), adminUser.getName(), adminUser.getEmail(), "admin-init");
+            userEventPublisher.ifPresent(pub -> pub.publishUserCreated(adminUser.getId(), adminUser.getName(), adminUser.getEmail(), "admin-init"));
 
             log.info("Admin user initialized successfully: email={}, name={}", 
                     normalizedEmail, adminUser.getName());

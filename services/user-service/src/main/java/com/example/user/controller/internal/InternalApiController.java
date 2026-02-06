@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -40,7 +41,7 @@ public class InternalApiController {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
     private final PasswordResetService passwordResetService;
-    private final UserEventPublisher userEventPublisher;
+    private final Optional<UserEventPublisher> userEventPublisher;
 
     /**
      * 校验用户（登录时）：验证邮箱+密码，返回 userId、email、name、roles
@@ -93,7 +94,7 @@ public class InternalApiController {
         userMapper.insert(entity);
         
         // 发布用户创建事件 (Phase 2 事件驱动)
-        userEventPublisher.publishUserCreated(entity.getId(), entity.getName(), entity.getEmail(), "registration");
+        userEventPublisher.ifPresent(pub -> pub.publishUserCreated(entity.getId(), entity.getName(), entity.getEmail(), "registration"));
         
         return ResponseEntity.status(HttpStatus.CREATED).body(new InternalCreateUserResponse(entity.getId()));
     }

@@ -4,6 +4,7 @@ import com.example.api.event.UserCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
@@ -15,10 +16,12 @@ import java.util.concurrent.CompletableFuture;
 /**
  * 用户事件发布器
  * 负责将用户相关事件发布到 Kafka
+ * 仅在 spring.kafka.enabled=true 时加载（默认启用）
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "spring.kafka.enabled", havingValue = "true", matchIfMissing = true)
 public class UserEventPublisher {
 
     private final KafkaTemplate<String, UserCreatedEvent> kafkaTemplate;
