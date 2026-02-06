@@ -82,3 +82,16 @@ spring:
           response-status: 429        # HTTP 状态码 429 Too Many Requests
           response-body: '{"code": 429, "message": "请求过于频繁，请稍后再试", "success": false}'
           content-type: application/json;charset=UTF-8
+
+# 健康检查与监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}

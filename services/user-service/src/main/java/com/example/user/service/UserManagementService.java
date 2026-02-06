@@ -5,6 +5,7 @@ import com.example.api.exception.BusinessException;
 import com.example.api.common.ResultCode;
 import com.example.user.controller.dto.*;
 import com.example.user.entity.*;
+import com.example.user.event.UserEventPublisher;
 import com.example.user.mapper.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +41,7 @@ public class UserManagementService {
     private final AuditLogMapper auditLogMapper;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+    private final UserEventPublisher userEventPublisher;
 
     private static final int MAX_PAGE_SIZE = 100;
     private static final List<String> USER_SORT_WHITELIST = List.of("createdAt", "email", "name");
@@ -89,6 +91,10 @@ public class UserManagementService {
         }
         UserEntity created = userMapper.findById(entity.getId());
         writeAudit("user.created", "user", String.valueOf(created.getId()), null, userSnapshot(created));
+        
+        // 发布用户创建事件 (Phase 2 事件驱动)
+        userEventPublisher.publishUserCreated(created.getId(), created.getName(), created.getEmail(), "admin-create");
+        
         return toUserDetailDto(created);
     }
 

@@ -3,6 +3,7 @@ package com.example.user.service;
 import com.example.user.config.AdminInitializationProperties;
 import com.example.user.entity.RoleEntity;
 import com.example.user.entity.UserEntity;
+import com.example.user.event.UserEventPublisher;
 import com.example.user.mapper.RoleMapper;
 import com.example.user.mapper.UserMapper;
 import com.example.user.mapper.UserRoleMapper;
@@ -37,6 +38,7 @@ public class AdminInitializationService {
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
+    private final UserEventPublisher userEventPublisher;
 
     /**
      * 应用启动时初始化 admin 账号
@@ -89,6 +91,9 @@ public class AdminInitializationService {
 
             // 分配 ADMIN 角色
             userRoleMapper.insert(adminUser.getId(), adminRole.getId(), now);
+            
+            // 发布用户创建事件 (Phase 2 事件驱动)
+            userEventPublisher.publishUserCreated(adminUser.getId(), adminUser.getName(), adminUser.getEmail(), "admin-init");
 
             log.info("Admin user initialized successfully: email={}, name={}", 
                     normalizedEmail, adminUser.getName());

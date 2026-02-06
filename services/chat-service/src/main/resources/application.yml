@@ -29,12 +29,18 @@ spring:
         namespace: public
         group: DEFAULT_GROUP
 
-# 健康检查
+# 健康检查与监控配置
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
 
 # JWT 配置（与 user-service 共享公钥验证）
 jwt:

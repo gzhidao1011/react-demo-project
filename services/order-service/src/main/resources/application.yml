@@ -42,3 +42,33 @@ mybatis:
   type-aliases-package: com.example.order.entity
   configuration:
     map-underscore-to-camel-case: true
+
+spring:
+  # Kafka 配置 (Phase 2 事件驱动)
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: order-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.example.*
+
+# Kafka Topic 配置
+kafka:
+  topics:
+    user-created: user-created-events
+
+# 健康检查与监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}

@@ -1,10 +1,12 @@
 package com.example.user.controller.internal;
 
 import com.example.api.common.ResultCode;
+import com.example.api.event.UserCreatedEvent;
 import com.example.api.exception.BusinessException;
 import com.example.api.model.ForgotPasswordResponse;
 import com.example.user.controller.internal.dto.*;
 import com.example.user.entity.UserEntity;
+import com.example.user.event.UserEventPublisher;
 import com.example.user.mapper.RoleMapper;
 import com.example.user.mapper.UserMapper;
 import com.example.user.mapper.UserRoleMapper;
@@ -38,6 +40,7 @@ public class InternalApiController {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
     private final PasswordResetService passwordResetService;
+    private final UserEventPublisher userEventPublisher;
 
     /**
      * 校验用户（登录时）：验证邮箱+密码，返回 userId、email、name、roles
@@ -88,6 +91,10 @@ public class InternalApiController {
         entity.setUpdatedAt(now);
         entity.setDeletedAt(null);
         userMapper.insert(entity);
+        
+        // 发布用户创建事件 (Phase 2 事件驱动)
+        userEventPublisher.publishUserCreated(entity.getId(), entity.getName(), entity.getEmail(), "registration");
+        
         return ResponseEntity.status(HttpStatus.CREATED).body(new InternalCreateUserResponse(entity.getId()));
     }
 

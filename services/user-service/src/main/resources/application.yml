@@ -34,6 +34,20 @@ spring:
       database: 0
       timeout: 3000  # 连接超时时间（毫秒）
 
+  # Kafka 配置 (Phase 2 事件驱动)
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+
+# Kafka Topic 配置
+kafka:
+  topics:
+    user-created: user-created-events
+
 # Dubbo 配置
 dubbo:
   application:
@@ -48,12 +62,18 @@ dubbo:
   scan:
     base-packages: com.example.user.service  # 扫描服务实现类
 
-# 健康检查配置
+# 健康检查与监控配置
 management:
   endpoints:
     web:
       exposure:
-        include: health,info  # 暴露健康检查端点
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
 
 # JWT 配置
 jwt:

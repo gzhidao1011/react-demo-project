@@ -52,6 +52,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        
+        <!-- Spring Kafka（事件驱动 Phase 2） -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
 
         <!-- Lombok -->
         <dependency>
