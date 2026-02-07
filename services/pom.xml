@@ -128,7 +128,7 @@
             </dependency>
             <dependency>
                 <groupId>io.temporal</groupId>
-                <artifactId>temporal-spring-boot-starter-alpha</artifactId>
+                <artifactId>temporal-spring-boot-starter</artifactId>
                 <version>1.24.0</version>
             </dependency>
         </dependencies>
