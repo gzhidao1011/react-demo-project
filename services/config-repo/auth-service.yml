@@ -1,0 +1,9 @@
+rate-limit:
+  login:
+    max-attempts-per-ip: 80
+    max-attempts-per-user: 5
+  verify-email:
+    max-attempts-per-ip: 8
+  forgot-password:
+    max-attempts-per-ip: 4
+    max-attempts-per-email: 2

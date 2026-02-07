@@ -2,6 +2,9 @@ package com.example.user.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -50,6 +53,33 @@ public class SecurityConfig {
      * 允许认证接口公开访问，其他接口需要认证
      */
     @Bean
+    @Order(1)
+    @Profile("local")
+    public SecurityFilterChain actuatorLocalSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher(AntPathRequestMatcher.antMatcher("/actuator/**"))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(1)
+    @Profile("!local")
+    public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher(AntPathRequestMatcher.antMatcher("/actuator/**"))
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("ACTUATOR"))
+            .httpBasic(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // 禁用 CSRF（API 使用 JWT，不需要 CSRF）
@@ -62,7 +92,6 @@ public class SecurityConfig {
                 }))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/internal/**")).permitAll() // 内部 API 由 InternalApiSecretFilter 校验
-                .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll() // 健康检查公开访问
                 .anyRequest().authenticated() // 其他接口需 JWT 认证（/api/users/**、/api/user/** 等，JWT 由 auth-service 签发）
             )
             // 均以内置 filter 为参考，避免「does not have a registered order」；后添加的在前执行

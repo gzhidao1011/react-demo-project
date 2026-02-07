@@ -1,0 +1,6 @@
+password:
+  min-length: 10
+
+admin:
+  initialization:
+    enabled: false

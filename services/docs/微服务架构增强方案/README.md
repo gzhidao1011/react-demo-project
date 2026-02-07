@@ -2,7 +2,7 @@
 
 本目录将原始方案拆分为可维护的专题文档, 便于按阶段推进与复用。
 
-**当前进度**: ✅ Phase 1 已完成 | ✅ Phase 2 已完成 | ⏳ Phase 3 待实施
+**当前进度**: ✅ Phase 1 已完成 | ✅ Phase 2 已完成 | ✅ Phase 4 已完成 | ⏳ Phase 3/5/6 待实施
 
 ## 阅读顺序
 
@@ -10,10 +10,13 @@
 2. [phase-1-observability.md](phase-1-observability.md) - ✅ 可观测性三角形
 3. [phase-2-event-driven.md](phase-2-event-driven.md) - ✅ Kafka 事件驱动
 4. [phase-3-enterprise.md](phase-3-enterprise.md) - ⏳ 企业功能增强
-5. [checklists.md](checklists.md) - 完成度检查清单
-6. [timeline-and-kpi.md](timeline-and-kpi.md) - 时间线与 KPI
-7. [resources-and-files.md](resources-and-files.md) - 文件清单
-8. [notes-and-troubleshooting.md](notes-and-troubleshooting.md) - 注意事项与故障排查
+5. [phase-4-config-center.md](phase-4-config-center.md) - ✅ 配置中心
+6. [phase-5-unified-tracing.md](phase-5-unified-tracing.md) - ⏳ 统一追踪
+7. [phase-6-api-contracts.md](phase-6-api-contracts.md) - ⏳ API 文档与契约
+8. [checklists.md](checklists.md) - 完成度检查清单
+9. [timeline-and-kpi.md](timeline-and-kpi.md) - 时间线与 KPI
+10. [resources-and-files.md](resources-and-files.md) - 文件清单
+11. [notes-and-troubleshooting.md](notes-and-troubleshooting.md) - 注意事项与故障排查
 
 ## 关联参考 (services/docs)
 

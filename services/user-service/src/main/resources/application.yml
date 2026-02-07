@@ -2,9 +2,15 @@ server:
   port: 8001  # 服务端口
 
 spring:
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   application:
     name: user-service  # 服务名称
   cloud:
+    config:
+      name: ${spring.application.name}
+      profile: ${SPRING_PROFILES_ACTIVE:local}
+      label: ${CONFIG_LABEL:main}
     nacos:
       discovery:
         server-addr: localhost:8848  # Nacos 服务器地址
@@ -67,7 +73,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,refresh
   metrics:
     export:
       prometheus:

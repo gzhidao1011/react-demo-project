@@ -9,12 +9,18 @@ server:
 # 默认禁用 Docker Compose，需先 make up 启动基础设施
 # 使用 make gateway-compose 或 -Dspring-boot.run.profiles=docker-compose 可自动拉起
 spring:
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   docker:
     compose:
       enabled: false
   application:
     name: api-gateway
   cloud:
+    config:
+      name: ${spring.application.name}
+      profile: ${SPRING_PROFILES_ACTIVE:local}
+      label: ${CONFIG_LABEL:main}
     gateway:
       # 全局超时配置
       httpclient:
@@ -88,7 +94,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,refresh
   metrics:
     export:
       prometheus:

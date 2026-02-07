@@ -2,6 +2,8 @@ server:
   port: 8003  # Chat 服务端口（与 user-service 8001、order-service 8002 并列）
 
 spring:
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   application:
     name: chat-service
   ai:
@@ -23,6 +25,10 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
   cloud:
+    config:
+      name: ${spring.application.name}
+      profile: ${SPRING_PROFILES_ACTIVE:local}
+      label: ${CONFIG_LABEL:main}
     nacos:
       discovery:
         server-addr: localhost:8848
@@ -34,7 +40,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,refresh
   metrics:
     export:
       prometheus:

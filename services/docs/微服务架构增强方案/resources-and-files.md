@@ -46,6 +46,9 @@ services/
     ├── phase-1-observability.md
     ├── phase-2-event-driven.md
     ├── phase-3-enterprise.md
+    ├── phase-4-config-center.md
+    ├── phase-5-unified-tracing.md
+    ├── phase-6-api-contracts.md
     ├── checklists.md
     ├── timeline-and-kpi.md
     ├── resources-and-files.md

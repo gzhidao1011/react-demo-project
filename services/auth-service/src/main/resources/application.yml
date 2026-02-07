@@ -2,9 +2,15 @@ server:
   port: 8002  # 认证服务端口（与 user-service 8001 区分）
 
 spring:
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   application:
     name: auth-service
   cloud:
+    config:
+      name: ${spring.application.name}
+      profile: ${SPRING_PROFILES_ACTIVE:local}
+      label: ${CONFIG_LABEL:main}
     nacos:
       discovery:
         server-addr: localhost:8848
@@ -41,7 +47,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,refresh
   metrics:
     export:
       prometheus:

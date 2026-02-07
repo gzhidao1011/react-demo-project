@@ -14,7 +14,7 @@
 | 2.2 | 阶段二 | 监控告警（Prometheus + Grafana 部署与配置） | ⬜ 待完成 |
 | 2.3 | 阶段二 | 日志聚合（ELK 部署与 Logback JSON 配置） | ⬜ 待完成 |
 | 3.1 | 阶段三 | 熔断降级完善（Sentinel 熔断规则配置） | ⬜ 待完成 |
-| 3.2 | 阶段三 | 配置中心（Nacos Config 集成） | ⬜ 待完成 |
+| 3.2 | 阶段三 | 配置中心（Spring Cloud Config） | ⬜ 待完成 |
 | 3.3 | 阶段三 | 分布式缓存（Redis 集成与 Spring Cache） | ⬜ 待完成 |
 | 4.1 | 阶段四 | 单元测试（JUnit 5 + Mockito） | ⬜ 待完成 |
 | 4.2 | 阶段四 | 集成测试（Spring Boot Test + TestContainers） | ⬜ 待完成 |
@@ -57,7 +57,9 @@ graph TB
     subgraph target [目标架构]
         Gateway[API Gateway]
         Auth[认证授权<br/>JWT + Spring Security]
-        Nacos[Nacos<br/>注册中心 + 配置中心]
+        Nacos[Nacos<br/>注册中心]
+        ConfigServer[Config Server<br/>Spring Cloud Config]
+        ConfigRepo[(Config Repo<br/>Git)]
         UserSvc[User Service]
         OrderSvc[Order Service]
         MySQL[(MySQL)]
@@ -77,9 +79,14 @@ graph TB
     OrderSvc-->MySQL
     UserSvc-->Redis
     Gateway-->Nacos
+    Gateway-->ConfigServer
     UserSvc-->SkyWalking
     OrderSvc-->SkyWalking
     UserSvc-->Prometheus
+    Auth-->ConfigServer
+    UserSvc-->ConfigServer
+    OrderSvc-->ConfigServer
+    ConfigServer-->ConfigRepo
 ```
 
 ---
@@ -273,14 +280,26 @@ HTTP/1.1 400 Bad Request
 - `api-gateway/src/.../config/SentinelGatewayConfig.java` - 添加熔断规则
 - 各服务添加 `@SentinelResource` 注解
 
-### 3.2 配置中心（Nacos Config）
+### 3.2 配置中心（Spring Cloud Config）
 
-**目标**：使用 Nacos 进行配置管理
+**目标**：使用 Spring Cloud Config 统一配置管理，支持审计与回滚
+
+**新增模块**：
+
+- `config-server` - Spring Cloud Config Server
+- `config-repo` - 配置仓库（Git）
 
 **修改文件**：
 
-- 各服务 `bootstrap.yml` - Nacos Config 配置
-- Nacos 中创建配置文件（user-service.yml、order-service.yml）
+- 各服务 `application.yml` - `spring.config.import` 指向 Config Server
+
+**治理模板（与 Phase 4 同步）**：
+
+- **合规/审计**：PR 审核、变更单、分支保护、审计字段记录
+- **多环境发布**：dev -> staging -> prod，生产变更可回滚
+- **安全控制**：内网访问、最小权限、密钥轮换、访问日志接入 SIEM
+- **质量校验**：YAML schema、敏感字段检测、环境差异校验
+- **回滚与灾备**：tag 回滚、配置仓库备份、Config Server 高可用
 
 ### 3.3 分布式缓存（Redis）
 

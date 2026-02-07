@@ -35,6 +35,12 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
 
+        <!-- Spring Cloud Config Client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-config</artifactId>
+        </dependency>
+
         <!-- Spring Cloud LoadBalancer（RestTemplate 按服务名调用 user-service） -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

@@ -37,7 +37,7 @@
 |------|------|
 | [enterprise-architecture-plan.md](./enterprise-architecture-plan.md) | 企业级架构规划（任务清单） |
 | [phase1-detailed-implementation-guide.md](./phase1-detailed-implementation-guide.md) | Phase 1 可观测性详细实施指南 |
-| [微服务架构增强方案/](./微服务架构增强方案/README.md) | 拆分版方案（✅ Phase 1-2 已完成 / Phase 3 待实施） |
+| [微服务架构增强方案/](./微服务架构增强方案/README.md) | 拆分版方案（✅ Phase 1-2 已完成 / ✅ Phase 4 已完成 / ⏳ Phase 3/5/6 待实施） |
 
 ---
 

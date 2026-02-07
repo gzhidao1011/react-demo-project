@@ -30,6 +30,7 @@
         <module>order-service</module>
         <module>chat-service</module>
         <module>api-gateway</module>
+        <module>config-server</module>
     </modules>
 
     <!-- 依赖管理：统一管理所有子模块的依赖版本 -->
