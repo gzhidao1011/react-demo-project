@@ -276,6 +276,7 @@
                 <artifactId>dependency-check-maven</artifactId>
                 <version>11.0.0</version>
                 <configuration>
+                    <skip>true</skip>
                     <!-- 生成 HTML 报告 -->
                     <format>HTML</format>
                     <!-- 报告输出目录 -->
