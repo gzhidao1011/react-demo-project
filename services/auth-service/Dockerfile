@@ -16,6 +16,7 @@ COPY user-service/pom.xml ./user-service/
 COPY order-service/pom.xml ./order-service/
 COPY chat-service/pom.xml ./chat-service/
 COPY api-gateway/pom.xml ./api-gateway/
+COPY config-server/pom.xml ./config-server/
 
 RUN mvn dependency:go-offline -B -pl auth-service -am || true
 

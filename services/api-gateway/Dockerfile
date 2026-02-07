@@ -24,6 +24,7 @@ COPY user-service/pom.xml ./user-service/
 COPY order-service/pom.xml ./order-service/
 COPY chat-service/pom.xml ./chat-service/
 COPY api-gateway/pom.xml ./api-gateway/
+COPY config-server/pom.xml ./config-server/
 
 # 步骤2：下载依赖（利用缓存，如果 pom.xml 没变化就不重新下载）
 # 使用 -am (also-make) 确保依赖的模块也被处理
